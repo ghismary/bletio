@@ -1,0 +1,14 @@
+[package]
+name = "bletio"
+version = "0.1.0"
+edition = "2021"
+authors = ["Ghislain MARY <ghislain@ghislainmary.fr>"]
+description = "BLE stack"
+license = "MIT OR Apache-2.0"
+keywords = ["no-std", "ble", "bluetooth"]
+categories = ["embedded", "no-std"]
+
+[dependencies]
+embedded-io = "0.6.1"
+embedded-io-async = "0.6.1"
+log = "0.4.22"
