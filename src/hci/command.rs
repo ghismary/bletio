@@ -1,7 +1,7 @@
 use crate::hci::PacketType;
 
 #[derive(Debug)]
-struct Buffer {
+pub(crate) struct Buffer {
     buffer: [u8; 259], // Packet Type (1) + Opcode (2) + Parameter Total Length (1) + Up to 255 bytes of parameters
     len: usize,
 }
@@ -16,7 +16,7 @@ impl Buffer {
         s
     }
 
-    fn data(&self) -> &[u8] {
+    pub(crate) fn data(&self) -> &[u8] {
         &self.buffer[0..self.len]
     }
 
@@ -150,7 +150,7 @@ impl CommandHeader {
 }
 
 #[derive(Debug)]
-enum Command {
+pub(crate) enum Command {
     // LeAddDeviceToWhiteList(AddressType, Address),
     LeClearWhiteList,
     // LeEncrypt(Key, Data),
@@ -170,7 +170,7 @@ enum Command {
 }
 
 impl Command {
-    fn encode(self) -> Buffer {
+    pub(crate) fn encode(self) -> Buffer {
         match self {
             Command::LeClearWhiteList => Buffer::new().append_command_header(CommandHeader::new(
                 OcfLeController::LeClearWhiteList.into(),

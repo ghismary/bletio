@@ -1,4 +1,4 @@
-mod command;
+pub(crate) mod command;
 
 #[derive(Debug)]
 #[repr(u8)]
