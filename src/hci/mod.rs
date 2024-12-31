@@ -2,6 +2,7 @@ pub(crate) mod command;
 pub mod error_code;
 pub(crate) mod event;
 pub(crate) mod event_parameter;
+pub(crate) mod le_features;
 pub(crate) mod opcode;
 pub(crate) mod supported_commands;
 

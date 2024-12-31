@@ -1,4 +1,5 @@
 use crate::hci::error_code::HciErrorCode;
+use crate::hci::le_features::LeFeatures;
 use crate::hci::supported_commands::SupportedCommands;
 use crate::Error;
 
@@ -42,5 +43,22 @@ impl TryFrom<&[u8]> for SupportedCommandsEventParameter {
                 value: <[u8; 64]>::try_from(value).unwrap().into(),
             })
         }
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct LeFeaturesEventParameter {
+    pub(crate) value: LeFeatures,
+}
+
+impl TryFrom<&[u8]> for LeFeaturesEventParameter {
+    type Error = Error;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        Ok(LeFeaturesEventParameter {
+            value: <[u8; 8]>::try_from(value)
+                .map_err(|_| Error::InvalidEventPacket)?
+                .into(),
+        })
     }
 }

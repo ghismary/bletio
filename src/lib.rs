@@ -10,7 +10,10 @@ use embedded_io::Error as EmbeddedIoError;
 use crate::hci::command::Command;
 use crate::hci::error_code::HciErrorCode;
 use crate::hci::event::{CommandCompleteEvent, Event};
-use crate::hci::event_parameter::{StatusEventParameter, SupportedCommandsEventParameter};
+use crate::hci::event_parameter::{
+    LeFeaturesEventParameter, StatusEventParameter, SupportedCommandsEventParameter,
+};
+use crate::hci::le_features::LeFeatures;
 use crate::hci::opcode::OpCode;
 use crate::hci::supported_commands::SupportedCommands;
 use crate::hci::PacketType;
@@ -41,6 +44,7 @@ where
 {
     hci: RefCell<T>,
     supported_commands: SupportedCommands,
+    supported_le_features: LeFeatures,
 }
 
 impl<T> BleStack<T>
@@ -52,6 +56,7 @@ where
         Self {
             hci: hci.into(),
             supported_commands: SupportedCommands::default(),
+            supported_le_features: LeFeatures::default(),
         }
     }
 
@@ -62,6 +67,10 @@ where
 
     pub fn supported_commands(&self) -> &SupportedCommands {
         &self.supported_commands
+    }
+
+    pub fn supported_le_features(&self) -> &LeFeatures {
+        &self.supported_le_features
     }
 
     fn cmd_reset(&self) -> Result<(), Error> {
@@ -87,6 +96,23 @@ where
                 let supported_commands_event_parameter: SupportedCommandsEventParameter =
                     event.return_parameters.slice(1)?[..64].try_into()?;
                 self.supported_commands = supported_commands_event_parameter.value;
+                Ok(())
+            }
+            _ => Err(Error::HciError(status_event_parameter.status)),
+        }
+    }
+
+    fn cmd_read_le_local_supported_features(&mut self) -> Result<(), Error> {
+        let command = Command::LeReadLocalSupportedFeatures;
+        self.hci_write(command.encode().data())?;
+        let event = self.hci_wait_for_command_complete(command.opcode())?;
+        let status_event_parameter: StatusEventParameter =
+            event.return_parameters.slice(0)?.try_into()?;
+        match status_event_parameter.status {
+            HciErrorCode::Success => {
+                let le_features_event_parameter: LeFeaturesEventParameter =
+                    event.return_parameters.slice(1)?[..8].try_into()?;
+                self.supported_le_features = le_features_event_parameter.value;
                 Ok(())
             }
             _ => Err(Error::HciError(status_event_parameter.status)),
