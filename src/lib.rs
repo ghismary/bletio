@@ -11,11 +11,13 @@ use crate::hci::command::Command;
 use crate::hci::error_code::HciErrorCode;
 use crate::hci::event::{CommandCompleteEvent, Event};
 use crate::hci::event_parameter::{
-    LeFeaturesEventParameter, StatusEventParameter, SupportedCommandsEventParameter,
+    LeFeaturesEventParameter, LmpFeaturesEventParameter, StatusEventParameter,
+    SupportedCommandsEventParameter,
 };
-use crate::hci::le_features::LeFeatures;
 use crate::hci::opcode::OpCode;
 use crate::hci::supported_commands::SupportedCommands;
+use crate::hci::supported_features::SupportedFeatures;
+use crate::hci::supported_le_features::SupportedLeFeatures;
 use crate::hci::PacketType;
 
 #[derive(Debug)]
@@ -30,6 +32,7 @@ pub enum Error {
     InvalidOpcode(u16),
     HciError(HciErrorCode),
     InvalidErrorCode(u8),
+    NonLECapableController,
 }
 
 impl From<BorrowMutError> for Error {
@@ -44,7 +47,8 @@ where
 {
     hci: RefCell<T>,
     supported_commands: SupportedCommands,
-    supported_le_features: LeFeatures,
+    supported_features: SupportedFeatures,
+    supported_le_features: SupportedLeFeatures,
 }
 
 impl<T> BleStack<T>
@@ -56,13 +60,20 @@ where
         Self {
             hci: hci.into(),
             supported_commands: SupportedCommands::default(),
-            supported_le_features: LeFeatures::default(),
+            supported_features: SupportedFeatures::default(),
+            supported_le_features: SupportedLeFeatures::default(),
         }
     }
 
     pub fn init(&mut self) -> Result<(), Error> {
         self.cmd_reset()?;
+        self.cmd_read_local_supported_features()?;
+        if !self.supported_features.has_le_supported_controller() {
+            return Err(Error::NonLECapableController);
+        }
+
         self.cmd_read_local_supported_commands()?;
+        self.cmd_read_le_local_supported_features()?;
         Ok(())
     }
 
@@ -70,7 +81,11 @@ where
         &self.supported_commands
     }
 
-    pub fn supported_le_features(&self) -> &LeFeatures {
+    pub fn supported_features(&self) -> &SupportedFeatures {
+        &self.supported_features
+    }
+
+    pub fn supported_le_features(&self) -> &SupportedLeFeatures {
         &self.supported_le_features
     }
 
@@ -94,6 +109,14 @@ where
         let supported_commands_event_parameter: SupportedCommandsEventParameter =
             event.return_parameters.slice(1)?[..64].try_into()?;
         self.supported_commands = supported_commands_event_parameter.value;
+        Ok(event)
+    }
+
+    fn cmd_read_local_supported_features(&mut self) -> Result<CommandCompleteEvent, Error> {
+        let event = self.execute_command(Command::ReadLocalSupportedFeatures)?;
+        let lmp_features_event_parameter: LmpFeaturesEventParameter =
+            event.return_parameters.slice(1)?[..8].try_into()?;
+        self.supported_features = lmp_features_event_parameter.value;
         Ok(event)
     }
 
