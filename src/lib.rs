@@ -49,6 +49,8 @@ where
     supported_commands: SupportedCommands,
     supported_features: SupportedFeatures,
     supported_le_features: SupportedLeFeatures,
+    le_data_packet_length: usize,
+    num_le_data_packets: usize,
 }
 
 impl<T> BleStack<T>
@@ -62,6 +64,8 @@ where
             supported_commands: SupportedCommands::default(),
             supported_features: SupportedFeatures::default(),
             supported_le_features: SupportedLeFeatures::default(),
+            le_data_packet_length: 255,
+            num_le_data_packets: 1,
         }
     }
 
@@ -73,7 +77,19 @@ where
         }
 
         self.cmd_read_local_supported_commands()?;
-        self.cmd_read_le_local_supported_features()?;
+        if (self
+            .supported_commands
+            .has_le_read_local_supported_features())
+        {
+            self.cmd_le_read_local_supported_features()?;
+        }
+        self.cmd_le_read_buffer_size()?;
+        if ((self.le_data_packet_length == 0) | (self.num_le_data_packets == 0)
+            && self.supported_commands.has_read_buffer_size())
+        {
+            self.cmd_read_buffer_size()?;
+        }
+
         Ok(())
     }
 
@@ -120,11 +136,25 @@ where
         Ok(event)
     }
 
-    fn cmd_read_le_local_supported_features(&mut self) -> Result<CommandCompleteEvent, Error> {
+    fn cmd_read_buffer_size(&mut self) -> Result<CommandCompleteEvent, Error> {
+        let event = self.execute_command(Command::ReadBufferSize)?;
+        self.le_data_packet_length = event.return_parameters.le_u16(1)? as usize;
+        self.num_le_data_packets = event.return_parameters.le_u16(4)? as usize;
+        Ok(event)
+    }
+
+    fn cmd_le_read_local_supported_features(&mut self) -> Result<CommandCompleteEvent, Error> {
         let event = self.execute_command(Command::LeReadLocalSupportedFeatures)?;
         let le_features_event_parameter: LeFeaturesEventParameter =
             event.return_parameters.slice(1)?[..8].try_into()?;
         self.supported_le_features = le_features_event_parameter.value;
+        Ok(event)
+    }
+
+    fn cmd_le_read_buffer_size(&mut self) -> Result<CommandCompleteEvent, Error> {
+        let event = self.execute_command(Command::LeReadBufferSize)?;
+        self.le_data_packet_length = event.return_parameters.le_u16(1)? as usize;
+        self.num_le_data_packets = event.return_parameters.u8(3)? as usize;
         Ok(event)
     }
 

@@ -33,6 +33,7 @@ macro_rules! supported_commands {
 }
 
 supported_commands! {
+    (has_read_buffer_size, 14, 7),
     (has_read_bd_addr, 15, 1),
     (has_le_set_event_mask, 25, 0),
     (has_le_read_buffer_size, 25, 1),
