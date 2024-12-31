@@ -119,6 +119,22 @@ impl EventParameterData {
             Ok(&self.data[offset..])
         }
     }
+
+    pub(crate) fn le_u16(&self, offset: usize) -> Result<u16, Error> {
+        if offset + 2 > self.len {
+            Err(Error::InvalidEventPacket)
+        } else {
+            Ok((self.data[offset + 1] as u16) << 8 | (self.data[offset] as u16))
+        }
+    }
+
+    pub(crate) fn u8(&self, offset: usize) -> Result<u8, Error> {
+        if offset + 1 > self.len {
+            Err(Error::InvalidEventPacket)
+        } else {
+            Ok(self.data[offset])
+        }
+    }
 }
 
 impl From<&[u8]> for EventParameterData {
