@@ -62,7 +62,8 @@ where
 
     pub fn init(&mut self) -> Result<(), Error> {
         self.cmd_reset()?;
-        self.cmd_read_local_supported_commands()
+        self.cmd_read_local_supported_commands()?;
+        Ok(())
     }
 
     pub fn supported_commands(&self) -> &SupportedCommands {
@@ -73,50 +74,35 @@ where
         &self.supported_le_features
     }
 
-    fn cmd_reset(&self) -> Result<(), Error> {
-        let command = Command::Reset;
+    fn execute_command(&self, command: Command) -> Result<CommandCompleteEvent, Error> {
         self.hci_write(command.encode().data())?;
         let event = self.hci_wait_for_command_complete(command.opcode())?;
         let status_event_parameter: StatusEventParameter =
             event.return_parameters.slice(0)?.try_into()?;
         match status_event_parameter.status {
-            HciErrorCode::Success => Ok(()),
+            HciErrorCode::Success => Ok(event),
             _ => Err(Error::HciError(status_event_parameter.status)),
         }
     }
 
-    fn cmd_read_local_supported_commands(&mut self) -> Result<(), Error> {
-        let command = Command::ReadLocalSupportedCommands;
-        self.hci_write(command.encode().data())?;
-        let event = self.hci_wait_for_command_complete(command.opcode())?;
-        let status_event_parameter: StatusEventParameter =
-            event.return_parameters.slice(0)?.try_into()?;
-        match status_event_parameter.status {
-            HciErrorCode::Success => {
-                let supported_commands_event_parameter: SupportedCommandsEventParameter =
-                    event.return_parameters.slice(1)?[..64].try_into()?;
-                self.supported_commands = supported_commands_event_parameter.value;
-                Ok(())
-            }
-            _ => Err(Error::HciError(status_event_parameter.status)),
-        }
+    fn cmd_reset(&self) -> Result<CommandCompleteEvent, Error> {
+        self.execute_command(Command::Reset)
     }
 
-    fn cmd_read_le_local_supported_features(&mut self) -> Result<(), Error> {
-        let command = Command::LeReadLocalSupportedFeatures;
-        self.hci_write(command.encode().data())?;
-        let event = self.hci_wait_for_command_complete(command.opcode())?;
-        let status_event_parameter: StatusEventParameter =
-            event.return_parameters.slice(0)?.try_into()?;
-        match status_event_parameter.status {
-            HciErrorCode::Success => {
-                let le_features_event_parameter: LeFeaturesEventParameter =
-                    event.return_parameters.slice(1)?[..8].try_into()?;
-                self.supported_le_features = le_features_event_parameter.value;
-                Ok(())
-            }
-            _ => Err(Error::HciError(status_event_parameter.status)),
-        }
+    fn cmd_read_local_supported_commands(&mut self) -> Result<CommandCompleteEvent, Error> {
+        let event = self.execute_command(Command::ReadLocalSupportedCommands)?;
+        let supported_commands_event_parameter: SupportedCommandsEventParameter =
+            event.return_parameters.slice(1)?[..64].try_into()?;
+        self.supported_commands = supported_commands_event_parameter.value;
+        Ok(event)
+    }
+
+    fn cmd_read_le_local_supported_features(&mut self) -> Result<CommandCompleteEvent, Error> {
+        let event = self.execute_command(Command::LeReadLocalSupportedFeatures)?;
+        let le_features_event_parameter: LeFeaturesEventParameter =
+            event.return_parameters.slice(1)?[..8].try_into()?;
+        self.supported_le_features = le_features_event_parameter.value;
+        Ok(event)
     }
 
     fn hci_write(&self, data: &[u8]) -> Result<usize, Error> {
