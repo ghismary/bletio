@@ -38,6 +38,7 @@ pub(crate) enum OcfControllerAndBaseband {
 #[repr(u16)]
 pub(crate) enum OcfInformationalParameters {
     ReadLocalSupportedCommands = 0x0002,
+    ReadLocalSupportedFeatures = 0x0003,
     ReadBufferSize = 0x0005,
     ReadBdAddr = 0x0009,
 }
@@ -101,6 +102,7 @@ impl TryFrom<u16> for OpCode {
             },
             0x04 => match ocf {
                 0x0002 => OcfInformationalParameters::ReadLocalSupportedCommands.into(),
+                0x0003 => OcfInformationalParameters::ReadLocalSupportedFeatures.into(),
                 0x0005 => OcfInformationalParameters::ReadBufferSize.into(),
                 0x0009 => OcfInformationalParameters::ReadBdAddr.into(),
                 _ => return Err(Error::InvalidOpcode(value)),

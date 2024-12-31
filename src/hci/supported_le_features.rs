@@ -1,9 +1,9 @@
 #[derive(Debug, Default)]
-pub struct LeFeatures {
+pub struct SupportedLeFeatures {
     value: [u8; 8],
 }
 
-impl From<[u8; 8]> for LeFeatures {
+impl From<[u8; 8]> for SupportedLeFeatures {
     fn from(value: [u8; 8]) -> Self {
         Self { value }
     }
@@ -16,7 +16,7 @@ macro_rules! le_features {
             ($func:ident, $byte:expr, $bit:expr),
         )+
     ) => {
-        impl LeFeatures {
+        impl SupportedLeFeatures {
             $(
                 pub fn $func(&self) -> bool {
                     self.value[$byte] & (1 << $bit) != 0

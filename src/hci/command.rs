@@ -42,6 +42,7 @@ pub(crate) enum Command {
     ReadBdAddr,
     ReadBufferSize,
     ReadLocalSupportedCommands,
+    ReadLocalSupportedFeatures,
     Reset,
     // SetEventMask(EventMask),
 }
@@ -59,6 +60,7 @@ impl Command {
             | Command::ReadBdAddr
             | Command::ReadBufferSize
             | Command::ReadLocalSupportedCommands
+            | Command::ReadLocalSupportedFeatures
             | Command::Reset => {
                 CommandPacket::new().append_command_header(CommandHeader::new(self.opcode(), 0))
             }
@@ -80,6 +82,9 @@ impl Command {
             Command::ReadBufferSize => OcfInformationalParameters::ReadBufferSize.into(),
             Command::ReadLocalSupportedCommands => {
                 OcfInformationalParameters::ReadLocalSupportedCommands.into()
+            }
+            Command::ReadLocalSupportedFeatures => {
+                OcfInformationalParameters::ReadLocalSupportedFeatures.into()
             }
             Command::Reset => OcfControllerAndBaseband::Reset.into(),
         }
