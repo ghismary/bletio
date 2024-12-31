@@ -3,6 +3,7 @@ pub mod error_code;
 pub(crate) mod event;
 pub(crate) mod event_parameter;
 pub(crate) mod opcode;
+pub(crate) mod supported_commands;
 
 use crate::Error;
 

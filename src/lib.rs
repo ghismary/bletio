@@ -9,9 +9,10 @@ use embedded_io::Error as EmbeddedIoError;
 
 use crate::hci::command::Command;
 use crate::hci::error_code::HciErrorCode;
-use crate::hci::event::Event;
-use crate::hci::event_parameter::StatusEventParameter;
+use crate::hci::event::{CommandCompleteEvent, Event};
+use crate::hci::event_parameter::{StatusEventParameter, SupportedCommandsEventParameter};
 use crate::hci::opcode::OpCode;
+use crate::hci::supported_commands::SupportedCommands;
 use crate::hci::PacketType;
 
 #[derive(Debug)]
@@ -39,6 +40,7 @@ where
     T: embedded_io::Read + embedded_io::Write,
 {
     hci: RefCell<T>,
+    supported_commands: SupportedCommands,
 }
 
 impl<T> BleStack<T>
@@ -47,26 +49,47 @@ where
     <T as embedded_io::ErrorType>::Error: embedded_io::Error,
 {
     pub fn new(hci: T) -> Self {
-        Self { hci: hci.into() }
+        Self {
+            hci: hci.into(),
+            supported_commands: SupportedCommands::default(),
+        }
     }
 
-    pub fn init(&self) -> Result<(), Error> {
-        self.cmd_reset()
+    pub fn init(&mut self) -> Result<(), Error> {
+        self.cmd_reset()?;
+        self.cmd_read_local_supported_commands()
+    }
+
+    pub fn supported_commands(&self) -> &SupportedCommands {
+        &self.supported_commands
     }
 
     fn cmd_reset(&self) -> Result<(), Error> {
-        let reset_command = Command::Reset;
-        self.hci_write(reset_command.encode().data())?;
-        let event = self.hci_wait_for_command_complete(reset_command.opcode())?;
-        match event {
-            Event::CommandComplete(event) => {
-                let status_event_parameter: StatusEventParameter =
-                    event.return_parameters.slice(0)?.try_into()?;
-                match status_event_parameter.status {
-                    HciErrorCode::Success => Ok(()),
-                    _ => Err(Error::HciError(status_event_parameter.status)),
-                }
+        let command = Command::Reset;
+        self.hci_write(command.encode().data())?;
+        let event = self.hci_wait_for_command_complete(command.opcode())?;
+        let status_event_parameter: StatusEventParameter =
+            event.return_parameters.slice(0)?.try_into()?;
+        match status_event_parameter.status {
+            HciErrorCode::Success => Ok(()),
+            _ => Err(Error::HciError(status_event_parameter.status)),
+        }
+    }
+
+    fn cmd_read_local_supported_commands(&mut self) -> Result<(), Error> {
+        let command = Command::ReadLocalSupportedCommands;
+        self.hci_write(command.encode().data())?;
+        let event = self.hci_wait_for_command_complete(command.opcode())?;
+        let status_event_parameter: StatusEventParameter =
+            event.return_parameters.slice(0)?.try_into()?;
+        match status_event_parameter.status {
+            HciErrorCode::Success => {
+                let supported_commands_event_parameter: SupportedCommandsEventParameter =
+                    event.return_parameters.slice(1)?[..64].try_into()?;
+                self.supported_commands = supported_commands_event_parameter.value;
+                Ok(())
             }
+            _ => Err(Error::HciError(status_event_parameter.status)),
         }
     }
 
@@ -77,15 +100,15 @@ where
             .map_err(|err| Error::IO(err.kind()))
     }
 
-    fn hci_wait_for_command_complete(&self, opcode: OpCode) -> Result<Event, Error> {
+    fn hci_wait_for_command_complete(&self, opcode: OpCode) -> Result<CommandCompleteEvent, Error> {
         // TODO: Handle timeout
         loop {
             if let Some(HciPollResult::Event(event)) = self.hci_poll()? {
-                match &event {
+                match event {
                     Event::CommandComplete(command_complete_event)
                         if command_complete_event.opcode == opcode =>
                     {
-                        return Ok(event)
+                        return Ok(command_complete_event)
                     }
                     _ => {}
                 }
