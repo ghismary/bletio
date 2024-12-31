@@ -2,10 +2,12 @@ pub(crate) mod command;
 pub mod error_code;
 pub(crate) mod event;
 pub(crate) mod event_parameter;
+pub mod le_states;
 pub(crate) mod opcode;
 pub(crate) mod supported_commands;
 pub(crate) mod supported_features;
 pub(crate) mod supported_le_features;
+pub(crate) mod supported_le_states;
 
 use crate::Error;
 

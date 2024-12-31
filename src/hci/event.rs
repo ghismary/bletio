@@ -120,6 +120,21 @@ impl EventParameterData {
         }
     }
 
+    pub(crate) fn le_u64(&self, offset: usize) -> Result<u64, Error> {
+        if offset + 8 > self.len {
+            Err(Error::InvalidEventPacket)
+        } else {
+            Ok(((self.data[offset + 7] as u64) << 56)
+                | ((self.data[offset + 6] as u64) << 48)
+                | ((self.data[offset + 5] as u64) << 40)
+                | ((self.data[offset + 4] as u64) << 32)
+                | ((self.data[offset + 3] as u64) << 24)
+                | ((self.data[offset + 2] as u64) << 16)
+                | ((self.data[offset + 1] as u64) << 8)
+                | (self.data[offset] as u64))
+        }
+    }
+
     pub(crate) fn le_u16(&self, offset: usize) -> Result<u16, Error> {
         if offset + 2 > self.len {
             Err(Error::InvalidEventPacket)

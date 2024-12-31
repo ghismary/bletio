@@ -2,7 +2,7 @@
 
 extern crate alloc;
 
-mod hci;
+pub mod hci; // TODO: Remove pub
 
 use core::cell::{BorrowMutError, RefCell};
 use embedded_io::Error as EmbeddedIoError;
@@ -11,13 +11,14 @@ use crate::hci::command::Command;
 use crate::hci::error_code::HciErrorCode;
 use crate::hci::event::{CommandCompleteEvent, Event};
 use crate::hci::event_parameter::{
-    LeFeaturesEventParameter, LmpFeaturesEventParameter, StatusEventParameter,
-    SupportedCommandsEventParameter,
+    LeFeaturesEventParameter, LeStatesEventParameter, LmpFeaturesEventParameter,
+    StatusEventParameter, SupportedCommandsEventParameter,
 };
 use crate::hci::opcode::OpCode;
 use crate::hci::supported_commands::SupportedCommands;
 use crate::hci::supported_features::SupportedFeatures;
 use crate::hci::supported_le_features::SupportedLeFeatures;
+use crate::hci::supported_le_states::SupportedLeStates;
 use crate::hci::PacketType;
 
 #[derive(Debug)]
@@ -33,6 +34,7 @@ pub enum Error {
     HciError(HciErrorCode),
     InvalidErrorCode(u8),
     NonLECapableController,
+    InvalidStateCombination,
 }
 
 impl From<BorrowMutError> for Error {
@@ -49,6 +51,7 @@ where
     supported_commands: SupportedCommands,
     supported_features: SupportedFeatures,
     supported_le_features: SupportedLeFeatures,
+    supported_le_states: SupportedLeStates,
     le_data_packet_length: usize,
     num_le_data_packets: usize,
 }
@@ -64,6 +67,7 @@ where
             supported_commands: SupportedCommands::default(),
             supported_features: SupportedFeatures::default(),
             supported_le_features: SupportedLeFeatures::default(),
+            supported_le_states: SupportedLeStates::default(),
             le_data_packet_length: 255,
             num_le_data_packets: 1,
         }
@@ -77,18 +81,19 @@ where
         }
 
         self.cmd_read_local_supported_commands()?;
-        if (self
+        if self
             .supported_commands
-            .has_le_read_local_supported_features())
+            .has_le_read_local_supported_features()
         {
             self.cmd_le_read_local_supported_features()?;
         }
         self.cmd_le_read_buffer_size()?;
-        if ((self.le_data_packet_length == 0) | (self.num_le_data_packets == 0)
-            && self.supported_commands.has_read_buffer_size())
+        if (self.le_data_packet_length == 0) || (self.num_le_data_packets == 0)
+            && self.supported_commands.has_read_buffer_size()
         {
             self.cmd_read_buffer_size()?;
         }
+        self.cmd_le_read_supported_states()?;
 
         Ok(())
     }
@@ -103,6 +108,10 @@ where
 
     pub fn supported_le_features(&self) -> &SupportedLeFeatures {
         &self.supported_le_features
+    }
+
+    pub fn supported_le_states(&self) -> &SupportedLeStates {
+        &self.supported_le_states
     }
 
     fn execute_command(&self, command: Command) -> Result<CommandCompleteEvent, Error> {
@@ -131,7 +140,7 @@ where
     fn cmd_read_local_supported_features(&mut self) -> Result<CommandCompleteEvent, Error> {
         let event = self.execute_command(Command::ReadLocalSupportedFeatures)?;
         let lmp_features_event_parameter: LmpFeaturesEventParameter =
-            event.return_parameters.slice(1)?[..8].try_into()?;
+            event.return_parameters.le_u64(1)?.into();
         self.supported_features = lmp_features_event_parameter.value;
         Ok(event)
     }
@@ -146,7 +155,7 @@ where
     fn cmd_le_read_local_supported_features(&mut self) -> Result<CommandCompleteEvent, Error> {
         let event = self.execute_command(Command::LeReadLocalSupportedFeatures)?;
         let le_features_event_parameter: LeFeaturesEventParameter =
-            event.return_parameters.slice(1)?[..8].try_into()?;
+            event.return_parameters.le_u64(1)?.into();
         self.supported_le_features = le_features_event_parameter.value;
         Ok(event)
     }
@@ -155,6 +164,14 @@ where
         let event = self.execute_command(Command::LeReadBufferSize)?;
         self.le_data_packet_length = event.return_parameters.le_u16(1)? as usize;
         self.num_le_data_packets = event.return_parameters.u8(3)? as usize;
+        Ok(event)
+    }
+
+    fn cmd_le_read_supported_states(&mut self) -> Result<CommandCompleteEvent, Error> {
+        let event = self.execute_command(Command::LeReadSupportedStates)?;
+        let le_states_event_parameter: LeStatesEventParameter =
+            event.return_parameters.le_u64(1)?.into();
+        self.supported_le_states = le_states_event_parameter.value;
         Ok(event)
     }
 
