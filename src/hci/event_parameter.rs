@@ -2,6 +2,7 @@ use crate::hci::error_code::HciErrorCode;
 use crate::hci::supported_commands::SupportedCommands;
 use crate::hci::supported_features::SupportedFeatures;
 use crate::hci::supported_le_features::SupportedLeFeatures;
+use crate::hci::supported_le_states::SupportedLeStates;
 use crate::Error;
 
 #[derive(Debug)]
@@ -33,15 +34,11 @@ pub(crate) struct LmpFeaturesEventParameter {
     pub(crate) value: SupportedFeatures,
 }
 
-impl TryFrom<&[u8]> for LmpFeaturesEventParameter {
-    type Error = Error;
-
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        Ok(LmpFeaturesEventParameter {
-            value: <[u8; 8]>::try_from(value)
-                .map_err(|_| Error::InvalidEventPacket)?
-                .into(),
-        })
+impl From<u64> for LmpFeaturesEventParameter {
+    fn from(value: u64) -> Self {
+        LmpFeaturesEventParameter {
+            value: value.into(),
+        }
     }
 }
 
@@ -67,14 +64,23 @@ pub(crate) struct LeFeaturesEventParameter {
     pub(crate) value: SupportedLeFeatures,
 }
 
-impl TryFrom<&[u8]> for LeFeaturesEventParameter {
-    type Error = Error;
+impl From<u64> for LeFeaturesEventParameter {
+    fn from(value: u64) -> Self {
+        LeFeaturesEventParameter {
+            value: value.into(),
+        }
+    }
+}
 
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        Ok(LeFeaturesEventParameter {
-            value: <[u8; 8]>::try_from(value)
-                .map_err(|_| Error::InvalidEventPacket)?
-                .into(),
-        })
+#[derive(Debug)]
+pub(crate) struct LeStatesEventParameter {
+    pub(crate) value: SupportedLeStates,
+}
+
+impl From<u64> for LeStatesEventParameter {
+    fn from(value: u64) -> Self {
+        LeStatesEventParameter {
+            value: value.into(),
+        }
     }
 }
