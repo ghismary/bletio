@@ -13,9 +13,9 @@ impl EventMask {
         }
     }
 
-    pub(crate) fn clear(mut self) -> Self {
-        self.value = 0;
-        self
+    #[must_use]
+    pub(crate) fn clear(self) -> Self {
+        Self { value: 0 }
     }
 
     pub(crate) fn encode(&self) -> Result<[u8; 8], Error> {
@@ -34,13 +34,13 @@ macro_rules! event_mask {
     ) => {
         impl EventMask {
             $(
-                pub(crate) fn $field(mut self, value: bool) -> Self {
+                #[must_use]
+                pub(crate) fn $field(self, value: bool) -> Self {
                     if value {
-                        self.value |= (1 << $bit);
+                        Self { value: self.value | (1 << $bit) }
                     } else {
-                        self.value &= !(1 << $bit);
+                        Self { value: self.value & !(1 << $bit) }
                     }
-                    self
                 }
             )+
         }

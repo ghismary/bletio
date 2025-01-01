@@ -119,7 +119,7 @@ where
         &self.supported_le_states
     }
 
-    pub fn set_event_mask(&self) -> Result<CommandCompleteEvent, Error> {
+    fn set_event_mask(&self) -> Result<CommandCompleteEvent, Error> {
         let event_mask = EventMask::new()
             .clear()
             .hardware_error(true)

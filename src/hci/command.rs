@@ -91,12 +91,14 @@ impl CommandPacket {
         packet
     }
 
-    pub(crate) fn append(mut self, data: &[u8]) -> Self {
+    #[must_use]
+    pub(crate) fn append(self, data: &[u8]) -> Self {
+        let mut packet = self;
         let data_len = data.len();
-        self.buffer[3] += data_len as u8;
-        self.buffer[self.len..self.len + data_len].copy_from_slice(data);
-        self.len += data_len;
-        self
+        packet.buffer[3] += data_len as u8;
+        packet.buffer[packet.len..packet.len + data_len].copy_from_slice(data);
+        packet.len += data_len;
+        packet
     }
 
     pub(crate) fn data(&self) -> &[u8] {
