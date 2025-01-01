@@ -1,6 +1,6 @@
 use crate::hci::event_mask::EventMask;
 use crate::hci::opcode::{
-    OcfControllerAndBaseband, OcfInformationalParameters, OcfLeController, OcfNop, OpCode,
+    OcfControllerAndBaseband, OcfInformationalParameters, OcfLeController, OpCode,
 };
 use crate::hci::PacketType;
 use crate::Error;
@@ -8,18 +8,18 @@ use crate::Error;
 #[derive(Debug)]
 pub(crate) enum Command {
     // LeAddDeviceToWhiteList(AddressType, Address),
-    LeClearWhiteList,
+    // LeClearWhiteList,
     // LeEncrypt(Key, Data),
-    LeRand,
+    // LeRand,
     LeReadBufferSize,
     LeReadLocalSupportedFeatures,
     LeReadSupportedStates,
-    LeReadWhiteListSize,
+    // LeReadWhiteListSize,
     // LeRemoveDeviceFromWhiteList(AddressType, Address),
     // LeSetEventMask(LeEventMask),
     // LeSetRandomAddress(RandomAddress),
-    Nop,
-    ReadBdAddr,
+    // Nop,
+    // ReadBdAddr,
     ReadBufferSize,
     ReadLocalSupportedCommands,
     ReadLocalSupportedFeatures,
@@ -30,14 +30,9 @@ pub(crate) enum Command {
 impl Command {
     pub(crate) fn encode(&self) -> Result<CommandPacket, Error> {
         Ok(match self {
-            Command::LeClearWhiteList
-            | Command::LeRand
-            | Command::LeReadBufferSize
+            Command::LeReadBufferSize
             | Command::LeReadLocalSupportedFeatures
             | Command::LeReadSupportedStates
-            | Command::LeReadWhiteListSize
-            | Command::Nop
-            | Command::ReadBdAddr
             | Command::ReadBufferSize
             | Command::ReadLocalSupportedCommands
             | Command::ReadLocalSupportedFeatures
@@ -50,16 +45,11 @@ impl Command {
 
     pub(crate) fn opcode(&self) -> OpCode {
         match self {
-            Command::LeClearWhiteList => OcfLeController::LeClearWhiteList.into(),
-            Command::LeRand => OcfLeController::LeRand.into(),
             Command::LeReadBufferSize => OcfLeController::LeReadBufferSize.into(),
             Command::LeReadLocalSupportedFeatures => {
                 OcfLeController::LeReadLocalSupportedFeatures.into()
             }
             Command::LeReadSupportedStates => OcfLeController::LeReadSupportedStates.into(),
-            Command::LeReadWhiteListSize => OcfLeController::LeReadWhiteListSize.into(),
-            Command::Nop => OcfNop::Nop.into(),
-            Command::ReadBdAddr => OcfInformationalParameters::ReadBdAddr.into(),
             Command::ReadBufferSize => OcfInformationalParameters::ReadBufferSize.into(),
             Command::ReadLocalSupportedCommands => {
                 OcfInformationalParameters::ReadLocalSupportedCommands.into()
