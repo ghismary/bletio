@@ -1,4 +1,4 @@
-use crate::hci::le_states::{CombinedLeState, LeState, SingleLeState};
+use crate::le_states::{CombinedLeState, LeState, SingleLeState};
 
 #[derive(Debug, Default)]
 pub struct SupportedLeStates {

@@ -6,11 +6,6 @@ use crate::hci::supported_le_states::SupportedLeStates;
 use crate::Error;
 
 #[derive(Debug)]
-enum EventParameter {
-    Status(StatusEventParameter),
-}
-
-#[derive(Debug)]
 pub(crate) struct StatusEventParameter {
     pub(crate) status: HciErrorCode,
 }

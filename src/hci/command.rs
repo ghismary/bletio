@@ -1,29 +1,9 @@
+use crate::hci::event_mask::EventMask;
 use crate::hci::opcode::{
     OcfControllerAndBaseband, OcfInformationalParameters, OcfLeController, OcfNop, OpCode,
 };
 use crate::hci::PacketType;
-
-#[derive(Debug)]
-struct CommandHeader {
-    opcode: OpCode,
-    parameter_total_length: u8,
-}
-
-impl CommandHeader {
-    fn new(opcode: OpCode, parameter_total_length: u8) -> Self {
-        Self {
-            opcode,
-            parameter_total_length,
-        }
-    }
-
-    fn encode(&self, buffer: &mut [u8]) -> usize {
-        buffer[0] = (self.opcode.value() & 0xff) as u8;
-        buffer[1] = ((self.opcode.value() & 0xff00) >> 8) as u8;
-        buffer[2] = self.parameter_total_length;
-        3
-    }
-}
+use crate::Error;
 
 #[derive(Debug)]
 pub(crate) enum Command {
@@ -44,12 +24,12 @@ pub(crate) enum Command {
     ReadLocalSupportedCommands,
     ReadLocalSupportedFeatures,
     Reset,
-    // SetEventMask(EventMask),
+    SetEventMask(EventMask),
 }
 
 impl Command {
-    pub(crate) fn encode(&self) -> CommandPacket {
-        match self {
+    pub(crate) fn encode(&self) -> Result<CommandPacket, Error> {
+        Ok(match self {
             Command::LeClearWhiteList
             | Command::LeRand
             | Command::LeReadBufferSize
@@ -61,10 +41,11 @@ impl Command {
             | Command::ReadBufferSize
             | Command::ReadLocalSupportedCommands
             | Command::ReadLocalSupportedFeatures
-            | Command::Reset => {
-                CommandPacket::new().append_command_header(CommandHeader::new(self.opcode(), 0))
+            | Command::Reset => CommandPacket::new(self.opcode()),
+            Command::SetEventMask(event_mask) => {
+                CommandPacket::new(self.opcode()).append(&event_mask.encode()?)
             }
-        }
+        })
     }
 
     pub(crate) fn opcode(&self) -> OpCode {
@@ -87,6 +68,7 @@ impl Command {
                 OcfInformationalParameters::ReadLocalSupportedFeatures.into()
             }
             Command::Reset => OcfControllerAndBaseband::Reset.into(),
+            Command::SetEventMask(_) => OcfControllerAndBaseband::SetEventMask.into(),
         }
     }
 }
@@ -98,21 +80,26 @@ pub(crate) struct CommandPacket {
 }
 
 impl CommandPacket {
-    fn new() -> Self {
-        let mut s = Self {
+    fn new(opcode: OpCode) -> Self {
+        let mut packet = Self {
             buffer: [0; 259],
-            len: 1,
+            len: 4,
         };
-        s.buffer[0] = PacketType::Command as u8;
-        s
+        packet.buffer[0] = PacketType::Command as u8;
+        packet.buffer[1] = (opcode.value() & 0xff) as u8;
+        packet.buffer[2] = ((opcode.value() & 0xff00) >> 8) as u8;
+        packet
+    }
+
+    pub(crate) fn append(mut self, data: &[u8]) -> Self {
+        let data_len = data.len();
+        self.buffer[3] += data_len as u8;
+        self.buffer[self.len..self.len + data_len].copy_from_slice(data);
+        self.len += data_len;
+        self
     }
 
     pub(crate) fn data(&self) -> &[u8] {
         &self.buffer[0..self.len]
-    }
-
-    fn append_command_header(mut self, header: CommandHeader) -> Self {
-        self.len += header.encode(&mut self.buffer[self.len..]);
-        self
     }
 }

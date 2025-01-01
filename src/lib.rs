@@ -2,7 +2,9 @@
 
 extern crate alloc;
 
-pub mod hci; // TODO: Remove pub
+mod hci;
+pub mod le_states;
+mod utils;
 
 use core::cell::{BorrowMutError, RefCell};
 use embedded_io::Error as EmbeddedIoError;
@@ -10,6 +12,7 @@ use embedded_io::Error as EmbeddedIoError;
 use crate::hci::command::Command;
 use crate::hci::error_code::HciErrorCode;
 use crate::hci::event::{CommandCompleteEvent, Event};
+use crate::hci::event_mask::EventMask;
 use crate::hci::event_parameter::{
     LeFeaturesEventParameter, LeStatesEventParameter, LmpFeaturesEventParameter,
     StatusEventParameter, SupportedCommandsEventParameter,
@@ -35,6 +38,7 @@ pub enum Error {
     InvalidErrorCode(u8),
     NonLECapableController,
     InvalidStateCombination,
+    BufferTooSmall,
 }
 
 impl From<BorrowMutError> for Error {
@@ -88,12 +92,13 @@ where
             self.cmd_le_read_local_supported_features()?;
         }
         self.cmd_le_read_buffer_size()?;
-        if (self.le_data_packet_length == 0) || (self.num_le_data_packets == 0)
-            && self.supported_commands.has_read_buffer_size()
+        if (self.le_data_packet_length == 0)
+            || (self.num_le_data_packets == 0) && self.supported_commands.has_read_buffer_size()
         {
             self.cmd_read_buffer_size()?;
         }
         self.cmd_le_read_supported_states()?;
+        self.set_event_mask()?;
 
         Ok(())
     }
@@ -114,8 +119,21 @@ where
         &self.supported_le_states
     }
 
+    pub fn set_event_mask(&self) -> Result<CommandCompleteEvent, Error> {
+        let event_mask = EventMask::new()
+            .clear()
+            .hardware_error(true)
+            .data_buffer_overflow(true)
+            .le_meta_event(true)
+            .disconnection_complete(true)
+            .read_remote_version_information_complete(true)
+            .encryption_change(true)
+            .encryption_key_refresh_complete(true);
+        self.cmd_set_event_mask(event_mask)
+    }
+
     fn execute_command(&self, command: Command) -> Result<CommandCompleteEvent, Error> {
-        self.hci_write(command.encode().data())?;
+        self.hci_write(command.encode()?.data())?;
         let event = self.hci_wait_for_command_complete(command.opcode())?;
         let status_event_parameter: StatusEventParameter =
             event.return_parameters.slice(0)?.try_into()?;
@@ -123,6 +141,10 @@ where
             HciErrorCode::Success => Ok(event),
             _ => Err(Error::HciError(status_event_parameter.status)),
         }
+    }
+
+    fn cmd_set_event_mask(&self, event_mask: EventMask) -> Result<CommandCompleteEvent, Error> {
+        self.execute_command(Command::SetEventMask(event_mask))
     }
 
     fn cmd_reset(&self) -> Result<CommandCompleteEvent, Error> {
