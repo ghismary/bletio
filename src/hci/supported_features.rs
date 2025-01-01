@@ -13,7 +13,7 @@ macro_rules! features {
     (
         $(
             $(#[$docs:meta])*
-            ($func:ident, $value:expr),
+            $func:ident = $value:expr,
         )+
     ) => {
         impl SupportedFeatures {
@@ -27,6 +27,6 @@ macro_rules! features {
 }
 
 features! {
-    (has_bredr_not_supported, 37),
-    (has_le_supported_controller, 38),
+    has_bredr_not_supported = 37,
+    has_le_supported_controller = 38,
 }
