@@ -255,7 +255,8 @@ where
 }
 
 #[derive(Debug)]
+#[allow(clippy::large_enum_variant)] // TODO: To remove when AclData is used
 enum HciPollResult {
-    AclData,
+    _AclData,
     Event(Event),
 }

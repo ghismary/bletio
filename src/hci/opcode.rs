@@ -4,12 +4,12 @@ use crate::Error;
 #[repr(u8)]
 enum Ogf {
     Nop = 0x00,
-    LinkControl = 0x01,
-    LinkPolicy = 0x02,
+    _LinkControl = 0x01,
+    _LinkPolicy = 0x02,
     ControllerAndBaseband = 0x03,
     InformationalParameters = 0x04,
-    StatusParameters = 0x05,
-    Testing = 0x06,
+    _StatusParameters = 0x05,
+    _Testing = 0x06,
     LeController = 0x08,
 }
 
