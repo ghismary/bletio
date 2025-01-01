@@ -1,4 +1,4 @@
-use crate::le_states::{CombinedLeState, LeState, SingleLeState};
+use crate::le_states::{LeCombinedState, LeSingleState, LeState};
 
 #[derive(Debug, Default)]
 pub struct SupportedLeStates {
@@ -13,185 +13,202 @@ impl From<u64> for SupportedLeStates {
 
 impl SupportedLeStates {
     pub fn is_supported(&self, state: LeState) -> bool {
+        let state = state.simplify();
         match state {
-            LeState::Single(SingleLeState::NonConnectableAdvertising)
-            | LeState::Combined(CombinedLeState(
-                SingleLeState::NonConnectableAdvertising,
-                SingleLeState::NonConnectableAdvertising,
-            )) => (self.value & 0x0000_0000_0000_0001) != 0,
-            LeState::Single(SingleLeState::ScannableAdvertising)
-            | LeState::Combined(CombinedLeState(
-                SingleLeState::ScannableAdvertising,
-                SingleLeState::ScannableAdvertising,
-            )) => (self.value & 0x0000_0000_0000_0002) != 0,
-            LeState::Single(SingleLeState::ConnectableAdvertising)
-            | LeState::Combined(CombinedLeState(
-                SingleLeState::ConnectableAdvertising,
-                SingleLeState::ConnectableAdvertising,
-            )) => (self.value & 0x0000_0000_0000_0004) != 0,
-            LeState::Single(SingleLeState::HighDutyCycleDirectedAdvertising)
-            | LeState::Combined(CombinedLeState(
-                SingleLeState::HighDutyCycleDirectedAdvertising,
-                SingleLeState::HighDutyCycleDirectedAdvertising,
-            )) => (self.value & 0x0000_0000_0000_0008) != 0,
-            LeState::Single(SingleLeState::PassiveScanning)
-            | LeState::Combined(CombinedLeState(
-                SingleLeState::PassiveScanning,
-                SingleLeState::PassiveScanning,
-            )) => (self.value & 0x0000_0000_0000_0010) != 0,
-            LeState::Single(SingleLeState::ActiveScanning)
-            | LeState::Combined(CombinedLeState(
-                SingleLeState::ActiveScanning,
-                SingleLeState::ActiveScanning,
-            )) => (self.value & 0x0000_0000_0000_0020) != 0,
-            LeState::Single(SingleLeState::Initiating)
-            | LeState::Combined(CombinedLeState(
-                SingleLeState::Initiating,
-                SingleLeState::Initiating,
-            )) => (self.value & 0x0000_0000_0000_0040) != 0,
-            LeState::Single(SingleLeState::ConnectionSlaveRole)
-            | LeState::Combined(CombinedLeState(
-                SingleLeState::ConnectionSlaveRole,
-                SingleLeState::ConnectionSlaveRole,
-            )) => (self.value & 0x0000_0000_0000_0080) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::NonConnectableAdvertising,
-                SingleLeState::PassiveScanning,
+            LeState::Single(LeSingleState::NonConnectableAdvertising) => {
+                (self.value & 0x0000_0000_0000_0001) != 0
+            }
+            LeState::Single(LeSingleState::ScannableAdvertising) => {
+                (self.value & 0x0000_0000_0000_0002) != 0
+            }
+            LeState::Single(LeSingleState::ConnectableAdvertising) => {
+                (self.value & 0x0000_0000_0000_0004) != 0
+            }
+            LeState::Single(LeSingleState::HighDutyCycleDirectedAdvertising) => {
+                (self.value & 0x0000_0000_0000_0008) != 0
+            }
+            LeState::Single(LeSingleState::PassiveScanning) => {
+                (self.value & 0x0000_0000_0000_0010) != 0
+            }
+            LeState::Single(LeSingleState::ActiveScanning) => {
+                (self.value & 0x0000_0000_0000_0020) != 0
+            }
+            LeState::Single(LeSingleState::Initiating) => (self.value & 0x0000_0000_0000_0040) != 0,
+            LeState::Single(LeSingleState::ConnectionSlaveRole) => {
+                (self.value & 0x0000_0000_0000_0080) != 0
+            }
+            LeState::Combined(LeCombinedState(
+                LeSingleState::NonConnectableAdvertising,
+                LeSingleState::PassiveScanning,
             )) => (self.value & 0x0000_0000_0000_0100) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::ScannableAdvertising,
-                SingleLeState::PassiveScanning,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::ScannableAdvertising,
+                LeSingleState::PassiveScanning,
             )) => (self.value & 0x0000_0000_0000_0200) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::ConnectableAdvertising,
-                SingleLeState::PassiveScanning,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::ConnectableAdvertising,
+                LeSingleState::PassiveScanning,
             )) => (self.value & 0x0000_0000_0000_0400) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::HighDutyCycleDirectedAdvertising,
-                SingleLeState::PassiveScanning,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::HighDutyCycleDirectedAdvertising,
+                LeSingleState::PassiveScanning,
             )) => (self.value & 0x0000_0000_0000_0800) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::NonConnectableAdvertising,
-                SingleLeState::ActiveScanning,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::NonConnectableAdvertising,
+                LeSingleState::ActiveScanning,
             )) => (self.value & 0x0000_0000_0000_1000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::ScannableAdvertising,
-                SingleLeState::ActiveScanning,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::ScannableAdvertising,
+                LeSingleState::ActiveScanning,
             )) => (self.value & 0x0000_0000_0000_2000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::ConnectableAdvertising,
-                SingleLeState::ActiveScanning,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::ConnectableAdvertising,
+                LeSingleState::ActiveScanning,
             )) => (self.value & 0x0000_0000_0000_4000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::HighDutyCycleDirectedAdvertising,
-                SingleLeState::ActiveScanning,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::HighDutyCycleDirectedAdvertising,
+                LeSingleState::ActiveScanning,
             )) => (self.value & 0x0000_0000_0000_8000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::NonConnectableAdvertising,
-                SingleLeState::Initiating,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::NonConnectableAdvertising,
+                LeSingleState::Initiating,
             )) => (self.value & 0x0000_0000_0001_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::ScannableAdvertising,
-                SingleLeState::Initiating,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::ScannableAdvertising,
+                LeSingleState::Initiating,
             )) => (self.value & 0x0000_0000_0002_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::NonConnectableAdvertising,
-                SingleLeState::ConnectionMasterRole,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::NonConnectableAdvertising,
+                LeSingleState::ConnectionMasterRole,
             )) => (self.value & 0x0000_0000_0004_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::ScannableAdvertising,
-                SingleLeState::ConnectionMasterRole,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::ScannableAdvertising,
+                LeSingleState::ConnectionMasterRole,
             )) => (self.value & 0x0000_0000_0008_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::NonConnectableAdvertising,
-                SingleLeState::ConnectionSlaveRole,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::NonConnectableAdvertising,
+                LeSingleState::ConnectionSlaveRole,
             )) => (self.value & 0x0000_0000_0010_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::ScannableAdvertising,
-                SingleLeState::ConnectionSlaveRole,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::ScannableAdvertising,
+                LeSingleState::ConnectionSlaveRole,
             )) => (self.value & 0x0000_0000_0020_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::PassiveScanning,
-                SingleLeState::Initiating,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::PassiveScanning,
+                LeSingleState::Initiating,
             )) => (self.value & 0x0000_0000_0040_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::ActiveScanning,
-                SingleLeState::Initiating,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::ActiveScanning,
+                LeSingleState::Initiating,
             )) => (self.value & 0x0000_0000_0080_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::PassiveScanning,
-                SingleLeState::ConnectionMasterRole,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::PassiveScanning,
+                LeSingleState::ConnectionMasterRole,
             )) => (self.value & 0x0000_0000_0100_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::ActiveScanning,
-                SingleLeState::ConnectionMasterRole,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::ActiveScanning,
+                LeSingleState::ConnectionMasterRole,
             )) => (self.value & 0x0000_0000_0200_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::PassiveScanning,
-                SingleLeState::ConnectionSlaveRole,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::PassiveScanning,
+                LeSingleState::ConnectionSlaveRole,
             )) => (self.value & 0x0000_0000_0400_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::ActiveScanning,
-                SingleLeState::ConnectionSlaveRole,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::ActiveScanning,
+                LeSingleState::ConnectionSlaveRole,
             )) => (self.value & 0x0000_0000_0800_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::Initiating,
-                SingleLeState::ConnectionMasterRole,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::Initiating,
+                LeSingleState::ConnectionMasterRole,
             )) => (self.value & 0x0000_0000_1000_0000) != 0,
-            LeState::Single(SingleLeState::LowDutyCycleDirectedAdvertising)
-            | LeState::Combined(CombinedLeState(
-                SingleLeState::LowDutyCycleDirectedAdvertising,
-                SingleLeState::LowDutyCycleDirectedAdvertising,
-            )) => (self.value & 0x0000_0000_2000_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::LowDutyCycleDirectedAdvertising,
-                SingleLeState::PassiveScanning,
+            LeState::Single(LeSingleState::LowDutyCycleDirectedAdvertising) => {
+                (self.value & 0x0000_0000_2000_0000) != 0
+            }
+            LeState::Combined(LeCombinedState(
+                LeSingleState::LowDutyCycleDirectedAdvertising,
+                LeSingleState::PassiveScanning,
             )) => (self.value & 0x0000_0000_4000_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::LowDutyCycleDirectedAdvertising,
-                SingleLeState::ActiveScanning,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::LowDutyCycleDirectedAdvertising,
+                LeSingleState::ActiveScanning,
             )) => (self.value & 0x0000_0000_8000_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::ConnectableAdvertising,
-                SingleLeState::Initiating,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::ConnectableAdvertising,
+                LeSingleState::Initiating,
             )) => (self.value & 0x0000_0001_0000_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::HighDutyCycleDirectedAdvertising,
-                SingleLeState::Initiating,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::HighDutyCycleDirectedAdvertising,
+                LeSingleState::Initiating,
             )) => (self.value & 0x0000_0002_0000_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::LowDutyCycleDirectedAdvertising,
-                SingleLeState::Initiating,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::LowDutyCycleDirectedAdvertising,
+                LeSingleState::Initiating,
             )) => (self.value & 0x0000_0004_0000_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::ConnectableAdvertising,
-                SingleLeState::ConnectionMasterRole,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::ConnectableAdvertising,
+                LeSingleState::ConnectionMasterRole,
             )) => (self.value & 0x0000_0008_0000_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::HighDutyCycleDirectedAdvertising,
-                SingleLeState::ConnectionMasterRole,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::HighDutyCycleDirectedAdvertising,
+                LeSingleState::ConnectionMasterRole,
             )) => (self.value & 0x0000_0010_0000_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::LowDutyCycleDirectedAdvertising,
-                SingleLeState::ConnectionMasterRole,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::LowDutyCycleDirectedAdvertising,
+                LeSingleState::ConnectionMasterRole,
             )) => (self.value & 0x0000_0020_0000_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::ConnectableAdvertising,
-                SingleLeState::ConnectionSlaveRole,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::ConnectableAdvertising,
+                LeSingleState::ConnectionSlaveRole,
             )) => (self.value & 0x0000_0040_0000_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::HighDutyCycleDirectedAdvertising,
-                SingleLeState::ConnectionSlaveRole,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::HighDutyCycleDirectedAdvertising,
+                LeSingleState::ConnectionSlaveRole,
             )) => (self.value & 0x0000_0080_0000_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::LowDutyCycleDirectedAdvertising,
-                SingleLeState::ConnectionSlaveRole,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::LowDutyCycleDirectedAdvertising,
+                LeSingleState::ConnectionSlaveRole,
             )) => (self.value & 0x0000_0100_0000_0000) != 0,
-            LeState::Combined(CombinedLeState(
-                SingleLeState::Initiating,
-                SingleLeState::ConnectionSlaveRole,
+            LeState::Combined(LeCombinedState(
+                LeSingleState::Initiating,
+                LeSingleState::ConnectionSlaveRole,
             )) => (self.value & 0x0000_0200_0000_0000) != 0,
             _ => false,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_single_state_is_supported() {
+        let supported_states: SupportedLeStates = 0x0000_0000_0000_0022.into();
+        assert!(supported_states.is_supported(LeState::Single(LeSingleState::ScannableAdvertising)));
+        assert!(supported_states.is_supported(LeState::Single(LeSingleState::ActiveScanning)));
+        assert!(!supported_states.is_supported(LeState::Single(LeSingleState::Initiating)));
+    }
+
+    #[test]
+    fn test_combined_state_is_supported() {
+        let supported_states: SupportedLeStates = 0x0000_0010_0400_0000.into();
+        assert!(
+            supported_states.is_supported(LeState::Combined(LeCombinedState(
+                LeSingleState::HighDutyCycleDirectedAdvertising,
+                LeSingleState::ConnectionMasterRole,
+            )))
+        );
+        assert!(
+            supported_states.is_supported(LeState::Combined(LeCombinedState(
+                LeSingleState::ConnectionMasterRole,
+                LeSingleState::HighDutyCycleDirectedAdvertising,
+            )))
+        );
+        assert!(
+            !supported_states.is_supported(LeState::Combined(LeCombinedState(
+                LeSingleState::Initiating,
+                LeSingleState::HighDutyCycleDirectedAdvertising,
+            )))
+        )
     }
 }
