@@ -23,7 +23,7 @@ impl TryFrom<u8> for EventCode {
 
 #[derive(Debug)]
 pub(crate) struct CommandCompleteEvent {
-    _num_hci_command_packets: u8,
+    pub(crate) num_hci_command_packets: u8,
     pub(crate) opcode: OpCode,
     pub(crate) return_parameters: EventParameterData,
 }
@@ -37,7 +37,7 @@ impl TryFrom<EventPacket> for CommandCompleteEvent {
         }
         let return_parameters_length = value.parameter_total_length - 3;
         Ok(CommandCompleteEvent {
-            _num_hci_command_packets: value.data[0],
+            num_hci_command_packets: value.data[0],
             opcode: (((value.data[2] as u16) << 8) + value.data[1] as u16).try_into()?,
             return_parameters: value.data[3..3 + return_parameters_length].into(),
         })

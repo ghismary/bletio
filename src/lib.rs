@@ -1,7 +1,5 @@
 #![no_std]
 
-extern crate alloc;
-
 mod hci;
 pub mod le_states;
 mod utils;
@@ -56,6 +54,7 @@ where
     supported_features: SupportedFeatures,
     supported_le_features: SupportedLeFeatures,
     supported_le_states: SupportedLeStates,
+    num_hci_command_packets: usize,
     le_data_packet_length: usize,
     num_le_data_packets: usize,
 }
@@ -72,33 +71,37 @@ where
             supported_features: SupportedFeatures::default(),
             supported_le_features: SupportedLeFeatures::default(),
             supported_le_states: SupportedLeStates::default(),
+            num_hci_command_packets: 0,
             le_data_packet_length: 255,
             num_le_data_packets: 1,
         }
     }
 
-    pub fn init(&mut self) -> Result<(), Error> {
+    pub fn setup(&mut self) -> Result<(), Error> {
+        // Perform setup has described in Core specification 4.2, Vol. 6, Part D, 2.1
+
         self.cmd_reset()?;
+
+        self.cmd_read_local_supported_commands()?;
         self.cmd_read_local_supported_features()?;
         if !self.supported_features.has_le_supported_controller() {
             return Err(Error::NonLECapableController);
         }
-
-        self.cmd_read_local_supported_commands()?;
-        if self
-            .supported_commands
-            .has_le_read_local_supported_features()
-        {
-            self.cmd_le_read_local_supported_features()?;
-        }
+        self.set_event_mask()?;
+        // TODO: set LE event mask
         self.cmd_le_read_buffer_size()?;
         if (self.le_data_packet_length == 0)
             || (self.num_le_data_packets == 0) && self.supported_commands.has_read_buffer_size()
         {
             self.cmd_read_buffer_size()?;
         }
-        self.cmd_le_read_supported_states()?;
-        self.set_event_mask()?;
+        if self
+            .supported_commands
+            .has_le_read_local_supported_features()
+        {
+            self.cmd_le_read_local_supported_features()?;
+        }
+        self.cmd_le_read_supported_states()?; // TODO: needed??
 
         Ok(())
     }
@@ -147,8 +150,10 @@ where
         self.execute_command(Command::SetEventMask(event_mask))
     }
 
-    fn cmd_reset(&self) -> Result<CommandCompleteEvent, Error> {
-        self.execute_command(Command::Reset)
+    fn cmd_reset(&mut self) -> Result<CommandCompleteEvent, Error> {
+        let event = self.execute_command(Command::Reset)?;
+        self.num_hci_command_packets = event.num_hci_command_packets as usize;
+        Ok(event)
     }
 
     fn cmd_read_local_supported_commands(&mut self) -> Result<CommandCompleteEvent, Error> {
