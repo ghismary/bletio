@@ -36,6 +36,7 @@ pub(crate) enum OcfControllerAndBaseband {
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 #[repr(u16)]
+#[allow(clippy::enum_variant_names)]
 pub(crate) enum OcfInformationalParameters {
     ReadLocalSupportedCommands = 0x0002,
     ReadLocalSupportedFeatures = 0x0003,
