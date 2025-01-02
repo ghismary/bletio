@@ -7,7 +7,7 @@ use crate::Error;
 
 #[derive(Debug)]
 pub struct ServiceUuid16AdStruct {
-    uuids: ArrayVec<Uuid16, 15>,
+    uuids: ArrayVec<Uuid16, 14>,
     complete: bool,
 }
 
@@ -26,6 +26,10 @@ impl ServiceUuid16AdStruct {
 
     pub fn is_empty(&self) -> bool {
         self.uuids.is_empty()
+    }
+
+    pub fn is_valid(&self) -> bool {
+        !self.is_empty() || self.is_complete()
     }
 
     #[must_use]
@@ -73,7 +77,7 @@ impl TryFrom<&[Uuid16]> for ServiceUuid16AdStruct {
     type Error = Error;
 
     fn try_from(value: &[Uuid16]) -> Result<Self, Self::Error> {
-        if value.len() <= 15 {
+        if value.len() <= 14 {
             Ok(Self {
                 uuids: value.iter().cloned().collect(),
                 complete: false,
@@ -88,7 +92,7 @@ impl TryFrom<&[u16]> for ServiceUuid16AdStruct {
     type Error = Error;
 
     fn try_from(value: &[u16]) -> Result<Self, Self::Error> {
-        if value.len() <= 15 {
+        if value.len() <= 14 {
             Ok(Self {
                 uuids: value.iter().map(|v| (*v).into()).collect(),
                 complete: false,
@@ -120,6 +124,10 @@ impl ServiceUuid32AdStruct {
 
     pub fn is_empty(&self) -> bool {
         self.uuids.is_empty()
+    }
+
+    pub fn is_valid(&self) -> bool {
+        !self.is_empty() || self.is_complete()
     }
 
     #[must_use]
@@ -192,22 +200,32 @@ impl TryFrom<&[u32]> for ServiceUuid32AdStruct {
         }
     }
 }
+
 #[derive(Debug)]
 pub struct ServiceUuid128AdStruct {
-    uuid: Uuid128,
+    uuids: ArrayVec<Uuid128, 1>,
     complete: bool,
 }
 
 impl ServiceUuid128AdStruct {
-    pub fn new(uuid: Uuid128) -> Self {
-        Self {
-            uuid,
-            complete: false,
-        }
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn len(&self) -> usize {
+        self.uuids.len()
     }
 
     pub fn is_complete(&self) -> bool {
         self.complete
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.uuids.is_empty()
+    }
+
+    pub fn is_valid(&self) -> bool {
+        !self.is_empty() || self.is_complete()
     }
 
     #[must_use]
@@ -216,8 +234,15 @@ impl ServiceUuid128AdStruct {
         self
     }
 
+    pub fn try_add(mut self, uuid: Uuid128) -> Result<Self, Error> {
+        self.uuids
+            .try_push(uuid)
+            .map_err(|_| Error::BufferTooSmall)?;
+        Ok(self)
+    }
+
     pub(crate) fn size(&self) -> usize {
-        2 + 16
+        2 + (self.uuids.len() * 16)
     }
 
     pub(crate) fn encode(&self, buffer: &mut [u8]) -> Result<usize, Error> {
@@ -227,25 +252,49 @@ impl ServiceUuid128AdStruct {
         } else {
             CommonDataType::IncompleteListOfServiceUuid128
         } as u8;
-        encode_le_u128(&mut buffer[2..], self.uuid.0)?;
+        let mut offset = 2;
+        for item in &self.uuids {
+            offset += encode_le_u128(&mut buffer[offset..], item.0)?;
+        }
         Ok(self.size())
     }
 }
 
-impl From<Uuid128> for ServiceUuid128AdStruct {
-    fn from(value: Uuid128) -> Self {
+impl Default for ServiceUuid128AdStruct {
+    fn default() -> Self {
         Self {
-            uuid: value,
+            uuids: ArrayVec::new(),
             complete: false,
         }
     }
 }
 
-impl From<u128> for ServiceUuid128AdStruct {
-    fn from(value: u128) -> Self {
-        Self {
-            uuid: value.into(),
-            complete: false,
+impl TryFrom<&[Uuid128]> for ServiceUuid128AdStruct {
+    type Error = Error;
+
+    fn try_from(value: &[Uuid128]) -> Result<Self, Self::Error> {
+        if value.len() <= 1 {
+            Ok(Self {
+                uuids: value.iter().cloned().collect(),
+                complete: false,
+            })
+        } else {
+            Err(Error::BufferTooSmall)
+        }
+    }
+}
+
+impl TryFrom<&[u128]> for ServiceUuid128AdStruct {
+    type Error = Error;
+
+    fn try_from(value: &[u128]) -> Result<Self, Self::Error> {
+        if value.len() <= 1 {
+            Ok(Self {
+                uuids: value.iter().map(|v| (*v).into()).collect(),
+                complete: false,
+            })
+        } else {
+            Err(Error::BufferTooSmall)
         }
     }
 }
@@ -286,7 +335,7 @@ mod test {
     fn test_service_uuid16_advertising_data_creation_failure() {
         let value: Result<ServiceUuid16AdStruct, _> = [
             0x1802, 0x1803, 0x1804, 0x1815, 0x1806, 0x1807, 0x1808, 0x1809, 0x180A, 0x180B, 0x180C,
-            0x180D, 0x180E, 0x180F, 0x1810, 0x1811,
+            0x180D, 0x180E, 0x180F, 0x1810,
         ]
         .as_slice()
         .try_into();
@@ -319,10 +368,8 @@ mod test {
             .try_add(0x180E.into())
             .unwrap()
             .try_add(0x180F.into())
-            .unwrap()
-            .try_add(0x1810.into())
             .unwrap();
-        assert!(value.try_add(0x1811.into()).is_err());
+        assert!(value.try_add(0x1810.into()).is_err());
     }
 
     #[test]
@@ -393,12 +440,44 @@ mod test {
     }
 
     #[test]
-    fn test_service_uuid128_advertising_data_creation_success() {
-        let mut value = ServiceUuid128AdStruct::new(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640.into());
-        value = value.complete(true);
-        assert!(value.is_complete());
-
-        let value: ServiceUuid128AdStruct = 0xA624BAC7_A46C_4EC8_B3D6_4C82E5A56D96.into();
+    fn test_service_uuid128_advertising_data_creation_success() -> Result<(), Error> {
+        let mut value: ServiceUuid128AdStruct = [Uuid128(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640)]
+            .as_slice()
+            .try_into()?;
+        assert_eq!(value.len(), 1);
         assert!(!value.is_complete());
+        value = [0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640]
+            .as_slice()
+            .try_into()?;
+        value = value.complete(true);
+        assert_eq!(value.len(), 1);
+        assert!(value.is_complete());
+        value = ServiceUuid128AdStruct::new()
+            .try_add(Uuid128(0xA624BAC7_A46C_4EC8_B3D6_4C82E5A56D96))?;
+        assert_eq!(value.len(), 1);
+        assert!(!value.is_complete());
+        value = ServiceUuid128AdStruct::default()
+            .try_add(0xA624BAC7_A46C_4EC8_B3D6_4C82E5A56D96.into())?
+            .complete(true);
+        assert_eq!(value.len(), 1);
+        assert!(value.is_complete());
+        Ok(())
+    }
+
+    #[test]
+    fn test_service_uuid128_advertising_data_creation_failure() {
+        let value: Result<ServiceUuid128AdStruct, _> = [
+            0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640,
+            0xA624BAC7_A46C_4EC8_B3D6_4C82E5A56D96,
+        ]
+        .as_slice()
+        .try_into();
+        assert!(value.is_err());
+        let value = ServiceUuid128AdStruct::new()
+            .try_add(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640.into())
+            .unwrap();
+        assert!(value
+            .try_add(0xA624BAC7_A46C_4EC8_B3D6_4C82E5A56D96.into())
+            .is_err());
     }
 }

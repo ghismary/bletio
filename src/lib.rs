@@ -42,6 +42,7 @@ pub enum Error {
     BufferTooSmall,
     AdStructAlreadyPresent,
     AdStructDoesNotFit,
+    InvalidAdStruct,
 }
 
 impl From<BorrowMutError> for Error {

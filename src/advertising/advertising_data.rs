@@ -21,15 +21,13 @@ impl AdvertisingData {
         mut self,
         ad_struct: ServiceUuid16AdStruct,
     ) -> Result<Self, Error> {
-        let ad_struct_size = ad_struct.size();
-        if ad_struct_size == 0 {
-            // If the service uuid16 ad struct doesn't contain anything, just ignore it
-            return Ok(self);
+        if !ad_struct.is_valid() {
+            return Err(Error::InvalidAdStruct);
         }
         if self.has_service_uuid16() {
             return Err(Error::AdStructAlreadyPresent);
         }
-        if !self.can_fit(ad_struct_size) {
+        if !self.can_fit(ad_struct.size()) {
             return Err(Error::AdStructDoesNotFit);
         }
         self.ad_structs
@@ -42,15 +40,13 @@ impl AdvertisingData {
         mut self,
         ad_struct: ServiceUuid32AdStruct,
     ) -> Result<Self, Error> {
-        let ad_struct_size = ad_struct.size();
-        if ad_struct_size == 0 {
-            // If the service uuid32 ad struct doesn't contain anything, just ignore it
-            return Ok(self);
+        if !ad_struct.is_valid() {
+            return Err(Error::InvalidAdStruct);
         }
         if self.has_service_uuid32() {
             return Err(Error::AdStructAlreadyPresent);
         }
-        if !self.can_fit(ad_struct_size) {
+        if !self.can_fit(ad_struct.size()) {
             return Err(Error::AdStructDoesNotFit);
         }
         self.ad_structs
@@ -63,11 +59,13 @@ impl AdvertisingData {
         mut self,
         ad_struct: ServiceUuid128AdStruct,
     ) -> Result<Self, Error> {
-        let ad_struct_size = ad_struct.size();
+        if !ad_struct.is_valid() {
+            return Err(Error::InvalidAdStruct);
+        }
         if self.has_service_uuid128() {
             return Err(Error::AdStructAlreadyPresent);
         }
-        if !self.can_fit(ad_struct_size) {
+        if !self.can_fit(ad_struct.size()) {
             return Err(Error::AdStructDoesNotFit);
         }
         self.ad_structs
