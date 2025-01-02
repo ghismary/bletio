@@ -6,6 +6,7 @@ pub mod le_states;
 mod utils;
 pub mod uuid;
 
+use crate::advertising::AdvertisingData;
 use core::cell::{BorrowMutError, RefCell};
 use embedded_io::Error as EmbeddedIoError;
 
@@ -39,6 +40,8 @@ pub enum Error {
     NonLECapableController,
     InvalidStateCombination,
     BufferTooSmall,
+    AdStructAlreadyPresent,
+    AdStructDoesNotFit,
 }
 
 impl From<BorrowMutError> for Error {
@@ -122,6 +125,11 @@ where
 
     pub fn supported_le_states(&self) -> &SupportedLeStates {
         &self.supported_le_states
+    }
+
+    // TODO: Add scan response data & advertising parameters
+    pub fn start_advertising(&self, adv_data: &AdvertisingData) -> Result<(), Error> {
+        todo!()
     }
 
     fn set_event_mask(&self) -> Result<CommandCompleteEvent, Error> {

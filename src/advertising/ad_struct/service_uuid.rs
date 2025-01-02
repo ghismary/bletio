@@ -4,19 +4,12 @@ use crate::uuid::{Uuid128, Uuid16, Uuid32};
 use crate::Error;
 
 #[derive(Debug)]
-pub enum AdvertisingDataType {
-    ServiceUuid16(ServiceUuid16AdvertisingData),
-    ServiceUuid32(ServiceUuid32AdvertisingData),
-    ServiceUuid128(ServiceUuid128AdvertisingData),
-}
-
-#[derive(Debug)]
-pub struct ServiceUuid16AdvertisingData {
+pub struct ServiceUuid16AdStruct {
     uuids: ArrayVec<Uuid16, 15>,
     complete: bool,
 }
 
-impl ServiceUuid16AdvertisingData {
+impl ServiceUuid16AdStruct {
     pub fn new() -> Self {
         Self::default()
     }
@@ -45,9 +38,13 @@ impl ServiceUuid16AdvertisingData {
             .map_err(|_| Error::BufferTooSmall)?;
         Ok(self)
     }
+
+    pub(crate) fn size(&self) -> usize {
+        2 + (self.uuids.len() * 2)
+    }
 }
 
-impl Default for ServiceUuid16AdvertisingData {
+impl Default for ServiceUuid16AdStruct {
     fn default() -> Self {
         Self {
             uuids: ArrayVec::new(),
@@ -56,7 +53,7 @@ impl Default for ServiceUuid16AdvertisingData {
     }
 }
 
-impl TryFrom<&[Uuid16]> for ServiceUuid16AdvertisingData {
+impl TryFrom<&[Uuid16]> for ServiceUuid16AdStruct {
     type Error = Error;
 
     fn try_from(value: &[Uuid16]) -> Result<Self, Self::Error> {
@@ -71,7 +68,7 @@ impl TryFrom<&[Uuid16]> for ServiceUuid16AdvertisingData {
     }
 }
 
-impl TryFrom<&[u16]> for ServiceUuid16AdvertisingData {
+impl TryFrom<&[u16]> for ServiceUuid16AdStruct {
     type Error = Error;
 
     fn try_from(value: &[u16]) -> Result<Self, Self::Error> {
@@ -87,12 +84,12 @@ impl TryFrom<&[u16]> for ServiceUuid16AdvertisingData {
 }
 
 #[derive(Debug)]
-pub struct ServiceUuid32AdvertisingData {
+pub struct ServiceUuid32AdStruct {
     uuids: ArrayVec<Uuid32, 7>,
     complete: bool,
 }
 
-impl ServiceUuid32AdvertisingData {
+impl ServiceUuid32AdStruct {
     pub fn new() -> Self {
         Self::default()
     }
@@ -121,9 +118,13 @@ impl ServiceUuid32AdvertisingData {
             .map_err(|_| Error::BufferTooSmall)?;
         Ok(self)
     }
+
+    pub(crate) fn size(&self) -> usize {
+        2 + (self.uuids.len() * 4)
+    }
 }
 
-impl Default for ServiceUuid32AdvertisingData {
+impl Default for ServiceUuid32AdStruct {
     fn default() -> Self {
         Self {
             uuids: ArrayVec::new(),
@@ -132,7 +133,7 @@ impl Default for ServiceUuid32AdvertisingData {
     }
 }
 
-impl TryFrom<&[Uuid32]> for ServiceUuid32AdvertisingData {
+impl TryFrom<&[Uuid32]> for ServiceUuid32AdStruct {
     type Error = Error;
 
     fn try_from(value: &[Uuid32]) -> Result<Self, Self::Error> {
@@ -147,7 +148,7 @@ impl TryFrom<&[Uuid32]> for ServiceUuid32AdvertisingData {
     }
 }
 
-impl TryFrom<&[u32]> for ServiceUuid32AdvertisingData {
+impl TryFrom<&[u32]> for ServiceUuid32AdStruct {
     type Error = Error;
 
     fn try_from(value: &[u32]) -> Result<Self, Self::Error> {
@@ -162,12 +163,12 @@ impl TryFrom<&[u32]> for ServiceUuid32AdvertisingData {
     }
 }
 #[derive(Debug)]
-pub struct ServiceUuid128AdvertisingData {
+pub struct ServiceUuid128AdStruct {
     uuid: Uuid128,
     complete: bool,
 }
 
-impl ServiceUuid128AdvertisingData {
+impl ServiceUuid128AdStruct {
     pub fn new(uuid: Uuid128) -> Self {
         Self {
             uuid,
@@ -184,9 +185,13 @@ impl ServiceUuid128AdvertisingData {
         self.complete = complete;
         self
     }
+
+    pub(crate) fn size(&self) -> usize {
+        2 + 16
+    }
 }
 
-impl From<Uuid128> for ServiceUuid128AdvertisingData {
+impl From<Uuid128> for ServiceUuid128AdStruct {
     fn from(value: Uuid128) -> Self {
         Self {
             uuid: value,
@@ -195,7 +200,7 @@ impl From<Uuid128> for ServiceUuid128AdvertisingData {
     }
 }
 
-impl From<u128> for ServiceUuid128AdvertisingData {
+impl From<u128> for ServiceUuid128AdStruct {
     fn from(value: u128) -> Self {
         Self {
             uuid: value.into(),
@@ -210,23 +215,22 @@ mod test {
 
     #[test]
     fn test_service_uuid16_advertising_data_creation_success() -> Result<(), Error> {
-        let mut value: ServiceUuid16AdvertisingData =
-            [Uuid16(0x1803), Uuid16(0x180F), Uuid16(0x181A)]
-                .as_slice()
-                .try_into()?;
+        let mut value: ServiceUuid16AdStruct = [Uuid16(0x1803), Uuid16(0x180F), Uuid16(0x181A)]
+            .as_slice()
+            .try_into()?;
         assert_eq!(value.len(), 3);
         assert!(!value.is_complete());
         value = [0x1808, 0x180D, 0x180F, 0x1810].as_slice().try_into()?;
         value = value.complete(true);
         assert_eq!(value.len(), 4);
         assert!(value.is_complete());
-        value = ServiceUuid16AdvertisingData::new()
+        value = ServiceUuid16AdStruct::new()
             .try_add(Uuid16(0x1803))?
             .try_add(Uuid16(0x180F))?
             .try_add(Uuid16(0x181A))?;
         assert_eq!(value.len(), 3);
         assert!(!value.is_complete());
-        value = ServiceUuid16AdvertisingData::default()
+        value = ServiceUuid16AdStruct::default()
             .try_add(0x1808.into())?
             .try_add(0x180D.into())?
             .try_add(0x180F.into())?
@@ -239,14 +243,14 @@ mod test {
 
     #[test]
     fn test_service_uuid16_advertising_data_creation_failure() {
-        let value: Result<ServiceUuid16AdvertisingData, _> = [
+        let value: Result<ServiceUuid16AdStruct, _> = [
             0x1802, 0x1803, 0x1804, 0x1815, 0x1806, 0x1807, 0x1808, 0x1809, 0x180A, 0x180B, 0x180C,
             0x180D, 0x180E, 0x180F, 0x1810, 0x1811,
         ]
         .as_slice()
         .try_into();
         assert!(value.is_err());
-        let value = ServiceUuid16AdvertisingData::new()
+        let value = ServiceUuid16AdStruct::new()
             .try_add(0x1802.into())
             .unwrap()
             .try_add(0x1803.into())
@@ -282,7 +286,7 @@ mod test {
 
     #[test]
     fn test_service_uuid32_advertising_data_creation_success() -> Result<(), Error> {
-        let mut value: ServiceUuid32AdvertisingData = [
+        let mut value: ServiceUuid32AdStruct = [
             Uuid32(0x0000_1803),
             Uuid32(0x0000_180F),
             Uuid32(0x0000_181A),
@@ -297,13 +301,13 @@ mod test {
         value = value.complete(true);
         assert_eq!(value.len(), 4);
         assert!(value.is_complete());
-        value = ServiceUuid32AdvertisingData::new()
+        value = ServiceUuid32AdStruct::new()
             .try_add(Uuid32(0x0000_1803))?
             .try_add(Uuid32(0x0000_180F))?
             .try_add(Uuid32(0x0000_181A))?;
         assert_eq!(value.len(), 3);
         assert!(!value.is_complete());
-        value = ServiceUuid32AdvertisingData::default()
+        value = ServiceUuid32AdStruct::default()
             .try_add(0x0000_1808.into())?
             .try_add(0x0000_180D.into())?
             .try_add(0x0000_180F.into())?
@@ -316,7 +320,7 @@ mod test {
 
     #[test]
     fn test_service_uuid32_advertising_data_creation_failure() {
-        let value: Result<ServiceUuid32AdvertisingData, _> = [
+        let value: Result<ServiceUuid32AdStruct, _> = [
             0x0000_1802,
             0x0000_1803,
             0x0000_1804,
@@ -329,7 +333,7 @@ mod test {
         .as_slice()
         .try_into();
         assert!(value.is_err());
-        let value = ServiceUuid32AdvertisingData::new()
+        let value = ServiceUuid32AdStruct::new()
             .try_add(0x0000_1802.into())
             .unwrap()
             .try_add(0x0000_1803.into())
@@ -349,12 +353,11 @@ mod test {
 
     #[test]
     fn test_service_uuid128_advertising_data_creation_success() {
-        let mut value =
-            ServiceUuid128AdvertisingData::new(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640.into());
+        let mut value = ServiceUuid128AdStruct::new(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640.into());
         value = value.complete(true);
         assert!(value.is_complete());
 
-        let value: ServiceUuid128AdvertisingData = 0xA624BAC7_A46C_4EC8_B3D6_4C82E5A56D96.into();
+        let value: ServiceUuid128AdStruct = 0xA624BAC7_A46C_4EC8_B3D6_4C82E5A56D96.into();
         assert!(!value.is_complete());
     }
 }
