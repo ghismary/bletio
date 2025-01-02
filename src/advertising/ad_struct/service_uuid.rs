@@ -1,5 +1,7 @@
+use crate::advertising::ad_struct::common_data_types::CommonDataType;
 use arrayvec::ArrayVec;
 
+use crate::utils::{encode_le_u128, encode_le_u16, encode_le_u32};
 use crate::uuid::{Uuid128, Uuid16, Uuid32};
 use crate::Error;
 
@@ -41,6 +43,20 @@ impl ServiceUuid16AdStruct {
 
     pub(crate) fn size(&self) -> usize {
         2 + (self.uuids.len() * 2)
+    }
+
+    pub(crate) fn encode(&self, buffer: &mut [u8]) -> Result<usize, Error> {
+        buffer[0] = self.size() as u8;
+        buffer[1] = if self.is_complete() {
+            CommonDataType::CompleteListOfServiceUuid16
+        } else {
+            CommonDataType::IncompleteListOfServiceUuid16
+        } as u8;
+        let mut offset = 2;
+        for item in &self.uuids {
+            offset += encode_le_u16(&mut buffer[offset..], item.0)?;
+        }
+        Ok(self.size())
     }
 }
 
@@ -122,6 +138,20 @@ impl ServiceUuid32AdStruct {
     pub(crate) fn size(&self) -> usize {
         2 + (self.uuids.len() * 4)
     }
+
+    pub(crate) fn encode(&self, buffer: &mut [u8]) -> Result<usize, Error> {
+        buffer[0] = self.size() as u8;
+        buffer[1] = if self.is_complete() {
+            CommonDataType::CompleteListOfServiceUuid32
+        } else {
+            CommonDataType::IncompleteListOfServiceUuid32
+        } as u8;
+        let mut offset = 2;
+        for item in &self.uuids {
+            offset += encode_le_u32(&mut buffer[offset..], item.0)?;
+        }
+        Ok(self.size())
+    }
 }
 
 impl Default for ServiceUuid32AdStruct {
@@ -188,6 +218,17 @@ impl ServiceUuid128AdStruct {
 
     pub(crate) fn size(&self) -> usize {
         2 + 16
+    }
+
+    pub(crate) fn encode(&self, buffer: &mut [u8]) -> Result<usize, Error> {
+        buffer[0] = self.size() as u8;
+        buffer[1] = if self.is_complete() {
+            CommonDataType::CompleteListOfServiceUuid128
+        } else {
+            CommonDataType::IncompleteListOfServiceUuid128
+        } as u8;
+        encode_le_u128(&mut buffer[2..], self.uuid.0)?;
+        Ok(self.size())
     }
 }
 

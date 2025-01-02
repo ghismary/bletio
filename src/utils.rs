@@ -15,7 +15,31 @@ pub(crate) fn decode_le_u16(buffer: [u8; 2]) -> u16 {
     ((buffer[1] as u16) << 8) | (buffer[0] as u16)
 }
 
-pub(crate) fn encode_le_u64(buffer: &mut [u8], data: u64) -> Result<(), Error> {
+pub(crate) fn encode_le_u128(buffer: &mut [u8], data: u128) -> Result<usize, Error> {
+    if buffer.len() < 16 {
+        Err(Error::BufferTooSmall)
+    } else {
+        buffer[0] = (data & 0xFF) as u8;
+        buffer[1] = ((data >> 8) & 0xFF) as u8;
+        buffer[2] = ((data >> 16) & 0xFF) as u8;
+        buffer[3] = ((data >> 24) & 0xFF) as u8;
+        buffer[4] = ((data >> 32) & 0xFF) as u8;
+        buffer[5] = ((data >> 40) & 0xFF) as u8;
+        buffer[6] = ((data >> 48) & 0xFF) as u8;
+        buffer[7] = ((data >> 56) & 0xFF) as u8;
+        buffer[8] = ((data >> 64) & 0xFF) as u8;
+        buffer[9] = ((data >> 72) & 0xFF) as u8;
+        buffer[10] = ((data >> 80) & 0xFF) as u8;
+        buffer[11] = ((data >> 88) & 0xFF) as u8;
+        buffer[12] = ((data >> 96) & 0xFF) as u8;
+        buffer[13] = ((data >> 104) & 0xFF) as u8;
+        buffer[14] = ((data >> 112) & 0xFF) as u8;
+        buffer[15] = ((data >> 120) & 0xFF) as u8;
+        Ok(16)
+    }
+}
+
+pub(crate) fn encode_le_u64(buffer: &mut [u8], data: u64) -> Result<usize, Error> {
     if buffer.len() < 8 {
         Err(Error::BufferTooSmall)
     } else {
@@ -27,7 +51,29 @@ pub(crate) fn encode_le_u64(buffer: &mut [u8], data: u64) -> Result<(), Error> {
         buffer[5] = ((data >> 40) & 0xFF) as u8;
         buffer[6] = ((data >> 48) & 0xFF) as u8;
         buffer[7] = ((data >> 56) & 0xFF) as u8;
-        Ok(())
+        Ok(8)
+    }
+}
+
+pub(crate) fn encode_le_u32(buffer: &mut [u8], data: u32) -> Result<usize, Error> {
+    if buffer.len() < 4 {
+        Err(Error::BufferTooSmall)
+    } else {
+        buffer[0] = (data & 0xFF) as u8;
+        buffer[1] = ((data >> 8) & 0xFF) as u8;
+        buffer[2] = ((data >> 16) & 0xFF) as u8;
+        buffer[3] = ((data >> 24) & 0xFF) as u8;
+        Ok(4)
+    }
+}
+
+pub(crate) fn encode_le_u16(buffer: &mut [u8], data: u16) -> Result<usize, Error> {
+    if buffer.len() < 2 {
+        Err(Error::BufferTooSmall)
+    } else {
+        buffer[0] = (data & 0xFF) as u8;
+        buffer[1] = ((data >> 8) & 0xFF) as u8;
+        Ok(2)
     }
 }
 
