@@ -1,8 +1,10 @@
 #![no_std]
 
+pub mod advertising;
 mod hci;
 pub mod le_states;
 mod utils;
+pub mod uuid;
 
 use core::cell::{BorrowMutError, RefCell};
 use embedded_io::Error as EmbeddedIoError;
