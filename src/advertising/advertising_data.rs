@@ -5,6 +5,8 @@ use crate::advertising::{
 };
 use crate::Error;
 
+const ADVERTISING_DATA_MAX_SIZE: usize = 31;
+
 #[derive(Debug, Default)]
 pub struct AdvertisingData {
     ad_structs: ArrayVec<AdStruct, 10>,
@@ -74,6 +76,15 @@ impl AdvertisingData {
         Ok(self)
     }
 
+    pub(crate) fn encode(&self) -> Result<([u8; ADVERTISING_DATA_MAX_SIZE], usize), Error> {
+        let mut buffer = [0u8; ADVERTISING_DATA_MAX_SIZE];
+        let mut offset = 0;
+        for item in &self.ad_structs {
+            offset += item.encode(&mut buffer[offset..])?;
+        }
+        Ok((buffer, offset))
+    }
+
     fn has_service_uuid16(&self) -> bool {
         self.ad_structs
             .iter()
@@ -97,7 +108,7 @@ impl AdvertisingData {
     }
 
     fn remaining_size(&self) -> usize {
-        31 - self.total_size()
+        ADVERTISING_DATA_MAX_SIZE - self.total_size()
     }
 
     fn can_fit(&self, size: usize) -> bool {

@@ -129,7 +129,11 @@ where
 
     // TODO: Add scan response data & advertising parameters
     pub fn start_advertising(&self, adv_data: &AdvertisingData) -> Result<(), Error> {
-        todo!()
+        let (adv_data, adv_data_size) = adv_data.encode()?;
+        log::info!("Adv data: {:?}", adv_data);
+        log::info!("Adv data size: {}", adv_data_size);
+        // TODO
+        Ok(())
     }
 
     fn set_event_mask(&self) -> Result<CommandCompleteEvent, Error> {
