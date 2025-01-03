@@ -11,3 +11,10 @@ pub use advertising_parameters::{
     AdvertisingChannelMap, AdvertisingFilterPolicy, AdvertisingIntervalValue,
     AdvertisingParameters, AdvertisingType, OwnAddressType, PeerAddress, PeerAddressType,
 };
+
+#[derive(Debug, Clone, Copy)]
+#[repr(u8)]
+pub(crate) enum AdvertisingEnable {
+    Disabled = 0x00,
+    Enabled = 0x01,
+}
