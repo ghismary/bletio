@@ -50,7 +50,7 @@ impl ServiceUuid16AdStruct {
     }
 
     pub(crate) fn encode(&self, buffer: &mut [u8]) -> Result<usize, Error> {
-        buffer[0] = self.size() as u8;
+        buffer[0] = (self.size() - 1) as u8;
         buffer[1] = if self.is_complete() {
             CommonDataType::CompleteListOfServiceUuid16
         } else {
@@ -148,7 +148,7 @@ impl ServiceUuid32AdStruct {
     }
 
     pub(crate) fn encode(&self, buffer: &mut [u8]) -> Result<usize, Error> {
-        buffer[0] = self.size() as u8;
+        buffer[0] = (self.size() - 1) as u8;
         buffer[1] = if self.is_complete() {
             CommonDataType::CompleteListOfServiceUuid32
         } else {
@@ -246,7 +246,7 @@ impl ServiceUuid128AdStruct {
     }
 
     pub(crate) fn encode(&self, buffer: &mut [u8]) -> Result<usize, Error> {
-        buffer[0] = self.size() as u8;
+        buffer[0] = (self.size() - 1) as u8;
         buffer[1] = if self.is_complete() {
             CommonDataType::CompleteListOfServiceUuid128
         } else {

@@ -6,7 +6,7 @@ pub mod le_states;
 mod utils;
 pub mod uuid;
 
-use crate::advertising::{AdvertisingData, AdvertisingParameters};
+use crate::advertising::{AdvertisingData, AdvertisingEnable, AdvertisingParameters};
 use core::cell::{BorrowMutError, RefCell};
 use embedded_io::Error as EmbeddedIoError;
 
@@ -136,16 +136,21 @@ where
         adv_params: &AdvertisingParameters,
         adv_data: &AdvertisingData,
     ) -> Result<(), Error> {
+        // TODO: Check state
         if !adv_params.is_valid() {
             return Err(Error::InvalidAdvertisingParameters);
         }
-        let (adv_params, adv_params_size) = adv_params.encode()?;
-        log::info!("Adv params: {:?}", adv_params);
-        log::info!("Adv params size: {}", adv_params_size);
-        let (adv_data, adv_data_size) = adv_data.encode()?;
-        log::info!("Adv data: {:?}", adv_data);
-        log::info!("Adv data size: {}", adv_data_size);
-        // TODO
+        self.cmd_le_set_advertising_parameters(adv_params)?;
+        // TODO: Read Advertising Channel Tx Power
+        self.cmd_le_set_advertising_data(adv_data)?;
+        // TODO: Set real Scan Response Data
+        self.cmd_le_set_scan_response_data()?;
+        self.cmd_le_set_advertise_enable(AdvertisingEnable::Enabled)?;
+        Ok(())
+    }
+
+    pub fn stop_advertising(&self) -> Result<(), Error> {
+        self.cmd_le_set_advertise_enable(AdvertisingEnable::Disabled)?;
         Ok(())
     }
 
@@ -227,6 +232,31 @@ where
             event.return_parameters.le_u64(1)?.into();
         self.supported_le_states = le_states_event_parameter.value;
         Ok(event)
+    }
+
+    fn cmd_le_set_advertise_enable(
+        &self,
+        enable: AdvertisingEnable,
+    ) -> Result<CommandCompleteEvent, Error> {
+        self.execute_command(Command::LeSetAdvertiseEnable(enable))
+    }
+
+    fn cmd_le_set_advertising_data(
+        &self,
+        data: &AdvertisingData,
+    ) -> Result<CommandCompleteEvent, Error> {
+        self.execute_command(Command::LeSetAdvertisingData(data))
+    }
+
+    fn cmd_le_set_advertising_parameters(
+        &self,
+        parameters: &AdvertisingParameters,
+    ) -> Result<CommandCompleteEvent, Error> {
+        self.execute_command(Command::LeSetAdvertisingParameters(parameters))
+    }
+
+    fn cmd_le_set_scan_response_data(&self) -> Result<CommandCompleteEvent, Error> {
+        self.execute_command(Command::LeSetScanResponseData)
     }
 
     fn hci_write(&self, data: &[u8]) -> Result<usize, Error> {

@@ -1,3 +1,4 @@
+use crate::advertising::{AdvertisingData, AdvertisingEnable, AdvertisingParameters};
 use crate::hci::event_mask::EventMask;
 use crate::hci::opcode::{
     OcfControllerAndBaseband, OcfInformationalParameters, OcfLeController, OpCode,
@@ -6,7 +7,7 @@ use crate::hci::PacketType;
 use crate::Error;
 
 #[derive(Debug)]
-pub(crate) enum Command {
+pub(crate) enum Command<'a> {
     // LeAddDeviceToWhiteList(AddressType, Address),
     // LeClearWhiteList,
     // LeEncrypt(Key, Data),
@@ -17,7 +18,11 @@ pub(crate) enum Command {
     // LeReadWhiteListSize,
     // LeRemoveDeviceFromWhiteList(AddressType, Address),
     // LeSetEventMask(LeEventMask),
+    LeSetAdvertiseEnable(AdvertisingEnable),
+    LeSetAdvertisingData(&'a AdvertisingData),
+    LeSetAdvertisingParameters(&'a AdvertisingParameters),
     // LeSetRandomAddress(RandomAddress),
+    LeSetScanResponseData,
     // Nop,
     // ReadBdAddr,
     ReadBufferSize,
@@ -27,7 +32,7 @@ pub(crate) enum Command {
     SetEventMask(EventMask),
 }
 
-impl Command {
+impl Command<'_> {
     pub(crate) fn encode(&self) -> Result<CommandPacket, Error> {
         Ok(match self {
             Command::LeReadBufferSize
@@ -37,6 +42,22 @@ impl Command {
             | Command::ReadLocalSupportedCommands
             | Command::ReadLocalSupportedFeatures
             | Command::Reset => CommandPacket::new(self.opcode()),
+            Command::LeSetAdvertiseEnable(enable) => {
+                let buffer = [*enable as u8];
+                CommandPacket::new(self.opcode()).append(buffer.as_slice())
+            }
+            Command::LeSetAdvertisingData(data) => {
+                let (buffer, _len) = data.encode()?;
+                CommandPacket::new(self.opcode()).append(buffer.as_slice())
+            }
+            Command::LeSetAdvertisingParameters(parameters) => {
+                let (buffer, len) = parameters.encode()?;
+                CommandPacket::new(self.opcode()).append(&buffer[..len])
+            }
+            Command::LeSetScanResponseData => {
+                let buffer = [0u8; 32];
+                CommandPacket::new(self.opcode()).append(buffer.as_slice())
+            }
             Command::SetEventMask(event_mask) => {
                 CommandPacket::new(self.opcode()).append(&event_mask.encode()?)
             }
@@ -50,6 +71,12 @@ impl Command {
                 OcfLeController::LeReadLocalSupportedFeatures.into()
             }
             Command::LeReadSupportedStates => OcfLeController::LeReadSupportedStates.into(),
+            Command::LeSetAdvertiseEnable(_) => OcfLeController::LeSetAdvertiseEnable.into(),
+            Command::LeSetAdvertisingData(_) => OcfLeController::LeSetAdvertisingData.into(),
+            Command::LeSetAdvertisingParameters(_) => {
+                OcfLeController::LeSetAdvertisingParameters.into()
+            }
+            Command::LeSetScanResponseData => OcfLeController::LeSetScanResponseData.into(),
             Command::ReadBufferSize => OcfInformationalParameters::ReadBufferSize.into(),
             Command::ReadLocalSupportedCommands => {
                 OcfInformationalParameters::ReadLocalSupportedCommands.into()

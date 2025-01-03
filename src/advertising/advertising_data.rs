@@ -74,9 +74,10 @@ impl AdvertisingData {
         Ok(self)
     }
 
-    pub(crate) fn encode(&self) -> Result<([u8; ADVERTISING_DATA_MAX_SIZE], usize), Error> {
-        let mut buffer = [0u8; ADVERTISING_DATA_MAX_SIZE];
-        let mut offset = 0;
+    pub(crate) fn encode(&self) -> Result<([u8; ADVERTISING_DATA_MAX_SIZE + 1], usize), Error> {
+        let mut buffer = [0u8; ADVERTISING_DATA_MAX_SIZE + 1];
+        buffer[0] = self.total_size() as u8;
+        let mut offset = 1;
         for item in &self.ad_structs {
             offset += item.encode(&mut buffer[offset..])?;
         }

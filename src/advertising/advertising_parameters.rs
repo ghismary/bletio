@@ -3,7 +3,7 @@ use core::ops::Range;
 use crate::utils::encode_le_u16;
 use crate::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct AdvertisingIntervalValue {
     value: u16,
 }
@@ -65,7 +65,7 @@ pub enum PeerAddressType {
     Random = 0x01,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct PeerAddress {
     value: [u8; 6],
 }
@@ -131,7 +131,7 @@ pub enum AdvertisingFilterPolicy {
     ScanWhiteListAndConnectionWhiteList = 0x03,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AdvertisingParameters {
     pub interval: Range<AdvertisingIntervalValue>,
     pub r#type: AdvertisingType,
