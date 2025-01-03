@@ -6,7 +6,7 @@ pub mod le_states;
 mod utils;
 pub mod uuid;
 
-use crate::advertising::AdvertisingData;
+use crate::advertising::{AdvertisingData, AdvertisingParameters};
 use core::cell::{BorrowMutError, RefCell};
 use embedded_io::Error as EmbeddedIoError;
 
@@ -43,6 +43,8 @@ pub enum Error {
     AdStructAlreadyPresent,
     AdStructDoesNotFit,
     InvalidAdStruct,
+    InvalidAdvertisingIntervalValue(u16),
+    InvalidAdvertisingParameters,
 }
 
 impl From<BorrowMutError> for Error {
@@ -128,8 +130,18 @@ where
         &self.supported_le_states
     }
 
-    // TODO: Add scan response data & advertising parameters
-    pub fn start_advertising(&self, adv_data: &AdvertisingData) -> Result<(), Error> {
+    // TODO: Add scan response data
+    pub fn start_advertising(
+        &self,
+        adv_params: &AdvertisingParameters,
+        adv_data: &AdvertisingData,
+    ) -> Result<(), Error> {
+        if !adv_params.is_valid() {
+            return Err(Error::InvalidAdvertisingParameters);
+        }
+        let (adv_params, adv_params_size) = adv_params.encode()?;
+        log::info!("Adv params: {:?}", adv_params);
+        log::info!("Adv params size: {}", adv_params_size);
         let (adv_data, adv_data_size) = adv_data.encode()?;
         log::info!("Adv data: {:?}", adv_data);
         log::info!("Adv data size: {}", adv_data_size);
