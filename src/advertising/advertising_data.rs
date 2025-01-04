@@ -1,7 +1,7 @@
 use arrayvec::ArrayVec;
 
 use crate::advertising::{
-    AdStruct, ServiceUuid128AdStruct, ServiceUuid16AdStruct, ServiceUuid32AdStruct,
+    AdStruct, FlagsAdStruct, ServiceUuid128AdStruct, ServiceUuid16AdStruct, ServiceUuid32AdStruct,
 };
 use crate::Error;
 
@@ -15,6 +15,19 @@ pub struct AdvertisingData {
 impl AdvertisingData {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn try_set_flags(mut self, ad_struct: FlagsAdStruct) -> Result<Self, Error> {
+        if self.has_flags() {
+            return Err(Error::AdStructAlreadyPresent);
+        }
+        if !self.can_fit(ad_struct.size()) {
+            return Err(Error::AdStructDoesNotFit);
+        }
+        self.ad_structs
+            .try_push(AdStruct::Flags(ad_struct))
+            .map_err(|_| Error::AdStructDoesNotFit)?;
+        Ok(self)
     }
 
     pub fn try_set_service_uuid16(
@@ -82,6 +95,12 @@ impl AdvertisingData {
             offset += item.encode(&mut buffer[offset..])?;
         }
         Ok((buffer, offset))
+    }
+
+    fn has_flags(&self) -> bool {
+        self.ad_structs
+            .iter()
+            .any(|item| matches!(item, AdStruct::Flags(_)))
     }
 
     fn has_service_uuid16(&self) -> bool {

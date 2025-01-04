@@ -3,7 +3,7 @@
 #[derive(Debug)]
 #[repr(u8)]
 pub(crate) enum CommonDataType {
-    // Flags = 0x01,
+    Flags = 0x01,
     IncompleteListOfServiceUuid16 = 0x02,
     CompleteListOfServiceUuid16 = 0x03,
     IncompleteListOfServiceUuid32 = 0x4,
