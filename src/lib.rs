@@ -1,6 +1,7 @@
 #![no_std]
 
 pub mod advertising;
+pub mod assigned_numbers;
 mod hci;
 pub mod le_states;
 mod utils;
