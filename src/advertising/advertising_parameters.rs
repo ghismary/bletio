@@ -1,3 +1,4 @@
+use bitflags::bitflags;
 use core::ops::Range;
 
 use crate::utils::encode_le_u16;
@@ -71,53 +72,25 @@ pub struct PeerAddress {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct AdvertisingChannelMap {
-    value: u8,
+pub struct AdvertisingChannelMap(u8);
+
+bitflags! {
+    impl AdvertisingChannelMap: u8 {
+        const CHANNEL37 = 1 << 0;
+        const CHANNEL38 = 1 << 1;
+        const CHANNEL39 = 1 << 2;
+    }
 }
 
 impl AdvertisingChannelMap {
     pub fn new() -> Self {
         Self::default()
     }
-
-    #[must_use]
-    pub fn channel37(mut self, enable: bool) -> Self {
-        if enable {
-            self.value |= 0b0000_0001;
-        } else {
-            self.value &= !0b0000_0001;
-        }
-        self
-    }
-
-    #[must_use]
-    pub fn channel38(mut self, enable: bool) -> Self {
-        if enable {
-            self.value |= 0b0000_0010;
-        } else {
-            self.value &= !0b0000_0010;
-        }
-        self
-    }
-
-    #[must_use]
-    pub fn channel39(mut self, enable: bool) -> Self {
-        if enable {
-            self.value |= 0b0000_0100;
-        } else {
-            self.value &= !0b0000_0100;
-        }
-        self
-    }
-
-    pub(crate) fn has_channels_enabled(&self) -> bool {
-        self.value != 0b0000_0000
-    }
 }
 
 impl Default for AdvertisingChannelMap {
     fn default() -> Self {
-        Self { value: 0b0000_0111 }
+        Self::all()
     }
 }
 
@@ -148,7 +121,7 @@ impl AdvertisingParameters {
     }
 
     pub(crate) fn is_valid(&self) -> bool {
-        self.channel_map.has_channels_enabled()
+        !self.channel_map.is_empty()
             && match self.r#type {
                 AdvertisingType::ScannableUndirected
                 | AdvertisingType::NonConnectableUndirected
@@ -178,7 +151,7 @@ impl AdvertisingParameters {
         offset += 1;
         buffer[offset..offset + 6].copy_from_slice(self.peer_address.value.as_slice());
         offset += 6;
-        buffer[offset] = self.channel_map.value;
+        buffer[offset] = self.channel_map.bits();
         offset += 1;
         buffer[offset] = self.filter_policy as u8;
         offset += 1;
