@@ -1,15 +1,16 @@
+use crate::advertising::ad_struct::{AdStruct, AdStructType};
+use crate::Error;
 use arrayvec::ArrayVec;
 
-use crate::advertising::{
-    AdStruct, FlagsAdStruct, ServiceUuid128AdStruct, ServiceUuid16AdStruct, ServiceUuid32AdStruct,
-};
-use crate::Error;
+pub(crate) const ADVERTISING_DATA_MAX_SIZE: usize = 31;
+const ADVERTISING_DATA_SIZE_OFFSET: usize = 0;
+const ADVERTISING_DATA_DATA_OFFSET: usize = 1;
 
-const ADVERTISING_DATA_MAX_SIZE: usize = 31;
-
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct AdvertisingData {
-    ad_structs: ArrayVec<AdStruct, 10>,
+    buffer: [u8; ADVERTISING_DATA_MAX_SIZE + 1],
+    offset: usize,
+    ad_struct_types: ArrayVec<AdStructType, 10>,
 }
 
 impl AdvertisingData {
@@ -17,119 +18,51 @@ impl AdvertisingData {
         Self::default()
     }
 
-    pub fn try_set_flags(mut self, ad_struct: FlagsAdStruct) -> Result<Self, Error> {
-        if self.has_flags() {
+    pub fn try_add(mut self, ad_struct: impl AdStruct) -> Result<Self, Error> {
+        if ad_struct.unique() && self.has_ad_struct_type(ad_struct.r#type()) {
             return Err(Error::AdStructAlreadyPresent);
         }
-        if !self.can_fit(ad_struct.size()) {
-            return Err(Error::AdStructDoesNotFit);
+        let ad_struct_data = ad_struct.data();
+        let ad_struct_size = ad_struct_data.len();
+        if self.remaining_size() < ad_struct_size {
+            return Err(Error::BufferTooSmall);
         }
-        self.ad_structs
-            .try_push(AdStruct::Flags(ad_struct))
-            .map_err(|_| Error::AdStructDoesNotFit)?;
+        self.buffer[self.offset..self.offset + ad_struct_size].copy_from_slice(ad_struct_data);
+        self.offset += ad_struct_size;
+        self.buffer[ADVERTISING_DATA_SIZE_OFFSET] += ad_struct_size as u8;
+        self.add_ad_struct_type(ad_struct.r#type())?;
         Ok(self)
     }
 
-    pub fn try_set_service_uuid16(
-        mut self,
-        ad_struct: ServiceUuid16AdStruct,
-    ) -> Result<Self, Error> {
-        if !ad_struct.is_valid() {
-            return Err(Error::InvalidAdStruct);
-        }
-        if self.has_service_uuid16() {
-            return Err(Error::AdStructAlreadyPresent);
-        }
-        if !self.can_fit(ad_struct.size()) {
-            return Err(Error::AdStructDoesNotFit);
-        }
-        self.ad_structs
-            .try_push(AdStruct::ServiceUuid16(ad_struct))
-            .map_err(|_| Error::AdStructDoesNotFit)?;
-        Ok(self)
+    pub(crate) fn data(&self) -> &[u8] {
+        &self.buffer
     }
 
-    pub fn try_set_service_uuid32(
-        mut self,
-        ad_struct: ServiceUuid32AdStruct,
-    ) -> Result<Self, Error> {
-        if !ad_struct.is_valid() {
-            return Err(Error::InvalidAdStruct);
-        }
-        if self.has_service_uuid32() {
-            return Err(Error::AdStructAlreadyPresent);
-        }
-        if !self.can_fit(ad_struct.size()) {
-            return Err(Error::AdStructDoesNotFit);
-        }
-        self.ad_structs
-            .try_push(AdStruct::ServiceUuid32(ad_struct))
-            .map_err(|_| Error::AdStructDoesNotFit)?;
-        Ok(self)
+    fn add_ad_struct_type(&mut self, ad_struct_type: AdStructType) -> Result<(), Error> {
+        self.ad_struct_types
+            .try_push(ad_struct_type)
+            .map_err(|_| Error::BufferTooSmall)
     }
 
-    pub fn try_set_service_uuid128(
-        mut self,
-        ad_struct: ServiceUuid128AdStruct,
-    ) -> Result<Self, Error> {
-        if !ad_struct.is_valid() {
-            return Err(Error::InvalidAdStruct);
-        }
-        if self.has_service_uuid128() {
-            return Err(Error::AdStructAlreadyPresent);
-        }
-        if !self.can_fit(ad_struct.size()) {
-            return Err(Error::AdStructDoesNotFit);
-        }
-        self.ad_structs
-            .try_push(AdStruct::ServiceUuid128(ad_struct))
-            .map_err(|_| Error::AdStructDoesNotFit)?;
-        Ok(self)
-    }
-
-    pub(crate) fn encode(&self) -> Result<([u8; ADVERTISING_DATA_MAX_SIZE + 1], usize), Error> {
-        let mut buffer = [0u8; ADVERTISING_DATA_MAX_SIZE + 1];
-        buffer[0] = self.total_size() as u8;
-        let mut offset = 1;
-        for item in &self.ad_structs {
-            offset += item.encode(&mut buffer[offset..])?;
-        }
-        Ok((buffer, offset))
-    }
-
-    fn has_flags(&self) -> bool {
-        self.ad_structs
-            .iter()
-            .any(|item| matches!(item, AdStruct::Flags(_)))
-    }
-
-    fn has_service_uuid16(&self) -> bool {
-        self.ad_structs
-            .iter()
-            .any(|item| matches!(item, AdStruct::ServiceUuid16(_)))
-    }
-
-    fn has_service_uuid32(&self) -> bool {
-        self.ad_structs
-            .iter()
-            .any(|item| matches!(item, AdStruct::ServiceUuid32(_)))
-    }
-
-    fn has_service_uuid128(&self) -> bool {
-        self.ad_structs
-            .iter()
-            .any(|item| matches!(item, AdStruct::ServiceUuid128(_)))
+    fn has_ad_struct_type(&self, r#type: AdStructType) -> bool {
+        self.ad_struct_types.iter().any(|item| *item == r#type)
     }
 
     fn total_size(&self) -> usize {
-        self.ad_structs.iter().map(|item| item.size()).sum()
+        self.buffer[ADVERTISING_DATA_SIZE_OFFSET] as usize
     }
 
     fn remaining_size(&self) -> usize {
         ADVERTISING_DATA_MAX_SIZE - self.total_size()
     }
+}
 
-    fn can_fit(&self, size: usize) -> bool {
-        self.remaining_size() >= size
+impl Default for AdvertisingData {
+    fn default() -> Self {
+        Self {
+            buffer: Default::default(),
+            offset: ADVERTISING_DATA_DATA_OFFSET,
+            ad_struct_types: Default::default(),
+        }
     }
 }

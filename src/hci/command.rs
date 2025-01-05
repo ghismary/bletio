@@ -47,8 +47,7 @@ impl Command<'_> {
                 CommandPacket::new(self.opcode()).append(buffer.as_slice())
             }
             Command::LeSetAdvertisingData(data) => {
-                let (buffer, _len) = data.encode()?;
-                CommandPacket::new(self.opcode()).append(buffer.as_slice())
+                CommandPacket::new(self.opcode()).append(data.data())
             }
             Command::LeSetAdvertisingParameters(parameters) => {
                 let (buffer, len) = parameters.encode()?;

@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 #[repr(u16)]
 pub enum Services {
     GAP = 0x1800,
