@@ -8,250 +8,103 @@ use crate::utils::{encode_le_u128, encode_le_u16, encode_le_u32};
 use crate::uuid::{Uuid128, Uuid16, Uuid32};
 use crate::Error;
 
-#[derive(Debug)]
-pub struct ServiceUuid16AdStruct {
-    buffer: [u8; ADVERTISING_DATA_MAX_SIZE],
-    offset: usize,
-}
+macro_rules! service_uuids {
+    (
+        $(
+            $(#[$docs:meta])*
+            ($struct_name:ident, $bytes:expr, $struct_type:expr, $uuid_type:ident, $encode_func:ident, $complete:expr, $incomplete:expr),
+        )+
+    ) => {
+            $(
+                #[derive(Debug)]
+                pub struct $struct_name {
+                    buffer: [u8; ADVERTISING_DATA_MAX_SIZE],
+                    offset: usize,
+                }
 
-impl ServiceUuid16AdStruct {
-    pub fn try_new(uuids: &[impl Into<Uuid16> + Copy], complete: bool) -> Result<Self, Error> {
-        let uuids_size = uuids.len() * 2;
-        if (2 + uuids_size) > ADVERTISING_DATA_MAX_SIZE {
-            return Err(Error::BufferTooSmall);
+                impl $struct_name {
+                    pub fn try_new(uuids: &[impl Into<$uuid_type> + Copy], complete: bool) -> Result<Self, Error> {
+                        let uuids_size = uuids.len() * $bytes;
+                        if (2 + uuids_size) > ADVERTISING_DATA_MAX_SIZE {
+                            return Err(Error::BufferTooSmall);
+                        }
+                        let mut s = Self {
+                            offset: AD_STRUCT_DATA_OFFSET,
+                            buffer: Default::default(),
+                        };
+                        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1 + uuids_size as u8;
+                        s = s.complete(complete);
+                        for uuid in uuids {
+                            s = s.try_add(*uuid)?;
+                        }
+                        Ok(s)
+                    }
+
+                    pub fn len(&self) -> usize {
+                        (self.offset - AD_STRUCT_DATA_OFFSET) / $bytes
+                    }
+
+                    pub fn is_complete(&self) -> bool {
+                        self.buffer[AD_STRUCT_TYPE_OFFSET] == ($complete as u8)
+                    }
+
+                    pub fn is_empty(&self) -> bool {
+                        self.offset == AD_STRUCT_DATA_OFFSET
+                    }
+
+                    pub fn is_valid(&self) -> bool {
+                        !self.is_empty() || self.is_complete()
+                    }
+
+                    #[must_use]
+                    pub fn complete(mut self, complete: bool) -> Self {
+                        self.buffer[AD_STRUCT_TYPE_OFFSET] = if complete {
+                            $complete
+                        } else {
+                            $incomplete
+                        } as u8;
+                        self
+                    }
+
+                    pub fn try_add(mut self, uuid: impl Into<$uuid_type>) -> Result<Self, Error> {
+                        let uuid = uuid.into();
+                        self.offset += $encode_func(&mut self.buffer[self.offset..], uuid.0)?;
+                        Ok(self)
+                    }
+                }
+
+                impl Default for $struct_name {
+                    fn default() -> Self {
+                        let mut s = Self {
+                            offset: AD_STRUCT_DATA_OFFSET,
+                            buffer: Default::default(),
+                        };
+                        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1;
+                        s = s.complete(true);
+                        s
+                    }
+                }
+
+                impl AdStruct for $struct_name {
+                    fn data(&self) -> &[u8] {
+                        &self.buffer[..self.offset]
+                    }
+                    fn r#type(&self) -> AdStructType {
+                        $struct_type
+                    }
+
+                    fn unique(&self) -> bool {
+                        true
+                    }
+                }
+            )+
         }
-        let mut s = Self {
-            offset: AD_STRUCT_DATA_OFFSET,
-            buffer: Default::default(),
-        };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1 + uuids_size as u8;
-        s = s.complete(complete);
-        for uuid in uuids {
-            s = s.try_add(*uuid)?;
-        }
-        Ok(s)
-    }
-
-    pub fn len(&self) -> usize {
-        (self.offset - AD_STRUCT_DATA_OFFSET) / 2
-    }
-
-    pub fn is_complete(&self) -> bool {
-        self.buffer[AD_STRUCT_TYPE_OFFSET] == (CommonDataType::CompleteListOfServiceUuid16 as u8)
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.offset == AD_STRUCT_DATA_OFFSET
-    }
-
-    pub fn is_valid(&self) -> bool {
-        !self.is_empty() || self.is_complete()
-    }
-
-    #[must_use]
-    pub fn complete(mut self, complete: bool) -> Self {
-        self.buffer[AD_STRUCT_TYPE_OFFSET] = if complete {
-            CommonDataType::CompleteListOfServiceUuid16
-        } else {
-            CommonDataType::IncompleteListOfServiceUuid16
-        } as u8;
-        self
-    }
-
-    pub fn try_add(mut self, uuid: impl Into<Uuid16>) -> Result<Self, Error> {
-        let uuid = uuid.into();
-        self.offset += encode_le_u16(&mut self.buffer[self.offset..], uuid.0)?;
-        Ok(self)
-    }
 }
 
-impl Default for ServiceUuid16AdStruct {
-    fn default() -> Self {
-        let mut s = Self {
-            offset: AD_STRUCT_DATA_OFFSET,
-            buffer: Default::default(),
-        };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1;
-        s = s.complete(true);
-        s
-    }
-}
-
-impl AdStruct for ServiceUuid16AdStruct {
-    fn data(&self) -> &[u8] {
-        &self.buffer[..self.offset]
-    }
-    fn r#type(&self) -> AdStructType {
-        AdStructType::ServiceUuid16
-    }
-
-    fn unique(&self) -> bool {
-        true
-    }
-}
-
-#[derive(Debug)]
-pub struct ServiceUuid32AdStruct {
-    buffer: [u8; ADVERTISING_DATA_MAX_SIZE],
-    offset: usize,
-}
-
-impl ServiceUuid32AdStruct {
-    pub fn try_new(uuids: &[impl Into<Uuid32> + Copy], complete: bool) -> Result<Self, Error> {
-        let uuids_size = uuids.len() * 4;
-        if (2 + uuids_size) > ADVERTISING_DATA_MAX_SIZE {
-            return Err(Error::BufferTooSmall);
-        }
-        let mut s = Self {
-            offset: AD_STRUCT_DATA_OFFSET,
-            buffer: Default::default(),
-        };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1 + uuids_size as u8;
-        s = s.complete(complete);
-        for uuid in uuids {
-            s = s.try_add(*uuid)?;
-        }
-        Ok(s)
-    }
-
-    pub fn len(&self) -> usize {
-        (self.offset - AD_STRUCT_DATA_OFFSET) / 4
-    }
-
-    pub fn is_complete(&self) -> bool {
-        self.buffer[AD_STRUCT_TYPE_OFFSET] == (CommonDataType::CompleteListOfServiceUuid32 as u8)
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.offset == AD_STRUCT_DATA_OFFSET
-    }
-
-    pub fn is_valid(&self) -> bool {
-        !self.is_empty() || self.is_complete()
-    }
-
-    #[must_use]
-    pub fn complete(mut self, complete: bool) -> Self {
-        self.buffer[AD_STRUCT_TYPE_OFFSET] = if complete {
-            CommonDataType::CompleteListOfServiceUuid32
-        } else {
-            CommonDataType::IncompleteListOfServiceUuid32
-        } as u8;
-        self
-    }
-
-    pub fn try_add(mut self, uuid: impl Into<Uuid32>) -> Result<Self, Error> {
-        let uuid = uuid.into();
-        self.offset += encode_le_u32(&mut self.buffer[self.offset..], uuid.0)?;
-        Ok(self)
-    }
-}
-
-impl Default for ServiceUuid32AdStruct {
-    fn default() -> Self {
-        let mut s = Self {
-            offset: AD_STRUCT_DATA_OFFSET,
-            buffer: Default::default(),
-        };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1;
-        s = s.complete(true);
-        s
-    }
-}
-
-impl AdStruct for ServiceUuid32AdStruct {
-    fn data(&self) -> &[u8] {
-        &self.buffer[..self.offset]
-    }
-    fn r#type(&self) -> AdStructType {
-        AdStructType::ServiceUuid32
-    }
-
-    fn unique(&self) -> bool {
-        true
-    }
-}
-
-#[derive(Debug)]
-pub struct ServiceUuid128AdStruct {
-    buffer: [u8; ADVERTISING_DATA_MAX_SIZE],
-    offset: usize,
-}
-
-impl ServiceUuid128AdStruct {
-    pub fn try_new(uuids: &[impl Into<Uuid128> + Copy], complete: bool) -> Result<Self, Error> {
-        let uuids_size = uuids.len() * 16;
-        if (2 + uuids_size) > ADVERTISING_DATA_MAX_SIZE {
-            return Err(Error::BufferTooSmall);
-        }
-        let mut s = Self {
-            offset: AD_STRUCT_DATA_OFFSET,
-            buffer: Default::default(),
-        };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1 + uuids_size as u8;
-        s = s.complete(complete);
-        for uuid in uuids {
-            s = s.try_add(*uuid)?;
-        }
-        Ok(s)
-    }
-
-    pub fn len(&self) -> usize {
-        (self.offset - AD_STRUCT_DATA_OFFSET) / 16
-    }
-
-    pub fn is_complete(&self) -> bool {
-        self.buffer[AD_STRUCT_TYPE_OFFSET] == (CommonDataType::CompleteListOfServiceUuid128 as u8)
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.offset == AD_STRUCT_DATA_OFFSET
-    }
-
-    pub fn is_valid(&self) -> bool {
-        !self.is_empty() || self.is_complete()
-    }
-
-    #[must_use]
-    pub fn complete(mut self, complete: bool) -> Self {
-        self.buffer[AD_STRUCT_TYPE_OFFSET] = if complete {
-            CommonDataType::CompleteListOfServiceUuid128
-        } else {
-            CommonDataType::IncompleteListOfServiceUuid128
-        } as u8;
-        self
-    }
-
-    pub fn try_add(mut self, uuid: impl Into<Uuid128>) -> Result<Self, Error> {
-        let uuid = uuid.into();
-        self.offset += encode_le_u128(&mut self.buffer[self.offset..], uuid.0)?;
-        Ok(self)
-    }
-}
-
-impl Default for ServiceUuid128AdStruct {
-    fn default() -> Self {
-        let mut s = Self {
-            offset: AD_STRUCT_DATA_OFFSET,
-            buffer: Default::default(),
-        };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1;
-        s = s.complete(true);
-        s
-    }
-}
-
-impl AdStruct for ServiceUuid128AdStruct {
-    fn data(&self) -> &[u8] {
-        &self.buffer[..self.offset]
-    }
-    fn r#type(&self) -> AdStructType {
-        AdStructType::ServiceUuid128
-    }
-
-    fn unique(&self) -> bool {
-        true
-    }
+service_uuids! {
+    (ServiceUuid16AdStruct, 2, AdStructType::ServiceUuid16, Uuid16, encode_le_u16, CommonDataType::CompleteListOfServiceUuid16, CommonDataType::IncompleteListOfServiceUuid16),
+    (ServiceUuid32AdStruct, 4, AdStructType::ServiceUuid32, Uuid32, encode_le_u32, CommonDataType::CompleteListOfServiceUuid32, CommonDataType::IncompleteListOfServiceUuid32),
+    (ServiceUuid128AdStruct, 16, AdStructType::ServiceUuid128, Uuid128, encode_le_u128, CommonDataType::CompleteListOfServiceUuid128, CommonDataType::IncompleteListOfServiceUuid128),
 }
 
 #[cfg(test)]
