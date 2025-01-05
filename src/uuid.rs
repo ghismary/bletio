@@ -1,5 +1,5 @@
 // Value from Core specification 4.2, Vol. 3, Part B, 2.5.1
-pub const BLUETOOTH_BASE_UUID: u128 = 0x00000000_0000_1000_8000_00805F9B34FB;
+const BLUETOOTH_BASE_UUID: u128 = 0x00000000_0000_1000_8000_00805F9B34FB;
 
 #[derive(Debug, Eq)]
 pub enum Uuid {
