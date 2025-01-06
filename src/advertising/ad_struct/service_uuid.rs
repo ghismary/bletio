@@ -141,15 +141,16 @@ mod test {
 
     #[test]
     fn test_service_uuid16_advertising_data_creation_failure() {
-        let value = ServiceUuid16AdStruct::try_new(
+        let err = ServiceUuid16AdStruct::try_new(
             [
                 0x1802, 0x1803, 0x1804, 0x1815, 0x1806, 0x1807, 0x1808, 0x1809, 0x180A, 0x180B,
                 0x180C, 0x180D, 0x180E, 0x180F, 0x1810,
             ]
             .as_slice(),
             true,
-        );
-        assert!(value.is_err());
+        )
+        .expect_err("Too many Uuid16 to fit in the advertising data");
+        assert!(matches!(err, Error::BufferTooSmall));
         let value = ServiceUuid16AdStruct::default()
             .try_add(0x1802)
             .unwrap()
@@ -179,7 +180,10 @@ mod test {
             .unwrap()
             .try_add(0x180F)
             .unwrap();
-        assert!(value.try_add(0x1810).is_err());
+        let err = value
+            .try_add(0x1810)
+            .expect_err("Too many Uuid16 to fit in the advertising data");
+        assert!(matches!(err, Error::BufferTooSmall));
     }
 
     #[test]
@@ -220,7 +224,7 @@ mod test {
 
     #[test]
     fn test_service_uuid32_advertising_data_creation_failure() {
-        let value = ServiceUuid32AdStruct::try_new(
+        let err = ServiceUuid32AdStruct::try_new(
             [
                 0x0000_1802,
                 0x0000_1803,
@@ -233,8 +237,9 @@ mod test {
             ]
             .as_slice(),
             true,
-        );
-        assert!(value.is_err());
+        )
+        .expect_err("Too many Uuid32 to fit in the advertising data");
+        assert!(matches!(err, Error::BufferTooSmall));
         let value = ServiceUuid32AdStruct::default()
             .try_add(0x0000_1802)
             .unwrap()
@@ -250,7 +255,10 @@ mod test {
             .unwrap()
             .try_add(0x0000_1808)
             .unwrap();
-        assert!(value.try_add(0x0000_1809).is_err());
+        let err = value
+            .try_add(0x0000_1809)
+            .expect_err("Too many Uuid32 to fit in the advertising data");
+        assert!(matches!(err, Error::BufferTooSmall));
     }
 
     #[test]
@@ -281,20 +289,22 @@ mod test {
 
     #[test]
     fn test_service_uuid128_advertising_data_creation_failure() {
-        let value = ServiceUuid128AdStruct::try_new(
+        let err = ServiceUuid128AdStruct::try_new(
             [
                 0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640,
                 0xA624BAC7_A46C_4EC8_B3D6_4C82E5A56D96,
             ]
             .as_slice(),
             true,
-        );
-        assert!(value.is_err());
+        )
+        .expect_err("Too many Uuid128 to fit in the advertising data");
+        assert!(matches!(err, Error::BufferTooSmall));
         let value = ServiceUuid128AdStruct::default()
             .try_add(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640)
             .unwrap();
-        assert!(value
+        let err = value
             .try_add(0xA624BAC7_A46C_4EC8_B3D6_4C82E5A56D96)
-            .is_err());
+            .expect_err("Too many Uuid128 to fit in the advertising data");
+        assert!(matches!(err, Error::BufferTooSmall));
     }
 }
