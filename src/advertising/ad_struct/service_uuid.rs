@@ -102,9 +102,9 @@ macro_rules! service_uuids {
 }
 
 service_uuids! {
-    (ServiceUuid16AdStruct, 2, AdStructType::ServiceUuid16, Uuid16, encode_le_u16, CommonDataType::CompleteListOfServiceUuid16, CommonDataType::IncompleteListOfServiceUuid16),
-    (ServiceUuid32AdStruct, 4, AdStructType::ServiceUuid32, Uuid32, encode_le_u32, CommonDataType::CompleteListOfServiceUuid32, CommonDataType::IncompleteListOfServiceUuid32),
-    (ServiceUuid128AdStruct, 16, AdStructType::ServiceUuid128, Uuid128, encode_le_u128, CommonDataType::CompleteListOfServiceUuid128, CommonDataType::IncompleteListOfServiceUuid128),
+    (ServiceUuid16AdStruct, 2, AdStructType::SERVICE_UUID16, Uuid16, encode_le_u16, CommonDataType::CompleteListOfServiceUuid16, CommonDataType::IncompleteListOfServiceUuid16),
+    (ServiceUuid32AdStruct, 4, AdStructType::SERVICE_UUID32, Uuid32, encode_le_u32, CommonDataType::CompleteListOfServiceUuid32, CommonDataType::IncompleteListOfServiceUuid32),
+    (ServiceUuid128AdStruct, 16, AdStructType::SERVICE_UUID128, Uuid128, encode_le_u128, CommonDataType::CompleteListOfServiceUuid128, CommonDataType::IncompleteListOfServiceUuid128),
 }
 
 #[cfg(test)]

@@ -29,7 +29,7 @@ impl AdStruct for FlagsAdStruct {
         &self.buffer
     }
     fn r#type(&self) -> AdStructType {
-        AdStructType::Flags
+        AdStructType::FLAGS
     }
 
     fn unique(&self) -> bool {
