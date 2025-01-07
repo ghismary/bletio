@@ -2,8 +2,8 @@ use crate::advertising::ad_struct::{
     AdStruct, AdStructType, AD_STRUCT_DATA_OFFSET, AD_STRUCT_LENGTH_OFFSET, AD_STRUCT_TYPE_OFFSET,
 };
 
-use crate::advertising::ad_struct::common_data_types::CommonDataType;
 use crate::advertising::Flags;
+use crate::assigned_numbers::ad_types::AdType;
 
 const FLAGS_AD_STRUCT_SIZE: usize = 3;
 
@@ -18,7 +18,7 @@ impl FlagsAdStruct {
             buffer: Default::default(),
         };
         s.buffer[AD_STRUCT_LENGTH_OFFSET] = (FLAGS_AD_STRUCT_SIZE - 1) as u8;
-        s.buffer[AD_STRUCT_TYPE_OFFSET] = CommonDataType::Flags as u8;
+        s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::Flags as u8;
         s.buffer[AD_STRUCT_DATA_OFFSET] = flags.bits();
         s
     }

@@ -39,7 +39,93 @@ fn main() -> Result<(), BuildRsError> {
     let out_dir = env::var("OUT_DIR")?;
     let out_path = Path::new(&out_dir);
 
+    generate_common_data_types(out_path)?;
     generate_services_assigned_numbers(out_path)?;
+
+    Ok(())
+}
+
+#[derive(Debug, Deserialize)]
+struct AdType {
+    value: u8,
+    name: String,
+    reference: String,
+}
+
+impl AdType {
+    fn normalized_name(&self) -> String {
+        self.name
+            .replace("16-bit Service or Service Class UUIDs", "ServiceUuid16")
+            .replace("32-bit Service or Service Class UUIDs", "ServiceUuid32")
+            .replace("128-bit Service or Service Class UUIDs", "ServiceUuid128")
+            .replace(
+                "16-bit Service Solicitation UUIDs",
+                "SolicitationServiceUuid16",
+            )
+            .replace(
+                "32-bit Service Solicitation UUIDs",
+                "SolicitationServiceUuid32",
+            )
+            .replace(
+                "128-bit Service Solicitation UUIDs",
+                "SolicitationServiceUuid128",
+            )
+            .replace("16-bit UUID", "Uuid16")
+            .replace("32-bit UUID", "Uuid32")
+            .replace("128-bit UUID", "Uuid128")
+            .replace("of", "Of")
+            .replace("long", "Long")
+            .replace("3D", "ThreeDimensional")
+            .replace("URI", "Uri")
+            .replace("PB-ADV", "PbAdv")
+            .replace("_", "")
+            .replace("-", "")
+            .replace(" ", "")
+    }
+}
+
+impl Display for AdType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!(
+            "\t/// {} AdType - See {}\n\t{} = {:#04X},",
+            self.name,
+            self.reference,
+            self.normalized_name(),
+            self.value
+        ))
+    }
+}
+
+fn generate_common_data_types(out_path: &Path) -> Result<(), BuildRsError> {
+    println!("cargo:rerun-if-changed=spec-files/ad_types.yaml");
+
+    let source_path = Path::new("spec-files/ad_types.yaml");
+    let yaml_str = fs::read_to_string(source_path)?;
+    let yaml: HashMap<String, Vec<AdType>> = serde_yml::from_str(&yaml_str)?;
+    let types_strs: Vec<String> = yaml["ad_types"]
+        .iter()
+        .filter(|item| item.name != "Device ID")
+        .map(|item| item.to_string())
+        .collect();
+    let types_str = types_strs.join("\n");
+    println!("{:?}", types_str);
+
+    let dest_path = out_path.join("ad_types.rs");
+    fs::write(
+        dest_path,
+        format!(
+            r#"
+#[derive(Debug, Clone, Copy)]
+#[repr(u8)]
+#[allow(dead_code)]
+/// Assigned numbers for Bluetooth Common Data Types.
+pub(crate) enum AdType {{
+{}
+}}
+"#,
+            types_str
+        ),
+    )?;
 
     Ok(())
 }

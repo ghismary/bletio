@@ -2,8 +2,8 @@ use crate::advertising::ad_struct::{
     AdStruct, AdStructType, AD_STRUCT_DATA_OFFSET, AD_STRUCT_LENGTH_OFFSET, AD_STRUCT_TYPE_OFFSET,
 };
 
-use crate::advertising::ad_struct::common_data_types::CommonDataType;
 use crate::advertising::tx_power_level::TxPowerLevel;
+use crate::assigned_numbers::ad_types::AdType;
 
 const TX_POWER_LEVEL_AD_STRUCT_SIZE: usize = 3;
 
@@ -18,7 +18,7 @@ impl TxPowerLevelAdStruct {
             buffer: Default::default(),
         };
         s.buffer[AD_STRUCT_LENGTH_OFFSET] = (TX_POWER_LEVEL_AD_STRUCT_SIZE - 1) as u8;
-        s.buffer[AD_STRUCT_TYPE_OFFSET] = CommonDataType::TxPowerLevel as u8;
+        s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::TxPowerLevel as u8;
         s.buffer[AD_STRUCT_DATA_OFFSET] = tx_power_level.into().0 as u8;
         s
     }

@@ -1,4 +1,3 @@
-mod common_data_types;
 mod flags;
 mod service_uuid;
 mod tx_power_level;
