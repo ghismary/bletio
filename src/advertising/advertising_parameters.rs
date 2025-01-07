@@ -104,23 +104,77 @@ pub enum AdvertisingFilterPolicy {
     ScanWhiteListAndConnectionWhiteList = 0x03,
 }
 
-#[derive(Debug, Clone)]
-pub struct AdvertisingParameters {
-    pub interval: Range<AdvertisingIntervalValue>,
-    pub r#type: AdvertisingType,
-    pub own_address_type: OwnAddressType,
-    pub peer_address_type: PeerAddressType,
-    pub peer_address: PeerAddress,
-    pub channel_map: AdvertisingChannelMap,
-    pub filter_policy: AdvertisingFilterPolicy,
+#[derive(Debug, Default)]
+pub struct AdvertisingParametersBuilder {
+    obj: AdvertisingParameters,
 }
 
-impl AdvertisingParameters {
+impl AdvertisingParametersBuilder {
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub(crate) fn is_valid(&self) -> bool {
+    pub fn try_build(self) -> Result<AdvertisingParameters, Error> {
+        if self.obj.is_valid() {
+            Ok(self.obj)
+        } else {
+            Err(Error::InvalidAdvertisingParameters)
+        }
+    }
+
+    pub fn with_interval(mut self, interval: Range<AdvertisingIntervalValue>) -> Self {
+        self.obj.interval = interval;
+        self
+    }
+
+    pub fn with_type(mut self, r#type: AdvertisingType) -> Self {
+        self.obj.r#type = r#type;
+        self
+    }
+
+    pub fn with_own_address_type(mut self, own_address_type: OwnAddressType) -> Self {
+        self.obj.own_address_type = own_address_type;
+        self
+    }
+
+    pub fn with_peer_address_type(mut self, peer_address_type: PeerAddressType) -> Self {
+        self.obj.peer_address_type = peer_address_type;
+        self
+    }
+
+    pub fn with_peer_address(mut self, peer_address: PeerAddress) -> Self {
+        self.obj.peer_address = peer_address;
+        self
+    }
+
+    pub fn with_channel_map(mut self, channel_map: AdvertisingChannelMap) -> Self {
+        self.obj.channel_map = channel_map;
+        self
+    }
+
+    pub fn with_filter_policy(mut self, filter_policy: AdvertisingFilterPolicy) -> Self {
+        self.obj.filter_policy = filter_policy;
+        self
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AdvertisingParameters {
+    interval: Range<AdvertisingIntervalValue>,
+    r#type: AdvertisingType,
+    own_address_type: OwnAddressType,
+    peer_address_type: PeerAddressType,
+    peer_address: PeerAddress,
+    channel_map: AdvertisingChannelMap,
+    filter_policy: AdvertisingFilterPolicy,
+}
+
+impl AdvertisingParameters {
+    pub fn builder() -> AdvertisingParametersBuilder {
+        AdvertisingParametersBuilder::new()
+    }
+
+    fn is_valid(&self) -> bool {
         !self.channel_map.is_empty()
             && match self.r#type {
                 AdvertisingType::ScannableUndirected

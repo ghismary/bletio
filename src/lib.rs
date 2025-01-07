@@ -138,9 +138,6 @@ where
         adv_data: &AdvertisingData,
     ) -> Result<(), Error> {
         // TODO: Check state
-        if !adv_params.is_valid() {
-            return Err(Error::InvalidAdvertisingParameters);
-        }
         self.cmd_le_set_advertising_parameters(adv_params)?;
         // TODO: Read Advertising Channel Tx Power
         self.cmd_le_set_advertising_data(adv_data)?;
