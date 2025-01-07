@@ -5,7 +5,9 @@ mod tx_power_level;
 
 use bitflags::bitflags;
 pub use flags::FlagsAdStruct;
-pub use service_uuid::{ServiceUuid128AdStruct, ServiceUuid16AdStruct, ServiceUuid32AdStruct};
+pub use service_uuid::{
+    ServiceListCompletion, ServiceUuid128AdStruct, ServiceUuid16AdStruct, ServiceUuid32AdStruct,
+};
 pub use tx_power_level::TxPowerLevelAdStruct;
 
 pub(crate) const AD_STRUCT_LENGTH_OFFSET: usize = 0;
