@@ -8,6 +8,12 @@ use crate::utils::{encode_le_u128, encode_le_u16, encode_le_u32};
 use crate::uuid::{Uuid128, Uuid16, Uuid32};
 use crate::Error;
 
+#[derive(Debug)]
+pub enum ServiceListCompletion {
+    Complete,
+    Incomplete,
+}
+
 macro_rules! service_uuids {
     (
         $(
@@ -23,7 +29,7 @@ macro_rules! service_uuids {
                 }
 
                 impl $struct_name {
-                    pub fn try_new(uuids: &[impl Into<$uuid_type> + Copy], complete: bool) -> Result<Self, Error> {
+                    pub fn try_new(uuids: &[impl Into<$uuid_type> + Copy], complete: ServiceListCompletion) -> Result<Self, Error> {
                         let uuids_size = uuids.len() * $bytes;
                         if (2 + uuids_size) > ADVERTISING_DATA_MAX_SIZE {
                             return Err(Error::BufferTooSmall);
@@ -57,11 +63,10 @@ macro_rules! service_uuids {
                     }
 
                     #[must_use]
-                    pub fn complete(mut self, complete: bool) -> Self {
-                        self.buffer[AD_STRUCT_TYPE_OFFSET] = if complete {
-                            $complete
-                        } else {
-                            $incomplete
+                    pub fn complete(mut self, complete: ServiceListCompletion) -> Self {
+                        self.buffer[AD_STRUCT_TYPE_OFFSET] = match complete {
+                            ServiceListCompletion::Complete => $complete,
+                            ServiceListCompletion::Incomplete => $incomplete,
                         } as u8;
                         self
                     }
@@ -80,7 +85,7 @@ macro_rules! service_uuids {
                             buffer: Default::default(),
                         };
                         s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1;
-                        s = s.complete(true);
+                        s = s.complete(ServiceListCompletion::Complete);
                         s
                     }
                 }
@@ -115,11 +120,14 @@ mod test {
     fn test_service_uuid16_advertising_data_creation_success() -> Result<(), Error> {
         let mut value = ServiceUuid16AdStruct::try_new(
             [Uuid16(0x1803), Uuid16(0x180F), Uuid16(0x181A)].as_slice(),
-            false,
+            ServiceListCompletion::Incomplete,
         )?;
         assert_eq!(value.len(), 3);
         assert!(!value.is_complete());
-        value = ServiceUuid16AdStruct::try_new([0x1808, 0x180D, 0x180F, 0x1810].as_slice(), true)?;
+        value = ServiceUuid16AdStruct::try_new(
+            [0x1808, 0x180D, 0x180F, 0x1810].as_slice(),
+            ServiceListCompletion::Complete,
+        )?;
         assert_eq!(value.len(), 4);
         assert!(value.is_complete());
         value = ServiceUuid16AdStruct::default()
@@ -133,7 +141,7 @@ mod test {
             .try_add(0x180D)?
             .try_add(0x180F)?
             .try_add(0x1810)?
-            .complete(false);
+            .complete(ServiceListCompletion::Incomplete);
         assert_eq!(value.len(), 4);
         assert!(!value.is_complete());
         Ok(())
@@ -147,7 +155,7 @@ mod test {
                 0x180C, 0x180D, 0x180E, 0x180F, 0x1810,
             ]
             .as_slice(),
-            true,
+            ServiceListCompletion::Complete,
         )
         .expect_err("Too many Uuid16 to fit in the advertising data");
         assert!(matches!(err, Error::BufferTooSmall));
@@ -195,13 +203,13 @@ mod test {
                 Uuid32(0x0000_181A),
             ]
             .as_slice(),
-            false,
+            ServiceListCompletion::Incomplete,
         )?;
         assert_eq!(value.len(), 3);
         assert!(!value.is_complete());
         value = ServiceUuid32AdStruct::try_new(
             [0x0000_1808, 0x0000_180D, 0x0000_180F, 0x0000_1810].as_slice(),
-            true,
+            ServiceListCompletion::Complete,
         )?;
         assert_eq!(value.len(), 4);
         assert!(value.is_complete());
@@ -216,7 +224,7 @@ mod test {
             .try_add(0x0000_180D)?
             .try_add(0x0000_180F)?
             .try_add(0x0000_1810)?
-            .complete(false);
+            .complete(ServiceListCompletion::Incomplete);
         assert_eq!(value.len(), 4);
         assert!(!value.is_complete());
         Ok(())
@@ -236,7 +244,7 @@ mod test {
                 0x0000_1809,
             ]
             .as_slice(),
-            true,
+            ServiceListCompletion::Complete,
         )
         .expect_err("Too many Uuid32 to fit in the advertising data");
         assert!(matches!(err, Error::BufferTooSmall));
@@ -265,13 +273,13 @@ mod test {
     fn test_service_uuid128_advertising_data_creation_success() -> Result<(), Error> {
         let mut value = ServiceUuid128AdStruct::try_new(
             [Uuid128(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640)].as_slice(),
-            false,
+            ServiceListCompletion::Incomplete,
         )?;
         assert_eq!(value.len(), 1);
         assert!(!value.is_complete());
         value = ServiceUuid128AdStruct::try_new(
             [0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640].as_slice(),
-            true,
+            ServiceListCompletion::Complete,
         )?;
         assert_eq!(value.len(), 1);
         assert!(value.is_complete());
@@ -281,7 +289,7 @@ mod test {
         assert!(value.is_complete());
         value = ServiceUuid128AdStruct::default()
             .try_add(0xA624BAC7_A46C_4EC8_B3D6_4C82E5A56D96)?
-            .complete(false);
+            .complete(ServiceListCompletion::Incomplete);
         assert_eq!(value.len(), 1);
         assert!(!value.is_complete());
         Ok(())
@@ -295,7 +303,7 @@ mod test {
                 0xA624BAC7_A46C_4EC8_B3D6_4C82E5A56D96,
             ]
             .as_slice(),
-            true,
+            ServiceListCompletion::Complete,
         )
         .expect_err("Too many Uuid128 to fit in the advertising data");
         assert!(matches!(err, Error::BufferTooSmall));
