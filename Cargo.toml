@@ -9,7 +9,6 @@ keywords = ["no-std", "ble", "bluetooth"]
 categories = ["embedded", "no-std"]
 
 [dependencies]
-arrayvec = { version = "0.7.6", default-features = false }
 bitflags = "2.6.0"
 embedded-io = "0.6.1"
 embedded-io-async = "0.6.1"
