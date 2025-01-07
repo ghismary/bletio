@@ -12,4 +12,5 @@ pub(crate) enum CommonDataType {
     CompleteListOfServiceUuid128 = 0x07,
     // ShortenedLocalName = 0x08,
     // CompleteLocalName = 0x09,
+    TxPowerLevel = 0x0A,
 }
