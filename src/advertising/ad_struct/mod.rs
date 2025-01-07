@@ -1,10 +1,12 @@
 mod common_data_types;
 mod flags;
 mod service_uuid;
+mod tx_power_level;
 
 use bitflags::bitflags;
 pub use flags::FlagsAdStruct;
 pub use service_uuid::{ServiceUuid128AdStruct, ServiceUuid16AdStruct, ServiceUuid32AdStruct};
+pub use tx_power_level::TxPowerLevelAdStruct;
 
 pub(crate) const AD_STRUCT_LENGTH_OFFSET: usize = 0;
 pub(crate) const AD_STRUCT_TYPE_OFFSET: usize = 1;
@@ -25,5 +27,6 @@ bitflags! {
         const SERVICE_UUID16 = 1 << 1;
         const SERVICE_UUID32 = 1 << 2;
         const SERVICE_UUID128 = 1 << 3;
+        const TX_POWER_LEVEL = 1 << 4;
     }
 }

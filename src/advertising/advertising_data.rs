@@ -1,4 +1,4 @@
-use crate::advertising::ad_struct::{AdStruct, AdStructType};
+use crate::advertising::ad_struct::{AdStruct, AdStructType, TxPowerLevelAdStruct};
 use crate::advertising::{
     FlagsAdStruct, ServiceUuid128AdStruct, ServiceUuid16AdStruct, ServiceUuid32AdStruct,
 };
@@ -49,6 +49,14 @@ impl AdvertisingDataBuilder {
         service_uuid128: ServiceUuid128AdStruct,
     ) -> Result<Self, Error> {
         self.try_add(service_uuid128)?;
+        Ok(self)
+    }
+
+    pub fn with_tx_power_level(
+        mut self,
+        tx_power_level: TxPowerLevelAdStruct,
+    ) -> Result<Self, Error> {
+        self.try_add(tx_power_level)?;
         Ok(self)
     }
 
