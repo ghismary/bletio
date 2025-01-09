@@ -1,187 +1,108 @@
-# This document, regardless of its title or content, is not a Bluetooth
-# Specification as defined in the Bluetooth Patent/Copyright License Agreement
-# (“PCLA”) and Bluetooth Trademark License Agreement. Use of this document by
-# members of Bluetooth SIG is governed by the membership and other related
-# agreements between Bluetooth SIG Inc. (“Bluetooth SIG”) and its members,
-# including the PCLA and other agreements posted on Bluetooth SIG’s website
-# located at www.bluetooth.com.
-# 
-# THIS DOCUMENT IS PROVIDED “AS IS” AND BLUETOOTH SIG, ITS MEMBERS, AND THEIR
-# AFFILIATES MAKE NO REPRESENTATIONS OR WARRANTIES AND DISCLAIM ALL WARRANTIES,
-# EXPRESS OR IMPLIED, INCLUDING ANY WARRANTY OF MERCHANTABILITY, TITLE,
-# NON-INFRINGEMENT, FITNESS FOR ANY PARTICULAR PURPOSE, THAT THE CONTENT OF THIS
-# DOCUMENT IS FREE OF ERRORS.
-# 
-# TO THE EXTENT NOT PROHIBITED BY LAW, BLUETOOTH SIG, ITS MEMBERS, AND THEIR
-# AFFILIATES DISCLAIM ALL LIABILITY ARISING OUT OF OR RELATING TO USE OF THIS
-# DOCUMENT AND ANY INFORMATION CONTAINED IN THIS DOCUMENT, INCLUDING LOST REVENUE,
-# PROFITS, DATA OR PROGRAMS, OR BUSINESS INTERRUPTION, OR FOR SPECIAL, INDIRECT,
-# CONSEQUENTIAL, INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF
-# THE THEORY OF LIABILITY, AND EVEN IF BLUETOOTH SIG, ITS MEMBERS, OR THEIR
-# AFFILIATES HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
-# 
-# This document is proprietary to Bluetooth SIG. This document may contain or
-# cover subject matter that is intellectual property of Bluetooth SIG and its
-# members. The furnishing of this document does not grant any license to any
-# intellectual property of Bluetooth SIG or its members.
-# 
-# This document is subject to change without notice.
-# 
-# Copyright © 2020–2025 by Bluetooth SIG, Inc. The Bluetooth word mark and logos
-# are owned by Bluetooth SIG, Inc. Other third-party brands and names are the
-# property of their respective owners.
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Bitbucket</title>
+    <meta id="bb-bootstrap" data-current-user="{&quot;isAuthenticated&quot;: false, &quot;isKbdShortcutsEnabled&quot;: true, &quot;isSshEnabled&quot;: false}"
 
-ad_types:
- - value: 0x01
-   name: Flags
-   reference: Core Specification Supplement, Part A, Section 1.3
- - value: 0x02
-   name: Incomplete List of 16-bit Service or Service Class UUIDs
-   reference: Core Specification Supplement, Part A, Section 1.1
- - value: 0x03
-   name: Complete List of 16-bit Service or Service Class UUIDs
-   reference: Core Specification Supplement, Part A, Section 1.1
- - value: 0x04
-   name: Incomplete List of 32-bit Service or Service Class UUIDs
-   reference: Core Specification Supplement, Part A, Section 1.1
- - value: 0x05
-   name: Complete List of 32-bit Service or Service Class UUIDs
-   reference: Core Specification Supplement, Part A, Section 1.1
- - value: 0x06
-   name: Incomplete List of 128-bit Service or Service Class UUIDs
-   reference: Core Specification Supplement, Part A, Section 1.1
- - value: 0x07
-   name: Complete List of 128-bit Service or Service Class UUIDs
-   reference: Core Specification Supplement, Part A, Section 1.1
- - value: 0x08
-   name: Shortened Local Name
-   reference: Core Specification Supplement, Part A, Section 1.2
- - value: 0x09
-   name: Complete Local Name
-   reference: Core Specification Supplement, Part A, Section 1.2
- - value: 0x0A
-   name: Tx Power Level
-   reference: Core Specification Supplement, Part A, Section 1.5
- - value: 0x0D
-   name: Class of Device
-   reference: Core Specification Supplement, Part A, Section 1.6
- - value: 0x0E
-   name: Simple Pairing Hash C-192
-   reference: Core Specification Supplement, Part A, Section 1.6
- - value: 0x0F
-   name: Simple Pairing Randomizer R-192
-   reference: Core Specification Supplement, Part A, Section 1.6
- - value: 0x10
-   name: Device ID
-   reference: Device ID Profile (when used in EIR data)
- - value: 0x10
-   name: Security Manager TK Value
-   reference: Core Specification Supplement, Part A, Section 1.8 (when used in OOB data blocks)
- - value: 0x11
-   name: Security Manager Out of Band Flags
-   reference: Core Specification Supplement, Part A, Section 1.7
- - value: 0x12
-   name: Peripheral Connection Interval Range
-   reference: Core Specification Supplement, Part A, Section 1.9
- - value: 0x14
-   name: List of 16-bit Service Solicitation UUIDs
-   reference: Core Specification Supplement, Part A, Section 1.10
- - value: 0x15
-   name: List of 128-bit Service Solicitation UUIDs
-   reference: Core Specification Supplement, Part A, Section 1.10
- - value: 0x16
-   name: Service Data - 16-bit UUID
-   reference: Core Specification Supplement, Part A, Section 1.11
- - value: 0x17
-   name: Public Target Address
-   reference: Core Specification Supplement, Part A, Section 1.13
- - value: 0x18
-   name: Random Target Address
-   reference: Core Specification Supplement, Part A, Section 1.14
- - value: 0x19
-   name: Appearance
-   reference: Core Specification Supplement, Part A, Section 1.12
- - value: 0x1A
-   name: Advertising Interval
-   reference: Core Specification Supplement, Part A, Section 1.15
- - value: 0x1B
-   name: LE Bluetooth Device Address
-   reference: Core Specification Supplement, Part A, Section 1.16
- - value: 0x1C
-   name: LE Role
-   reference: Core Specification Supplement, Part A, Section 1.17
- - value: 0x1D
-   name: Simple Pairing Hash C-256
-   reference: Core Specification Supplement, Part A, Section 1.6
- - value: 0x1E
-   name: Simple Pairing Randomizer R-256
-   reference: Core Specification Supplement, Part A, Section 1.6
- - value: 0x1F
-   name: List of 32-bit Service Solicitation UUIDs
-   reference: Core Specification Supplement, Part A, Section 1.10
- - value: 0x20
-   name: Service Data - 32-bit UUID
-   reference: Core Specification Supplement, Part A, Section 1.11
- - value: 0x21
-   name: Service Data - 128-bit UUID
-   reference: Core Specification Supplement, Part A, Section 1.11
- - value: 0x22
-   name: LE Secure Connections Confirmation Value
-   reference: Core Specification Supplement, Part A, Section 1.6
- - value: 0x23
-   name: LE Secure Connections Random Value
-   reference: Core Specification Supplement, Part A, Section 1.6
- - value: 0x24
-   name: URI
-   reference: Core Specification Supplement, Part A, Section 1.18
- - value: 0x25
-   name: Indoor Positioning
-   reference: Indoor Positioning Service
- - value: 0x26
-   name: Transport Discovery Data
-   reference: Transport Discovery Service
- - value: 0x27
-   name: LE Supported Features
-   reference: Core Specification Supplement, Part A, Section 1.19
- - value: 0x28
-   name: Channel Map Update Indication
-   reference: Core Specification Supplement, Part A, Section 1.20
- - value: 0x29
-   name: PB-ADV
-   reference: Mesh Profile Specification, Section 5.2.1
- - value: 0x2A
-   name: Mesh Message
-   reference: Mesh Profile Specification, Section 3.3.1
- - value: 0x2B
-   name: Mesh Beacon
-   reference: Mesh Profile Specification, Section 3.9
- - value: 0x2C
-   name: BIGInfo
-   reference: Core Specification Supplement, Part A, Section 1.21
- - value: 0x2D
-   name: Broadcast_Code
-   reference: Core Specification Supplement, Part A, Section 1.22
- - value: 0x2E
-   name: Resolvable Set Identifier
-   reference: Coordinated Set Identification Profile v1.0 or later
- - value: 0x2F
-   name: Advertising Interval - long
-   reference: Core Specification Supplement, Part A, Section 1.15
- - value: 0x30
-   name: Broadcast_Name
-   reference: Public Broadcast Profile v1.0 or later
- - value: 0x31
-   name: Encrypted Advertising Data
-   reference: Core Specification Supplement, Part A, Section 1.23
- - value: 0x32
-   name: Periodic Advertising Response Timing Information
-   reference: Core Specification Supplement, Part A, Section 1.24
- - value: 0x34
-   name: Electronic Shelf Label
-   reference: ESL Profile
- - value: 0x3D
-   name: 3D Information Data
-   reference: 3D Synchronization Profile
- - value: 0xFF
-   name: Manufacturer Specific Data
-   reference: Core Specification Supplement, Part A, Section 1.4
+
+    data-target-workspace-uuid="a45176b7-3986-4608-8e08-ed1c62ec1c3c"
+ />
+    <meta name="frontbucket-version" content="7e0d60082a290504a7b1445c4737ae5854c1d6b1">
+    <meta name="frontbucket-environment" content="production">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    
+
+
+<meta name="bb-env" content="production" />
+<meta id="bb-canon-url" name="bb-canon-url" content="https://bitbucket.org">
+<meta name="bb-api-canon-url" content="https://api.bitbucket.org">
+
+
+
+<meta name="bitbucket-commit-hash" content="d182736cf2e4">
+<meta name="bb-app-node" content="afafbfda2dd8">
+<meta name="bb-dce-env" content="micros">
+<meta name="bb-view-name" content="bitbucket.apps.repo2.views.SourceView">
+<meta name="ignore-whitespace" content="False">
+<meta name="tab-size" content="None">
+<meta name="locale" content="en">
+<meta name="application-name" content="Bitbucket">
+<meta name="apple-mobile-web-app-title" content="Bitbucket">
+<meta name="slack-app-id" content="A8W8QLZD1">
+<meta name="statuspage-api-host" content="https://bqlf8qjztdtr.statuspage.io">
+
+
+<meta name="theme-color" content="#0049B0">
+<meta name="msapplication-TileColor" content="#0052CC">
+<meta name="msapplication-TileImage" content="https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net/d182736cf2e4/img/logos/bitbucket/mstile-150x150.png">
+<link rel="apple-touch-icon" sizes="180x180" type="image/png" href="https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net/d182736cf2e4/img/logos/bitbucket/apple-touch-icon.png">
+<link rel="icon" sizes="192x192" type="image/png" href="https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net/d182736cf2e4/img/logos/bitbucket/android-chrome-192x192.png">
+
+<link rel="icon" sizes="16x16 24x24 32x32 64x64" type="image/x-icon" href="/favicon.ico?v=2">
+<link rel="mask-icon" href="https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net/d182736cf2e4/img/logos/bitbucket/safari-pinned-tab.svg" color="#0052CC">
+
+<link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title="Bitbucket">
+
+    <meta name="description" content="">
+    <meta name="bb-single-page-app" content="true">
+    
+      <link rel="stylesheet" href="https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net/frontbucket/assets/present/7e0d60082a290504a7b1445c4737ae5854c1d6b1/vendor.css">
+    
+    
+    
+    <script nonce="Ln/OhJn3uWtxjjpUHA9qXA==">
+
+if (window.performance) {
+
+  
+  window.performance.okayToSendMetrics = !document.hidden && 'onvisibilitychange' in document;
+
+  if (window.performance.okayToSendMetrics) {
+
+    
+    window.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        window.performance.okayToSendMetrics = false;
+      }
+    });
+  }
+
+  
+  
+}
+</script>
+  </head>
+  <body>
+    <div id="root">
+    <script nonce="Ln/OhJn3uWtxjjpUHA9qXA==">
+      window.__webpack_public_path__ = "https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net/frontbucket/assets/present/7e0d60082a290504a7b1445c4737ae5854c1d6b1/";
+    </script>
+    
+    
+    
+    </div>
+    <script nonce="Ln/OhJn3uWtxjjpUHA9qXA==">
+      
+        window.__sentry__ = {"dsn": "https://2dcda83904474d8c86928ebbfa1ab294@o55978.ingest.sentry.io/1480772", "environment": "production", "tags": {"dc_location": "Micros-3", "micros_deployment_id": "95uihvfpad18mcb3", "micros_service": "bbc-website", "micros_envtype": "prod", "micros_service_version": "113867", "micros_instance_id": "i-0d1dda9a73cb51ab0", "micros_zone": "us-east-1.prod.atl-paas.net", "revision": "d182736cf2e4"}};
+      
+      window.__app_data__ = {"navigationIsOpen": true, "tenantId": "a45176b7-3986-4608-8e08-ed1c62ec1c3c", "features": {"spa-account-settings--settings-index": true, "bbc-enable-react-ufo": true}, "links": {"backButtonUrl": null, "overviewUrl": "/bluetooth-SIG/workspace/overview/"}, "initialContext": {"workspace": {"type": "workspace", "uuid": "{a45176b7-3986-4608-8e08-ed1c62ec1c3c}", "name": "Bluetooth_SIG", "slug": "bluetooth-SIG", "is_private": true, "is_privacy_enforced": null, "links": {"avatar": {"href": "https://bitbucket.org/workspaces/bluetooth-SIG/avatar/?ts=1674082668"}, "html": {"href": "https://bitbucket.org/bluetooth-SIG/"}, "self": {"href": "https://bitbucket.org/!api/2.0/workspaces/bluetooth-SIG"}}, "created_on": "2020-08-27T16:56:48.863255+00:00", "forking_mode": "allow_forks"}, "repository": {"type": "repository", "full_name": "bluetooth-SIG/public", "links": {"self": {"href": "https://bitbucket.org/!api/2.0/repositories/bluetooth-SIG/public"}, "html": {"href": "https://bitbucket.org/bluetooth-SIG/public"}, "avatar": {"href": "https://bytebucket.org/ravatar/%7B6ac6a3bc-e606-4162-b443-598c7885fc1b%7D?ts=default"}}, "name": "public", "slug": "public", "is_private": false, "uuid": "{6ac6a3bc-e606-4162-b443-598c7885fc1b}"}, "project": {"type": "project", "key": "BLUET", "uuid": "{2e0a222a-5642-4911-8cc8-997978799eeb}", "is_private": false, "name": "BluetoothSIGPublic", "description": null, "links": {"self": {"href": "https://bitbucket.org/!api/2.0/workspaces/bluetooth-SIG/projects/BLUET"}, "html": {"href": "https://bitbucket.org/bluetooth-SIG/workspace/projects/BLUET"}, "avatar": {"href": "https://bitbucket.org/bluetooth-SIG/workspace/projects/BLUET/avatar/32?ts=1666802777"}}, "created_on": "2022-10-26T16:46:17.825844+00:00", "updated_on": "2022-10-26T16:46:17.825861+00:00", "has_publicly_visible_repos": true}}, "frontbucket_version": "7e0d60082a290504a7b1445c4737ae5854c1d6b1", "frontbucket_environment": "production"};
+      
+        window.__initial_state__ = {"global": {"geoip_country": null, "is_mobile_user_agent": false, "site_message": "", "needs_marketing_consent": false, "marketing_consent_locale": null, "whats_new_feed": "https://atlassianblog.wpengine.com/wp-json/wp/v2/posts?tags=11972&context=embed&per_page=6&orderby=date&order=desc", "locale": "en", "path": "/bluetooth-SIG/public/src/main/assigned_numbers/core/ad_types.yaml", "isFocusedTask": false, "focusedTaskBackButtonUrl": null, "features": {"lookup-pr-approvers-from-prs": true, "log-asap-errors": true, "provisioning-install-pipelines-addon": true, "fd-prs-client-cache-fallback": true, "block-non-pipelines-custom-events-webhooks": true, "read-only-message-migrations": true, "provisioning-skip-workspace-creation": true, "uninstall-dvcs-addon-only-when-jira-is-removed": true, "auth-flow-adg3": true, "workspace-member-set-last-accessed": true, "use-elasticache-lsn-storage": true, "whitelisted_throttle_exemption": true, "bbc-pride-logo": false, "pr-dependencies": false, "syntax-highlighting": false, "commit-expand-inno": false, "create-workspace-show-recaptcha": true, "spa-account-settings--settings-index": true, "lazy-diffstat": false, "workspace-ai-enabled": false, "pr-code-push-webhook": false, "unresolved-comments-check": false, "custom-merge-checks-activated": false, "pr-review-groups": false, "pull-request-labels": false}, "isNavigationOpen": true, "flags": [], "horizontalNavigationItems": {"mainItems": [], "secondaryItems": [], "settingsItems": []}, "targetUser": {"display_name": "Bluetooth_SIG", "links": {"self": {"href": "https://bitbucket.org/!api/2.0/workspaces/%7Ba45176b7-3986-4608-8e08-ed1c62ec1c3c%7D"}, "avatar": {"href": "https://bitbucket.org/account/bluetooth-SIG/avatar/"}, "html": {"href": "https://bitbucket.org/%7Ba45176b7-3986-4608-8e08-ed1c62ec1c3c%7D/"}}, "created_on": "2020-08-27T16:56:48.296841+00:00", "is_active": true, "type": "team", "uuid": "{a45176b7-3986-4608-8e08-ed1c62ec1c3c}", "has_2fa_enabled": null, "properties": {}, "username": "bluetooth-SIG"}, "targetFeatures": {"lookup-pr-approvers-from-prs": true, "log-asap-errors": true, "provisioning-install-pipelines-addon": true, "fd-prs-client-cache-fallback": true, "block-non-pipelines-custom-events-webhooks": true, "view-source-filtering-upon-timeout": true, "read-only-message-migrations": true, "provisioning-skip-workspace-creation": true, "fd-repository-page-loading-error-guard": true, "uninstall-dvcs-addon-only-when-jira-is-removed": true, "auth-flow-adg3": true, "workspace-member-set-last-accessed": true, "use-elasticache-lsn-storage": true, "whitelisted_throttle_exemption": true, "atlassian-editor": true}}, "section": {"repository": {"bitbucketActions": [], "cloneProtocol": "https", "connectActions": [], "currentRepository": {"type": "repository", "full_name": "bluetooth-SIG/public", "links": {"self": {"href": "https://bitbucket.org/!api/2.0/repositories/bluetooth-SIG/public"}, "html": {"href": "https://bitbucket.org/bluetooth-SIG/public"}, "avatar": {"href": "https://bytebucket.org/ravatar/%7B6ac6a3bc-e606-4162-b443-598c7885fc1b%7D?ts=default"}, "clone": [{"name": "https", "href": "https://bitbucket.org/bluetooth-SIG/public.git"}, {"name": "ssh", "href": "git@bitbucket.org:bluetooth-SIG/public.git"}]}, "name": "public", "slug": "public", "description": "Public YAML files for Bluetooth SIG Assigned Numbers, GATT Specification Supplement, and Device Properties", "scm": "git", "website": null, "owner": {"display_name": "Bluetooth_SIG", "links": {"self": {"href": "https://bitbucket.org/!api/2.0/workspaces/%7Ba45176b7-3986-4608-8e08-ed1c62ec1c3c%7D"}, "avatar": {"href": "https://bitbucket.org/account/bluetooth-SIG/avatar/"}, "html": {"href": "https://bitbucket.org/%7Ba45176b7-3986-4608-8e08-ed1c62ec1c3c%7D/"}}, "type": "team", "uuid": "{a45176b7-3986-4608-8e08-ed1c62ec1c3c}", "username": "bluetooth-SIG"}, "workspace": {"type": "workspace", "uuid": "{a45176b7-3986-4608-8e08-ed1c62ec1c3c}", "name": "Bluetooth_SIG", "slug": "bluetooth-SIG", "is_private": true, "is_privacy_enforced": null, "links": {"avatar": {"href": "https://bitbucket.org/workspaces/bluetooth-SIG/avatar/?ts=1674082668"}, "html": {"href": "https://bitbucket.org/bluetooth-SIG/"}, "self": {"href": "https://bitbucket.org/!api/2.0/workspaces/bluetooth-SIG"}}, "created_on": "2020-08-27T16:56:48.863255+00:00", "forking_mode": "allow_forks"}, "is_private": false, "project": {"type": "project", "owner": {"display_name": "Bluetooth_SIG", "links": {"self": {"href": "https://bitbucket.org/!api/2.0/workspaces/%7Ba45176b7-3986-4608-8e08-ed1c62ec1c3c%7D"}, "avatar": {"href": "https://bitbucket.org/account/bluetooth-SIG/avatar/"}, "html": {"href": "https://bitbucket.org/%7Ba45176b7-3986-4608-8e08-ed1c62ec1c3c%7D/"}}, "type": "team", "uuid": "{a45176b7-3986-4608-8e08-ed1c62ec1c3c}", "username": "bluetooth-SIG"}, "workspace": {"type": "workspace", "uuid": "{a45176b7-3986-4608-8e08-ed1c62ec1c3c}", "name": "Bluetooth_SIG", "slug": "bluetooth-SIG", "links": {"avatar": {"href": "https://bitbucket.org/workspaces/bluetooth-SIG/avatar/?ts=1674082668"}, "html": {"href": "https://bitbucket.org/bluetooth-SIG/"}, "self": {"href": "https://bitbucket.org/!api/2.0/workspaces/bluetooth-SIG"}}}, "key": "BLUET", "uuid": "{2e0a222a-5642-4911-8cc8-997978799eeb}", "is_private": false, "name": "BluetoothSIGPublic", "description": null, "links": {"self": {"href": "https://bitbucket.org/!api/2.0/workspaces/bluetooth-SIG/projects/BLUET"}, "html": {"href": "https://bitbucket.org/bluetooth-SIG/workspace/projects/BLUET"}, "avatar": {"href": "https://bitbucket.org/bluetooth-SIG/workspace/projects/BLUET/avatar/32?ts=1666802777"}}, "created_on": "2022-10-26T16:46:17.825844+00:00", "updated_on": "2022-10-26T16:46:17.825861+00:00", "has_publicly_visible_repos": true}, "fork_policy": "allow_forks", "updated_on": "2025-01-08T17:25:21.865091+00:00", "language": "", "uuid": "{6ac6a3bc-e606-4162-b443-598c7885fc1b}", "mainbranch": {"name": "main"}, "landing_page": "source"}, "menuItems": [{"id": "repo-source-link", "label": "Source", "tab_name": "source", "anchor": true, "weight": 200, "is_premium": null, "is_beta": null, "is_new": null, "url": "/bluetooth-SIG/public/src", "target": "_self", "icon_class": "icon-source", "badge_label": null, "matching_url_prefixes": ["/diff", "/history-node"], "analytics_label": "repository.source", "analytics_payload": {}, "is_client_link": true, "is_external_link": false, "is_dropdown_item": false, "test_id": null, "children": [], "type": "menu_item", "icon": "icon-source"}, {"id": "repo-commits-link", "label": "Commits", "tab_name": "commits", "anchor": true, "weight": 300, "is_premium": null, "is_beta": null, "is_new": null, "url": "/bluetooth-SIG/public/commits/", "target": "_self", "icon_class": "icon-commits", "badge_label": null, "matching_url_prefixes": [], "analytics_label": "repository.commits", "analytics_payload": {}, "is_client_link": true, "is_external_link": false, "is_dropdown_item": false, "test_id": null, "children": [], "type": "menu_item", "icon": "icon-commits"}, {"id": "repo-branches-link", "label": "Branches", "tab_name": "branches", "anchor": true, "weight": 400, "is_premium": null, "is_beta": null, "is_new": null, "url": "/bluetooth-SIG/public/branches/", "target": "_self", "icon_class": "icon-branches", "badge_label": null, "matching_url_prefixes": ["/branch"], "analytics_label": "repository.branches", "analytics_payload": {}, "is_client_link": true, "is_external_link": false, "is_dropdown_item": false, "test_id": null, "children": [], "type": "menu_item", "icon": "icon-branches"}, {"id": "repo-pullrequests-link", "label": "Pull requests", "tab_name": "pullrequests", "anchor": true, "weight": 500, "is_premium": null, "is_beta": null, "is_new": null, "url": "/bluetooth-SIG/public/pull-requests/", "target": "_self", "icon_class": "icon-pull-requests", "badge_label": null, "matching_url_prefixes": [], "analytics_label": "repository.pullrequests", "analytics_payload": {}, "is_client_link": true, "is_external_link": false, "is_dropdown_item": false, "test_id": null, "children": [], "type": "menu_item", "icon": "icon-pull-requests"}, {"id": "repo-pipelines-link", "label": "Pipelines", "tab_name": "pipelines", "anchor": true, "weight": 550, "is_premium": null, "is_beta": null, "is_new": null, "url": "/bluetooth-SIG/public/pipelines", "target": "_self", "icon_class": "icon-pipelines", "badge_label": null, "matching_url_prefixes": [], "analytics_label": "repository.pipelines", "analytics_payload": {}, "is_client_link": true, "is_external_link": false, "is_dropdown_item": false, "test_id": null, "children": [], "type": "menu_item", "icon": "icon-pipelines"}, {"id": "repo-deployments-link", "label": "Deployments", "tab_name": "deployments", "anchor": true, "weight": 570, "is_premium": null, "is_beta": null, "is_new": null, "url": "/bluetooth-SIG/public/deployments", "target": "_self", "icon_class": "icon-deployments", "badge_label": null, "matching_url_prefixes": [], "analytics_label": "repository.deployments", "analytics_payload": {}, "is_client_link": true, "is_external_link": false, "is_dropdown_item": false, "test_id": null, "children": [], "type": "menu_item", "icon": "icon-deployments"}, {"id": "repo-jira-link", "label": "Jira issues", "tab_name": "jira", "anchor": true, "weight": 600, "is_premium": null, "is_beta": null, "is_new": null, "url": "/bluetooth-SIG/public/jira", "target": "_self", "icon_class": "icon-jira", "badge_label": null, "matching_url_prefixes": [], "analytics_label": "repository.jira", "analytics_payload": {}, "is_client_link": true, "is_external_link": false, "is_dropdown_item": false, "test_id": null, "children": [], "type": "menu_item", "icon": "icon-jira"}, {"id": "repo-security-link", "label": "Security", "tab_name": "security", "anchor": true, "weight": 610, "is_premium": null, "is_beta": null, "is_new": null, "url": "/bluetooth-SIG/public/security", "target": "_self", "icon_class": "icon-security", "badge_label": null, "matching_url_prefixes": [], "analytics_label": "repository.security", "analytics_payload": {}, "is_client_link": true, "is_external_link": false, "is_dropdown_item": false, "test_id": null, "children": [], "type": "menu_item", "icon": "icon-security"}, {"id": "repo-downloads-link", "label": "Downloads", "tab_name": "downloads", "anchor": true, "weight": 800, "is_premium": null, "is_beta": null, "is_new": null, "url": "/bluetooth-SIG/public/downloads/", "target": "_self", "icon_class": "icon-downloads", "badge_label": null, "matching_url_prefixes": [], "analytics_label": "repository.downloads", "analytics_payload": {}, "is_client_link": false, "is_external_link": false, "is_dropdown_item": false, "test_id": null, "children": [], "type": "menu_item", "icon": "icon-downloads"}], "mirrors": [], "sizeLimits": {"hard": 4294967296, "soft": 2147483648.0, "readOnly": 10737418240.0}, "override_settings": {"default_merge_strategy": true, "branching_model": true}, "activeMenuItem": "source"}}, "repository": {"source": {"section": {"hash": "08cd45e84f22d4b570da44e329f833ca5cee9a42", "ref": {"name": "main", "target": {"hash": "08cd45e84f22d4b570da44e329f833ca5cee9a42", "links": {"self": {"href": "https://bitbucket.org/!api/2.0/repositories/bluetooth-SIG/public/commit/08cd45e84f22d4b570da44e329f833ca5cee9a42"}, "html": {"href": "https://bitbucket.org/bluetooth-SIG/public/commits/08cd45e84f22d4b570da44e329f833ca5cee9a42"}}, "type": "commit"}, "links": {"self": {"href": "https://bitbucket.org/!api/2.0/repositories/bluetooth-SIG/public/refs/branches/main"}, "html": {"href": "https://bitbucket.org/bluetooth-SIG/public/branch/main"}}}, "atRef": null}}}};
+      
+      window.__settings__ = {"ADMINHUB_BASE_URL": "https://admin.atlassian.com", "API_CANON_URL": "https://api.bitbucket.org", "CANON_URL": "https://bitbucket.org", "LOGIN_URL": "/account/signin/", "SOCIAL_AUTH_ATLASSIANID_LOGIN_PROMPT_URL": "https://id.atlassian.com/login", "SOCIAL_AUTH_ATLASSIANID_LOGOUT_URL": "https://id.atlassian.com/logout", "SOCIAL_AUTH_ATLASSIANID_PROFILE_URL": "https://id.atlassian.com/manage-profile/", "ATLASSIANID_LOGIN_URL": "https://id.atlassian.com/login", "ATLASSIANID_LOGOUT_URL": "https://id.atlassian.com/logout", "ATLASSIANID_MANAGE_PROFILE_URL": "https://id.atlassian.com/manage-profile/", "MARKETPLACE_TERMS_OF_USE_URL": null, "CONSENT_HUB_FRONTEND_BASE_URL": "https://preferences.atlassian.com", "EMOJI_STANDARD_BASE_URL": "https://bitbucket.org/gateway/api/emoji/", "STATUSPAGE_URL": "https://bitbucket.status.atlassian.com/", "RECAPTCHA_PUBLIC_KEY": "6LcRaMMkAAAAAFB-7L-4-1-mdLIrOMAP4H5asuWK", "WAC_CREATE_WORKSPACE_URL": "https://www.atlassian.com/try/cloud/signup?bundle=bitbucket"};
+      window.__webpack_nonce__ = 'Ln/OhJn3uWtxjjpUHA9qXA==';
+      window.isInitialLoadApdex = true;
+      
+      
+    </script>
+    
+      <script nonce="Ln/OhJn3uWtxjjpUHA9qXA==" src="https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net/frontbucket/assets/present/7e0d60082a290504a7b1445c4737ae5854c1d6b1/ajs.js"></script>
+    
+      <script nonce="Ln/OhJn3uWtxjjpUHA9qXA==" src="https://bbc-object-storage--frontbucket.us-east-1.prod.public.atl-paas.net/frontbucket/assets/present/7e0d60082a290504a7b1445c4737ae5854c1d6b1/app.js"></script>
+    
+    
+  </body>
+</html>
