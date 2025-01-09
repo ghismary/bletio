@@ -6,6 +6,7 @@ use std::fs;
 use std::io::Error;
 use std::path::Path;
 
+use convert_case::{Case, Casing};
 use serde::Deserialize;
 
 #[derive(Debug)]
@@ -73,14 +74,11 @@ impl AdType {
             .replace("16-bit UUID", "Uuid16")
             .replace("32-bit UUID", "Uuid32")
             .replace("128-bit UUID", "Uuid128")
-            .replace("of", "Of")
-            .replace("long", "Long")
             .replace("3D", "ThreeDimensional")
-            .replace("URI", "Uri")
-            .replace("PB-ADV", "PbAdv")
-            .replace("_", "")
-            .replace("-", "")
-            .replace(" ", "")
+            .split(' ')
+            .map(|s| s.to_case(Case::Pascal))
+            .collect::<Vec<_>>()
+            .join("")
     }
 }
 
@@ -118,6 +116,7 @@ fn generate_common_data_types(out_path: &Path) -> Result<(), BuildRsError> {
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
 #[allow(dead_code)]
+#[non_exhaustive]
 /// Assigned numbers for Bluetooth Common Data Types.
 pub(crate) enum AdType {{
 {}
@@ -139,7 +138,11 @@ struct Uuid {
 
 impl Uuid {
     fn normalized_name(&self) -> String {
-        self.name.replace(" and ", " And ").replace(' ', "")
+        self.name
+            .split(' ')
+            .map(|s| s.to_case(Case::Pascal))
+            .collect::<Vec<_>>()
+            .join("")
     }
 }
 
@@ -171,6 +174,7 @@ fn generate_services_assigned_numbers(out_path: &Path) -> Result<(), BuildRsErro
             r#"
 #[derive(Debug, Clone, Copy)]
 #[repr(u16)]
+#[non_exhaustive]
 /// Assigned numbers for Bluetooth GATT services.
 pub enum Service {{
 {}

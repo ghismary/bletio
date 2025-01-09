@@ -15,5 +15,6 @@ embedded-io-async = "0.6.1"
 log = "0.4.22"
 
 [build-dependencies]
+convert_case = "0.6.0"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_yml = "0.0.12"
