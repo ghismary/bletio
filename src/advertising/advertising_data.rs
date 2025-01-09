@@ -5,6 +5,8 @@ use crate::advertising::{
 };
 use crate::Error;
 
+use super::PeripheralConnectionIntervalRangeAdStruct;
+
 pub(crate) const ADVERTISING_DATA_MAX_SIZE: usize = 31;
 const ADVERTISING_DATA_SIZE_OFFSET: usize = 0;
 const ADVERTISING_DATA_DATA_OFFSET: usize = 1;
@@ -34,6 +36,14 @@ impl AdvertisingDataBuilder {
         data: ManufacturerSpecificDataAdStruct,
     ) -> Result<Self, Error> {
         self.try_add(data)?;
+        Ok(self)
+    }
+
+    pub fn with_peripheral_connection_interval_range(
+        mut self,
+        range: PeripheralConnectionIntervalRangeAdStruct,
+    ) -> Result<Self, Error> {
+        self.try_add(range)?;
         Ok(self)
     }
 
