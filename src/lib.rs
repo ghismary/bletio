@@ -2,6 +2,7 @@
 
 pub mod advertising;
 pub mod assigned_numbers;
+pub mod connection_interval_value;
 mod hci;
 pub mod le_states;
 mod utils;
@@ -46,6 +47,7 @@ pub enum Error {
     InvalidAdStruct,
     InvalidAdvertisingIntervalValue(u16),
     InvalidAdvertisingParameters,
+    InvalidConnectionIntervalValue(u16),
 }
 
 impl From<BorrowMutError> for Error {

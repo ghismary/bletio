@@ -1,11 +1,13 @@
 mod flags;
 mod manufacturer_specific_data;
+mod peripheral_connection_interval_range;
 mod service_uuid;
 mod tx_power_level;
 
 use bitflags::bitflags;
 pub use flags::FlagsAdStruct;
 pub use manufacturer_specific_data::ManufacturerSpecificDataAdStruct;
+pub use peripheral_connection_interval_range::PeripheralConnectionIntervalRangeAdStruct;
 pub use service_uuid::{
     ServiceListCompletion, ServiceUuid128AdStruct, ServiceUuid16AdStruct, ServiceUuid32AdStruct,
 };
@@ -32,5 +34,6 @@ bitflags! {
         const FLAGS = 1 << 3;
         const MANUFACTURER_SPECIFIC_DATA = 1 << 4;
         const TX_POWER_LEVEL = 1 << 5;
+        const PERIPHERAL_CONNECTION_INTERVAL_RANGE = 1 << 6;
     }
 }
