@@ -1,6 +1,7 @@
-use crate::advertising::ad_struct::{AdStruct, AdStructType, TxPowerLevelAdStruct};
+use crate::advertising::ad_struct::{AdStruct, AdStructType};
 use crate::advertising::{
-    FlagsAdStruct, ServiceUuid128AdStruct, ServiceUuid16AdStruct, ServiceUuid32AdStruct,
+    FlagsAdStruct, ManufacturerSpecificDataAdStruct, ServiceUuid128AdStruct, ServiceUuid16AdStruct,
+    ServiceUuid32AdStruct, TxPowerLevelAdStruct,
 };
 use crate::Error;
 
@@ -25,6 +26,14 @@ impl AdvertisingDataBuilder {
 
     pub fn with_flags(mut self, flags: FlagsAdStruct) -> Result<Self, Error> {
         self.try_add(flags)?;
+        Ok(self)
+    }
+
+    pub fn with_manufacturer_specific_data(
+        mut self,
+        data: ManufacturerSpecificDataAdStruct,
+    ) -> Result<Self, Error> {
+        self.try_add(data)?;
         Ok(self)
     }
 

@@ -1,9 +1,11 @@
 mod flags;
+mod manufacturer_specific_data;
 mod service_uuid;
 mod tx_power_level;
 
 use bitflags::bitflags;
 pub use flags::FlagsAdStruct;
+pub use manufacturer_specific_data::ManufacturerSpecificDataAdStruct;
 pub use service_uuid::{
     ServiceListCompletion, ServiceUuid128AdStruct, ServiceUuid16AdStruct, ServiceUuid32AdStruct,
 };
@@ -24,10 +26,11 @@ pub struct AdStructType(u8);
 
 bitflags! {
     impl AdStructType: u8 {
-        const FLAGS = 1 << 0;
-        const SERVICE_UUID16 = 1 << 1;
-        const SERVICE_UUID32 = 1 << 2;
-        const SERVICE_UUID128 = 1 << 3;
-        const TX_POWER_LEVEL = 1 << 4;
+        const SERVICE_UUID16 = 1 << 0;
+        const SERVICE_UUID32 = 1 << 1;
+        const SERVICE_UUID128 = 1 << 2;
+        const FLAGS = 1 << 3;
+        const MANUFACTURER_SPECIFIC_DATA = 1 << 4;
+        const TX_POWER_LEVEL = 1 << 5;
     }
 }

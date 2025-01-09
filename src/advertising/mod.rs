@@ -5,8 +5,8 @@ mod flags;
 mod tx_power_level;
 
 pub use ad_struct::{
-    FlagsAdStruct, ServiceListCompletion, ServiceUuid128AdStruct, ServiceUuid16AdStruct,
-    ServiceUuid32AdStruct, TxPowerLevelAdStruct,
+    FlagsAdStruct, ManufacturerSpecificDataAdStruct, ServiceListCompletion, ServiceUuid128AdStruct,
+    ServiceUuid16AdStruct, ServiceUuid32AdStruct, TxPowerLevelAdStruct,
 };
 pub use advertising_data::AdvertisingData;
 pub use advertising_parameters::{
