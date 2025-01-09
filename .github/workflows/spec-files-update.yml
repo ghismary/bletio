@@ -1,0 +1,23 @@
+name: Update specification files
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 10 1 * *"
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download specification files
+        run: |
+          curl https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/core/ad_types.yaml -o spec-files/ad_types.yaml \
+          && curl https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/uuids/service_uuids.yaml -o spec-files/service_uuids.yaml
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "chores: Update specification files."
+          title: Automated updates to specification files
+          body: This is an auto-generated PR with specification files updates.
+          branch: spec-files-updates
