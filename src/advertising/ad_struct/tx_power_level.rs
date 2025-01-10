@@ -2,8 +2,8 @@ use crate::advertising::ad_struct::{
     AdStruct, AdStructType, AD_STRUCT_DATA_OFFSET, AD_STRUCT_LENGTH_OFFSET, AD_STRUCT_TYPE_OFFSET,
 };
 
-use crate::advertising::tx_power_level::TxPowerLevel;
-use crate::assigned_numbers::ad_types::AdType;
+use crate::advertising::TxPowerLevel;
+use crate::assigned_numbers::AdType;
 
 const TX_POWER_LEVEL_AD_STRUCT_SIZE: usize = 3;
 

@@ -15,6 +15,7 @@ pub use advertising_parameters::{
     AdvertisingParameters, AdvertisingType, OwnAddressType, PeerAddress, PeerAddressType,
 };
 pub use flags::Flags;
+pub use tx_power_level::TxPowerLevel;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
