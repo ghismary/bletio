@@ -33,8 +33,8 @@ impl From<u16> for Uuid16 {
     }
 }
 
-impl From<crate::assigned_numbers::services::Service> for Uuid16 {
-    fn from(value: crate::assigned_numbers::services::Service) -> Self {
+impl From<crate::assigned_numbers::ServiceUuid> for Uuid16 {
+    fn from(value: crate::assigned_numbers::ServiceUuid) -> Self {
         (value as u16).into()
     }
 }

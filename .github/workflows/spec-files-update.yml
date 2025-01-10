@@ -13,6 +13,7 @@ jobs:
       - name: Download specification files
         run: |
           git clone --depth 1 https://bitbucket.org/bluetooth-SIG/public.git -b main bluetooth-sig
+          cp bluetooth-sig/assigned_numbers/company_identifiers/company_identifiers.yaml spec-files/company_identifiers.yaml
           cp bluetooth-sig/assigned_numbers/core/ad_types.yaml spec-files/ad_types.yaml
           cp bluetooth-sig/assigned_numbers/uuids/service_uuids.yaml spec-files/service_uuids.yaml
           rm -rf bluetooth-sig

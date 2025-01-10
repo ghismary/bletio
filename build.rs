@@ -40,8 +40,9 @@ fn main() -> Result<(), BuildRsError> {
     let out_dir = env::var("OUT_DIR")?;
     let out_path = Path::new(&out_dir);
 
-    generate_common_data_types(out_path)?;
-    generate_services_assigned_numbers(out_path)?;
+    generate_ad_types(out_path)?;
+    generate_company_identifiers(out_path)?;
+    generate_service_uuids(out_path)?;
 
     Ok(())
 }
@@ -94,7 +95,7 @@ impl Display for AdType {
     }
 }
 
-fn generate_common_data_types(out_path: &Path) -> Result<(), BuildRsError> {
+fn generate_ad_types(out_path: &Path) -> Result<(), BuildRsError> {
     println!("cargo:rerun-if-changed=spec-files/ad_types.yaml");
 
     let source_path = Path::new("spec-files/ad_types.yaml");
@@ -106,7 +107,6 @@ fn generate_common_data_types(out_path: &Path) -> Result<(), BuildRsError> {
         .map(|item| item.to_string())
         .collect();
     let types_str = types_strs.join("\n");
-    println!("{:?}", types_str);
 
     let dest_path = out_path.join("ad_types.rs");
     fs::write(
@@ -130,13 +130,119 @@ pub(crate) enum AdType {{
 }
 
 #[derive(Debug, Deserialize)]
-struct Uuid {
+struct CompanyIdentifier {
+    value: u16,
+    name: String,
+    #[serde(skip_deserializing)]
+    normalized_name: String,
+}
+
+impl CompanyIdentifier {
+    fn generate_normalized_name(&mut self, map_count: &mut HashMap<String, usize>) {
+        let mut name = self.name.clone();
+        name = name
+            .replace("\"", "")
+            .replace(".", " ")
+            .replace(",", " ")
+            .replace("/", " ")
+            .replace("+", " ")
+            .replace("|", " ")
+            .replace("!", " ")
+            .replace("'", " ")
+            .replace("(", " ")
+            .replace(")", " ")
+            .replace("（", " ")
+            .replace("）", " ")
+            .replace("&", " And ")
+            .split(' ')
+            .map(|s| s.to_case(Case::Pascal))
+            .collect::<Vec<_>>()
+            .join("");
+        if name.starts_with(|p: char| p.is_ascii_digit()) {
+            name = format!("_{name}");
+        }
+        let count = map_count.get(&name).unwrap_or(&0);
+        if *count == 0 {
+            map_count.insert(name.clone(), 1);
+        } else {
+            *map_count.get_mut(&name).unwrap() += 1;
+        }
+        self.normalized_name = name;
+    }
+
+    fn rectify_normalized_name(&mut self, map_count: &HashMap<String, usize>) {
+        let count = map_count.get(&self.normalized_name).unwrap_or(&0);
+        if *count > 1 {
+            self.normalized_name = format!("{}{:04X}", self.normalized_name, self.value);
+        }
+    }
+}
+
+impl Display for CompanyIdentifier {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!(
+            "\t/// {} ({:#06X})\n\t{} = {:#06X},",
+            self.name, self.value, self.normalized_name, self.value
+        ))
+    }
+}
+
+fn generate_company_identifiers(out_path: &Path) -> Result<(), BuildRsError> {
+    println!("cargo:rerun-if-changed=spec-files/company_identifiers.yaml");
+
+    let source_path = Path::new("spec-files/company_identifiers.yaml");
+    let yaml_str = fs::read_to_string(source_path)?;
+    let mut yaml: HashMap<String, Vec<CompanyIdentifier>> = serde_yml::from_str(&yaml_str)?;
+    let mut normalized_names_count_map: HashMap<String, usize> = HashMap::new();
+    let mut company_identifiers: Vec<&mut CompanyIdentifier> = yaml
+        .get_mut("company_identifiers")
+        .unwrap()
+        .iter_mut()
+        .collect();
+    company_identifiers
+        .iter_mut()
+        .for_each(|item| item.generate_normalized_name(&mut normalized_names_count_map));
+    let company_identifiers: Vec<String> = company_identifiers
+        .iter_mut()
+        .map(|item| {
+            item.rectify_normalized_name(&normalized_names_count_map);
+            item.to_string()
+        })
+        .collect();
+    let company_identifiers_str = company_identifiers.join("\n");
+
+    let dest_path = out_path.join("company_identifiers.rs");
+    fs::write(
+        dest_path,
+        format!(
+            r#"
+#[derive(Debug, Clone, Copy)]
+#[repr(u16)]
+#[non_exhaustive]
+/// Assigned numbers for company identifiers defined in
+/// [Assigned Numbers, 7.1](https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/company_identifiers/company_identifiers.yaml).
+///
+/// It is to be used when creating a Manufacturer Specific Data Advertising Structure.
+/// See [ManufacturerSpecificDataAdStruct::try_new](crate::advertising::ad_struct::ManufacturerSpecificDataAdStruct::try_new).
+pub enum CompanyIdentifier {{
+{}
+}}
+"#,
+            company_identifiers_str
+        ),
+    )?;
+
+    Ok(())
+}
+
+#[derive(Debug, Deserialize)]
+struct ServiceUuid {
     uuid: u16,
     name: String,
     id: String,
 }
 
-impl Uuid {
+impl ServiceUuid {
     fn normalized_name(&self) -> String {
         self.name
             .split(' ')
@@ -146,11 +252,12 @@ impl Uuid {
     }
 }
 
-impl Display for Uuid {
+impl Display for ServiceUuid {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str(&format!(
-            "\t/// {} Service - {}\n\t{} = {:#06X},",
+            "\t/// {} Service ({:#06X}) — {}\n\t{} = {:#06X},",
             self.name,
+            self.uuid,
             self.id,
             self.normalized_name(),
             self.uuid
@@ -158,16 +265,16 @@ impl Display for Uuid {
     }
 }
 
-fn generate_services_assigned_numbers(out_path: &Path) -> Result<(), BuildRsError> {
+fn generate_service_uuids(out_path: &Path) -> Result<(), BuildRsError> {
     println!("cargo:rerun-if-changed=spec-files/service_uuids.yaml");
 
     let source_path = Path::new("spec-files/service_uuids.yaml");
     let yaml_str = fs::read_to_string(source_path)?;
-    let yaml: HashMap<String, Vec<Uuid>> = serde_yml::from_str(&yaml_str)?;
+    let yaml: HashMap<String, Vec<ServiceUuid>> = serde_yml::from_str(&yaml_str)?;
     let uuids_strs: Vec<String> = yaml["uuids"].iter().map(|item| item.to_string()).collect();
     let uuids_str = uuids_strs.join("\n");
 
-    let dest_path = out_path.join("services.rs");
+    let dest_path = out_path.join("service_uuids.rs");
     fs::write(
         dest_path,
         format!(
@@ -175,8 +282,12 @@ fn generate_services_assigned_numbers(out_path: &Path) -> Result<(), BuildRsErro
 #[derive(Debug, Clone, Copy)]
 #[repr(u16)]
 #[non_exhaustive]
-/// Assigned numbers for Bluetooth GATT services.
-pub enum Service {{
+/// Assigned numbers for Bluetooth GATT services defined in
+/// [Assigned Numbers, 3.4](https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/uuids/service_uuids.yaml).
+///
+/// It is be used when creating a list of 16-bit Service UUIDs Advertising Structure.
+/// See [ServiceUuid16AdStruct::try_new](crate::advertising::ad_struct::ServiceUuid16AdStruct::try_new).
+pub enum ServiceUuid {{
 {}
 }}
 "#,

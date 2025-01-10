@@ -2,7 +2,7 @@ use crate::advertising::ad_struct::{
     AdStruct, AdStructType, AD_STRUCT_DATA_OFFSET, AD_STRUCT_LENGTH_OFFSET, AD_STRUCT_TYPE_OFFSET,
 };
 use crate::advertising::advertising_data::ADVERTISING_DATA_MAX_SIZE;
-use crate::assigned_numbers::ad_types::AdType;
+use crate::assigned_numbers::AdType;
 
 use crate::utils::{encode_le_u128, encode_le_u16, encode_le_u32};
 use crate::uuid::{Uuid128, Uuid16, Uuid32};

@@ -3,7 +3,7 @@ use core::ops::Range;
 use crate::advertising::ad_struct::{
     AdStruct, AdStructType, AD_STRUCT_DATA_OFFSET, AD_STRUCT_LENGTH_OFFSET, AD_STRUCT_TYPE_OFFSET,
 };
-use crate::assigned_numbers::ad_types::AdType;
+use crate::assigned_numbers::AdType;
 use crate::connection_interval_value::ConnectionIntervalValue;
 use crate::utils::encode_le_u16;
 

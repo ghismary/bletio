@@ -3,7 +3,7 @@ use crate::advertising::ad_struct::{
 };
 
 use crate::advertising::Flags;
-use crate::assigned_numbers::ad_types::AdType;
+use crate::assigned_numbers::AdType;
 
 const FLAGS_AD_STRUCT_SIZE: usize = 3;
 
