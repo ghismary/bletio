@@ -33,12 +33,6 @@ impl From<u16> for Uuid16 {
     }
 }
 
-impl From<crate::assigned_numbers::ServiceUuid> for Uuid16 {
-    fn from(value: crate::assigned_numbers::ServiceUuid) -> Self {
-        (value as u16).into()
-    }
-}
-
 impl PartialEq<Uuid32> for Uuid16 {
     fn eq(&self, other: &Uuid32) -> bool {
         Uuid32::from(*self) == *other

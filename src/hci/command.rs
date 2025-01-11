@@ -1,4 +1,5 @@
-use crate::advertising::{AdvertisingData, AdvertisingEnable, AdvertisingParameters};
+use crate::advertising::advertising_parameters::AdvertisingParameters;
+use crate::advertising::{AdvertisingData, AdvertisingEnable};
 use crate::hci::event_mask::EventMask;
 use crate::hci::opcode::{
     OcfControllerAndBaseband, OcfInformationalParameters, OcfLeController, OpCode,

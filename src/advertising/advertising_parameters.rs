@@ -1,5 +1,5 @@
 use bitflags::bitflags;
-use core::ops::Range;
+use core::ops::RangeInclusive;
 
 use crate::utils::encode_le_u16;
 use crate::Error;
@@ -122,7 +122,7 @@ impl AdvertisingParametersBuilder {
         }
     }
 
-    pub fn with_interval(mut self, interval: Range<AdvertisingIntervalValue>) -> Self {
+    pub fn with_interval(mut self, interval: RangeInclusive<AdvertisingIntervalValue>) -> Self {
         self.obj.interval = interval;
         self
     }
@@ -160,7 +160,7 @@ impl AdvertisingParametersBuilder {
 
 #[derive(Debug, Clone)]
 pub struct AdvertisingParameters {
-    interval: Range<AdvertisingIntervalValue>,
+    interval: RangeInclusive<AdvertisingIntervalValue>,
     r#type: AdvertisingType,
     own_address_type: OwnAddressType,
     peer_address_type: PeerAddressType,
@@ -179,7 +179,7 @@ impl AdvertisingParameters {
             && match self.r#type {
                 AdvertisingType::ScannableUndirected
                 | AdvertisingType::NonConnectableUndirected
-                    if self.interval.start.value < 0x00A0 =>
+                    if self.interval.start().value < 0x00A0 =>
                 {
                     false
                 }
@@ -195,8 +195,8 @@ impl AdvertisingParameters {
     pub(crate) fn encode(&self) -> Result<([u8; 15], usize), Error> {
         let mut buffer = [0u8; 15];
         let mut offset = 0;
-        offset += encode_le_u16(&mut buffer[offset..], self.interval.start.value)?;
-        offset += encode_le_u16(&mut buffer[offset..], self.interval.end.value)?;
+        offset += encode_le_u16(&mut buffer[offset..], self.interval.start().value)?;
+        offset += encode_le_u16(&mut buffer[offset..], self.interval.end().value)?;
         buffer[offset] = self.r#type as u8;
         offset += 1;
         buffer[offset] = self.own_address_type as u8;
@@ -216,10 +216,7 @@ impl AdvertisingParameters {
 impl Default for AdvertisingParameters {
     fn default() -> Self {
         Self {
-            interval: Range {
-                start: AdvertisingIntervalValue::default(),
-                end: AdvertisingIntervalValue::default(),
-            },
+            interval: (AdvertisingIntervalValue::default()..=AdvertisingIntervalValue::default()),
             r#type: AdvertisingType::default(),
             own_address_type: OwnAddressType::default(),
             peer_address_type: PeerAddressType::default(),

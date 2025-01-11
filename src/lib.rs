@@ -1,17 +1,20 @@
 #![no_std]
 
+use core::cell::{BorrowMutError, RefCell};
+use embedded_io::Error as EmbeddedIoError;
+
 pub mod advertising;
 pub mod assigned_numbers;
-pub mod connection_interval_value;
+mod connection_interval_value;
 mod hci;
 pub mod le_states;
 mod utils;
 pub mod uuid;
 
-use crate::advertising::{AdvertisingData, AdvertisingEnable, AdvertisingParameters};
-use core::cell::{BorrowMutError, RefCell};
-use embedded_io::Error as EmbeddedIoError;
+pub use connection_interval_value::ConnectionIntervalValue;
 
+use crate::advertising::advertising_parameters::AdvertisingParameters;
+use crate::advertising::{AdvertisingData, AdvertisingEnable};
 use crate::hci::command::Command;
 use crate::hci::error_code::HciErrorCode;
 use crate::hci::event::{CommandCompleteEvent, Event};
@@ -48,6 +51,7 @@ pub enum Error {
     InvalidAdvertisingIntervalValue(u16),
     InvalidAdvertisingParameters,
     InvalidConnectionIntervalValue(u16),
+    EmptyServiceUuidListShallBeComplete,
 }
 
 impl From<BorrowMutError> for Error {
