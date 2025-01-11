@@ -1,11 +1,9 @@
-use crate::advertising::ad_struct::{AdStruct, AdStructType};
-use crate::advertising::{
-    FlagsAdStruct, ManufacturerSpecificDataAdStruct, ServiceUuid128AdStruct, ServiceUuid16AdStruct,
+use crate::advertising::ad_struct::{
+    AdStruct, AdStructType, FlagsAdStruct, ManufacturerSpecificDataAdStruct,
+    PeripheralConnectionIntervalRangeAdStruct, ServiceUuid128AdStruct, ServiceUuid16AdStruct,
     ServiceUuid32AdStruct, TxPowerLevelAdStruct,
 };
 use crate::Error;
-
-use super::PeripheralConnectionIntervalRangeAdStruct;
 
 pub(crate) const ADVERTISING_DATA_MAX_SIZE: usize = 31;
 const ADVERTISING_DATA_SIZE_OFFSET: usize = 0;
@@ -81,7 +79,7 @@ impl AdvertisingDataBuilder {
 
     fn try_add(&mut self, ad_struct: impl AdStruct) -> Result<(), Error> {
         let ad_struct_type = ad_struct.r#type();
-        if ad_struct.unique() && self.present_ad_structs.contains(ad_struct_type) {
+        if ad_struct.is_unique() && self.present_ad_structs.contains(ad_struct_type) {
             return Err(Error::AdStructAlreadyPresent);
         }
         self.obj.try_add(ad_struct)?;
@@ -102,7 +100,7 @@ impl AdvertisingData {
     }
 
     fn try_add(&mut self, ad_struct: impl AdStruct) -> Result<(), Error> {
-        let ad_struct_data = ad_struct.data();
+        let ad_struct_data = ad_struct.encoded_data();
         let ad_struct_size = ad_struct_data.len();
         if self.remaining_size() < ad_struct_size {
             return Err(Error::BufferTooSmall);

@@ -1,21 +1,10 @@
-mod ad_struct;
+pub mod ad_struct;
 mod advertising_data;
-mod advertising_parameters;
-mod flags;
-mod tx_power_level;
+pub mod advertising_parameters;
 
-pub use ad_struct::{
-    FlagsAdStruct, ManufacturerSpecificDataAdStruct, PeripheralConnectionIntervalRangeAdStruct,
-    ServiceListCompletion, ServiceUuid128AdStruct, ServiceUuid16AdStruct, ServiceUuid32AdStruct,
-    TxPowerLevelAdStruct,
-};
+pub use ad_struct::flags::Flags;
+pub use ad_struct::tx_power_level::TxPowerLevel;
 pub use advertising_data::AdvertisingData;
-pub use advertising_parameters::{
-    AdvertisingChannelMap, AdvertisingFilterPolicy, AdvertisingIntervalValue,
-    AdvertisingParameters, AdvertisingType, OwnAddressType, PeerAddress, PeerAddressType,
-};
-pub use flags::Flags;
-pub use tx_power_level::TxPowerLevel;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
