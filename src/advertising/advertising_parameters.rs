@@ -190,10 +190,10 @@ pub enum AdvertisingFilterPolicy {
     /// Process scan requests from all devices and connection requests only from devices that are in the Filter Accept List.
     ScanAllAndConnectionFilterAcceptList = 0x02,
     /// Process scan and connection requests only from devices in the Filter Accept List.
-    ScanWhiteListAndConnectionFilterAcceptList = 0x03,
+    ScanFilterAcceptListAndConnectionFilterAcceptList = 0x03,
 }
 
-/// A builder to create [`AdvertisingParameters`].
+/// Builder to create [`AdvertisingParameters`].
 #[derive(Debug, Default)]
 pub struct AdvertisingParametersBuilder {
     obj: AdvertisingParameters,
@@ -338,5 +338,71 @@ impl Default for AdvertisingParameters {
             channel_map: AdvertisingChannelMap::default(),
             filter_policy: AdvertisingFilterPolicy::default(),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_default_advertising_parameters() -> Result<(), Error> {
+        let adv_params = AdvertisingParameters::default();
+        assert_eq!(
+            adv_params.encode()?,
+            (
+                [
+                    0x00, 0x08, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x07, 0x00
+                ],
+                15
+            )
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_advertising_parameters_creation_success() -> Result<(), Error> {
+        let adv_params = AdvertisingParameters::builder()
+            .with_type(AdvertisingType::ConnectableHighDutyCycleDirected)
+            .with_interval(0x0100.try_into()?..=0x0120.try_into()?)
+            .with_channel_map(AdvertisingChannelMap::CHANNEL37 | AdvertisingChannelMap::CHANNEL39)
+            .with_own_address_type(OwnAddressType::RandomDeviceAddress)
+            .with_filter_policy(AdvertisingFilterPolicy::ScanAllAndConnectionFilterAcceptList)
+            .try_build()?;
+        assert_eq!(
+            adv_params.encode()?,
+            (
+                [
+                    0x00, 0x01, 0x20, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x05, 0x02
+                ],
+                15
+            )
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_advertising_parameters_creation_failure() -> Result<(), Error> {
+        let err = AdvertisingParameters::builder()
+            .with_type(AdvertisingType::ScannableUndirected)
+            .with_interval(0x0030.try_into()?..=0x0800.try_into()?)
+            .try_build()
+            .expect_err("The minimum interval for scannable undirected advertising is 0x00A0");
+        assert!(matches!(err, Error::InvalidAdvertisingParameters));
+
+        let err = AdvertisingParameters::builder()
+            .with_type(AdvertisingType::NonConnectableUndirected)
+            .with_interval(0x009F.try_into()?..=0x0800.try_into()?)
+            .try_build()
+            .expect_err(
+                "The minimum interval for non-connectable undirected advertising is 0x00A0",
+            );
+        assert!(matches!(err, Error::InvalidAdvertisingParameters));
+
+        Ok(())
     }
 }

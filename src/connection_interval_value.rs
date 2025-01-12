@@ -3,6 +3,12 @@ use crate::Error;
 /// Value to be used in a connection interval range, as used in the
 /// [PeripheralConnectionIntervalRangeAdStruct](crate::advertising::ad_struct::PeripheralConnectionIntervalRangeAdStruct)
 /// Advertising Structure.
+///
+/// Here are the characteristics of this connection interval value:
+///  - Range: 0x0006 to 0x0C80 if specified
+///  - Can be unspecified
+///  - Time = N × 1.25 ms
+///  - Time Range: 7.5 ms to 4 s
 #[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd)]
 pub struct ConnectionIntervalValue {
     value: ConnectionIntervalValueType,
