@@ -11,6 +11,7 @@
 pub(crate) mod flags;
 mod manufacturer_specific_data;
 mod peripheral_connection_interval_range;
+mod service_solicitation;
 mod service_uuid;
 pub(crate) mod tx_power_level;
 
@@ -18,6 +19,10 @@ use bitflags::bitflags;
 pub use flags::FlagsAdStruct;
 pub use manufacturer_specific_data::ManufacturerSpecificDataAdStruct;
 pub use peripheral_connection_interval_range::PeripheralConnectionIntervalRangeAdStruct;
+pub use service_solicitation::{
+    ServiceSolicitationUuid128AdStruct, ServiceSolicitationUuid16AdStruct,
+    ServiceSolicitationUuid32AdStruct,
+};
 pub use service_uuid::{
     ServiceListComplete, ServiceUuid128AdStruct, ServiceUuid16AdStruct, ServiceUuid32AdStruct,
 };
@@ -34,10 +39,10 @@ pub(crate) trait AdStruct {
 }
 
 #[derive(Debug, Default, Copy, Clone)]
-pub(crate) struct AdStructType(u8);
+pub(crate) struct AdStructType(u16);
 
 bitflags! {
-    impl AdStructType: u8 {
+    impl AdStructType: u16 {
         const SERVICE_UUID16 = 1 << 0;
         const SERVICE_UUID32 = 1 << 1;
         const SERVICE_UUID128 = 1 << 2;
@@ -45,5 +50,8 @@ bitflags! {
         const MANUFACTURER_SPECIFIC_DATA = 1 << 4;
         const TX_POWER_LEVEL = 1 << 5;
         const PERIPHERAL_CONNECTION_INTERVAL_RANGE = 1 << 6;
+        const SERVICE_SOLICITATION_UUID16 = 1 << 7;
+        const SERVICE_SOLICITATION_UUID32 = 1 << 8;
+        const SERVICE_SOLICITATION_UUID128 = 1 << 9;
     }
 }
