@@ -1,6 +1,42 @@
 //! Advertising data packets.
 //!
 //! Normal advertising data and scan response data definitions.
+//!
+//! # Examples
+//!
+//! Create an Advertising Data with flags and a 16-bit Service:
+//! ```
+//! # use bletio::advertising::{AdvertisingData, Flags};
+//! # use bletio::advertising::ad_struct::{FlagsAdStruct, ServiceListComplete, ServiceUuid16AdStruct};
+//! # use bletio::assigned_numbers::ServiceUuid;
+//! # fn main() -> Result<(), bletio::Error> {
+//! let adv_data = AdvertisingData::builder()
+//!     .with_flags(FlagsAdStruct::new(
+//!         Flags::BREDR_NOT_SUPPORTED | Flags::LE_GENERAL_DISCOVERABLE_MODE
+//!     ))?
+//!     .with_service_uuid16(ServiceUuid16AdStruct::try_new(
+//!         [ServiceUuid::Battery, ServiceUuid::EnvironmentalSensing].as_slice(),
+//!         ServiceListComplete::Incomplete
+//!     )?)?
+//!     .build();
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! Create a Scan Response Data with TX power level and peripheral connection interval range:
+//! ```
+//! # use bletio::advertising::{Flags, ScanResponseData};
+//! # use bletio::advertising::ad_struct::{PeripheralConnectionIntervalRangeAdStruct, TxPowerLevelAdStruct};
+//! # fn main() -> Result<(), bletio::Error> {
+//! let adv_data = ScanResponseData::builder()
+//!     .with_peripheral_connection_interval_range(PeripheralConnectionIntervalRangeAdStruct::new(
+//!         (0x0050.try_into()?..=0x0060.try_into()?)
+//!     ))?
+//!     .with_tx_power_level(TxPowerLevelAdStruct::new(0))?
+//!     .build();
+//! # Ok(())
+//! # }
+//! ```
 
 use crate::advertising::ad_struct::{
     AdStruct, AdStructType, FlagsAdStruct, ManufacturerSpecificDataAdStruct,
@@ -13,6 +49,7 @@ pub(crate) const ADVERTISING_DATA_MAX_SIZE: usize = 31;
 const ADVERTISING_DATA_SIZE_OFFSET: usize = 0;
 const ADVERTISING_DATA_DATA_OFFSET: usize = 1;
 
+/// Builder to create `AdvertisingData` packets.
 #[derive(Debug, Default)]
 pub struct AdvertisingDataBuilder {
     obj: AdvertisingData,
@@ -20,19 +57,23 @@ pub struct AdvertisingDataBuilder {
 }
 
 impl AdvertisingDataBuilder {
+    /// Create a builder to instantiate `AdvertisingData`.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Build the `AdvertisingData`, containing all the Advertising Structures that has been added.
     pub fn build(self) -> AdvertisingData {
         self.obj
     }
 
+    /// Add a Flags Advertising Structure to the `AdvertisingData`.
     pub fn with_flags(mut self, flags: FlagsAdStruct) -> Result<Self, Error> {
         self.try_add(flags)?;
         Ok(self)
     }
 
+    /// Add a Manufacturer Specific Data Advertising Structure to the `AdvertisingData`.
     pub fn with_manufacturer_specific_data(
         mut self,
         data: ManufacturerSpecificDataAdStruct,
@@ -41,6 +82,7 @@ impl AdvertisingDataBuilder {
         Ok(self)
     }
 
+    /// Add a Peripheral Connection Interval Range Advertising Structure to the `AdvertisingData`.
     pub fn with_peripheral_connection_interval_range(
         mut self,
         range: PeripheralConnectionIntervalRangeAdStruct,
@@ -49,6 +91,7 @@ impl AdvertisingDataBuilder {
         Ok(self)
     }
 
+    /// Add a list of 16-bit Service UUIDs Advertising Structure to the `AdvertisingData`.
     pub fn with_service_uuid16(
         mut self,
         service_uuid16: ServiceUuid16AdStruct,
@@ -57,6 +100,7 @@ impl AdvertisingDataBuilder {
         Ok(self)
     }
 
+    /// Add a list of 32-bit Service UUIDs Advertising Structure to the `AdvertisingData`.
     pub fn with_service_uuid32(
         mut self,
         service_uuid32: ServiceUuid32AdStruct,
@@ -65,6 +109,7 @@ impl AdvertisingDataBuilder {
         Ok(self)
     }
 
+    /// Add a list of 128-bit Service UUIDs Advertising Structure to the `AdvertisingData`.
     pub fn with_service_uuid128(
         mut self,
         service_uuid128: ServiceUuid128AdStruct,
@@ -73,6 +118,7 @@ impl AdvertisingDataBuilder {
         Ok(self)
     }
 
+    /// Add a TX Power Level Advertising Structure to the `AdvertisingData`.
     pub fn with_tx_power_level(
         mut self,
         tx_power_level: TxPowerLevelAdStruct,
@@ -92,6 +138,15 @@ impl AdvertisingDataBuilder {
     }
 }
 
+/// Advertising Data sent when advertising.
+///
+/// The packet format for the Advertising Data is defined in
+/// [Core Specification 6.0, Vol.3, Part C, 11](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/generic-access-profile.html#UUID-51247611-bdce-274e-095c-afb6d879c55c).
+///
+/// It may contain some Advertising Structures, whose formats are specified in
+/// [Supplement to the Bluetooth Core Specification, Part A, 1](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-36b7e551-d4cf-9ae3-a8ee-0482fbc1d5bc).
+///
+/// Use the [`AdvertisingDataBuilder`] to instantiate it.
 #[derive(Debug)]
 pub struct AdvertisingData {
     buffer: [u8; ADVERTISING_DATA_MAX_SIZE + 1],
@@ -99,6 +154,7 @@ pub struct AdvertisingData {
 }
 
 impl AdvertisingData {
+    /// Instantiate a builder to create Advertising Data.
     pub fn builder() -> AdvertisingDataBuilder {
         AdvertisingDataBuilder::new()
     }
@@ -137,6 +193,7 @@ impl Default for AdvertisingData {
     }
 }
 
+/// Builder to create `ScanResponseData` packets.
 #[derive(Debug, Default)]
 pub struct ScanResponseDataBuilder {
     obj: ScanResponseData,
@@ -144,14 +201,17 @@ pub struct ScanResponseDataBuilder {
 }
 
 impl ScanResponseDataBuilder {
+    /// Create a builder to instantiate `ScanResponseData`.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Build the `ScanResponseData`, containing all the Advertising Structures that has been added.
     pub fn build(self) -> ScanResponseData {
         self.obj
     }
 
+    /// Add a Manufacturer Specific Data Advertising Structure to the `ScanResponseData`.
     pub fn with_manufacturer_specific_data(
         mut self,
         data: ManufacturerSpecificDataAdStruct,
@@ -160,6 +220,7 @@ impl ScanResponseDataBuilder {
         Ok(self)
     }
 
+    /// Add a Peripheral Connection Interval Range Advertising Structure to the `ScanResponseData`.
     pub fn with_peripheral_connection_interval_range(
         mut self,
         range: PeripheralConnectionIntervalRangeAdStruct,
@@ -168,6 +229,7 @@ impl ScanResponseDataBuilder {
         Ok(self)
     }
 
+    /// Add a list of 16-bit Service UUIDs Advertising Structure to the `ScanResponseData`.
     pub fn with_service_uuid16(
         mut self,
         service_uuid16: ServiceUuid16AdStruct,
@@ -176,6 +238,7 @@ impl ScanResponseDataBuilder {
         Ok(self)
     }
 
+    /// Add a list of 32-bit Service UUIDs Advertising Structure to the `ScanResponseData`.
     pub fn with_service_uuid32(
         mut self,
         service_uuid32: ServiceUuid32AdStruct,
@@ -184,6 +247,7 @@ impl ScanResponseDataBuilder {
         Ok(self)
     }
 
+    /// Add a list of 128-bit Service UUIDs Advertising Structure to the `ScanResponseData`.
     pub fn with_service_uuid128(
         mut self,
         service_uuid128: ServiceUuid128AdStruct,
@@ -192,6 +256,7 @@ impl ScanResponseDataBuilder {
         Ok(self)
     }
 
+    /// Add a TX Power Level Advertising Structure to the `ScanResponseData`.
     pub fn with_tx_power_level(
         mut self,
         tx_power_level: TxPowerLevelAdStruct,
@@ -211,6 +276,15 @@ impl ScanResponseDataBuilder {
     }
 }
 
+/// Scan Response Data that can be sent when the advertising is scannable.
+///
+/// The packet format for the Scan Response Data is defined in
+/// [Core Specification 6.0, Vol.3, Part C, 11](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/generic-access-profile.html#UUID-51247611-bdce-274e-095c-afb6d879c55c).
+///
+/// It may contain some Advertising Structures, whose formats are specified in
+/// [Supplement to the Bluetooth Core Specification, Part A, 1](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-36b7e551-d4cf-9ae3-a8ee-0482fbc1d5bc).
+///
+/// Use the [`ScanResponseDataBuilder`] to instantiate it.
 #[derive(Debug)]
 pub struct ScanResponseData {
     buffer: [u8; ADVERTISING_DATA_MAX_SIZE + 1],
@@ -218,6 +292,7 @@ pub struct ScanResponseData {
 }
 
 impl ScanResponseData {
+    /// Instantiate a builder to create Scan Response Data.
     pub fn builder() -> ScanResponseDataBuilder {
         ScanResponseDataBuilder::new()
     }
