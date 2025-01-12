@@ -1,5 +1,5 @@
 use crate::advertising::advertising_parameters::AdvertisingParameters;
-use crate::advertising::{AdvertisingData, AdvertisingEnable};
+use crate::advertising::{AdvertisingData, AdvertisingEnable, ScanResponseData};
 use crate::hci::event_mask::EventMask;
 use crate::hci::opcode::{
     OcfControllerAndBaseband, OcfInformationalParameters, OcfLeController, OpCode,
@@ -23,7 +23,7 @@ pub(crate) enum Command<'a> {
     LeSetAdvertisingData(&'a AdvertisingData),
     LeSetAdvertisingParameters(&'a AdvertisingParameters),
     // LeSetRandomAddress(RandomAddress),
-    LeSetScanResponseData,
+    LeSetScanResponseData(&'a ScanResponseData),
     // Nop,
     // ReadBdAddr,
     ReadBufferSize,
@@ -48,15 +48,14 @@ impl Command<'_> {
                 CommandPacket::new(self.opcode()).append(buffer.as_slice())
             }
             Command::LeSetAdvertisingData(data) => {
-                CommandPacket::new(self.opcode()).append(data.data())
+                CommandPacket::new(self.opcode()).append(data.encoded_data())
             }
             Command::LeSetAdvertisingParameters(parameters) => {
                 let (buffer, len) = parameters.encode()?;
                 CommandPacket::new(self.opcode()).append(&buffer[..len])
             }
-            Command::LeSetScanResponseData => {
-                let buffer = [0u8; 32];
-                CommandPacket::new(self.opcode()).append(buffer.as_slice())
+            Command::LeSetScanResponseData(data) => {
+                CommandPacket::new(self.opcode()).append(data.encoded_data())
             }
             Command::SetEventMask(event_mask) => {
                 CommandPacket::new(self.opcode()).append(&event_mask.encode()?)
@@ -76,7 +75,7 @@ impl Command<'_> {
             Command::LeSetAdvertisingParameters(_) => {
                 OcfLeController::LeSetAdvertisingParameters.into()
             }
-            Command::LeSetScanResponseData => OcfLeController::LeSetScanResponseData.into(),
+            Command::LeSetScanResponseData(_) => OcfLeController::LeSetScanResponseData.into(),
             Command::ReadBufferSize => OcfInformationalParameters::ReadBufferSize.into(),
             Command::ReadLocalSupportedCommands => {
                 OcfInformationalParameters::ReadLocalSupportedCommands.into()
