@@ -40,8 +40,9 @@
 
 use crate::advertising::ad_struct::{
     AdStruct, AdStructType, FlagsAdStruct, ManufacturerSpecificDataAdStruct,
-    PeripheralConnectionIntervalRangeAdStruct, ServiceUuid128AdStruct, ServiceUuid16AdStruct,
-    ServiceUuid32AdStruct, TxPowerLevelAdStruct,
+    PeripheralConnectionIntervalRangeAdStruct, ServiceSolicitationUuid128AdStruct,
+    ServiceSolicitationUuid16AdStruct, ServiceSolicitationUuid32AdStruct, ServiceUuid128AdStruct,
+    ServiceUuid16AdStruct, ServiceUuid32AdStruct, TxPowerLevelAdStruct,
 };
 use crate::Error;
 
@@ -88,6 +89,33 @@ impl AdvertisingDataBuilder {
         range: PeripheralConnectionIntervalRangeAdStruct,
     ) -> Result<Self, Error> {
         self.try_add(range)?;
+        Ok(self)
+    }
+
+    /// Add a list of 16-bit Service Solicitation UUIDs Advertising Structure to the `AdvertisingData`.
+    pub fn with_service_solicitation_uuid16(
+        mut self,
+        service_uuid16: ServiceSolicitationUuid16AdStruct,
+    ) -> Result<Self, Error> {
+        self.try_add(service_uuid16)?;
+        Ok(self)
+    }
+
+    /// Add a list of 32-bit Service Solicitation UUIDs Advertising Structure to the `AdvertisingData`.
+    pub fn with_service_solicitation_uuid32(
+        mut self,
+        service_uuid32: ServiceSolicitationUuid32AdStruct,
+    ) -> Result<Self, Error> {
+        self.try_add(service_uuid32)?;
+        Ok(self)
+    }
+
+    /// Add a list of 128-bit Service Solicitation UUIDs Advertising Structure to the `AdvertisingData`.
+    pub fn with_service_solicitation_uuid128(
+        mut self,
+        service_uuid128: ServiceSolicitationUuid128AdStruct,
+    ) -> Result<Self, Error> {
+        self.try_add(service_uuid128)?;
         Ok(self)
     }
 
@@ -226,6 +254,33 @@ impl ScanResponseDataBuilder {
         range: PeripheralConnectionIntervalRangeAdStruct,
     ) -> Result<Self, Error> {
         self.try_add(range)?;
+        Ok(self)
+    }
+
+    /// Add a list of 16-bit Service Solicitation UUIDs Advertising Structure to the `ScanResponseData`.
+    pub fn with_service_solicitation_uuid16(
+        mut self,
+        service_uuid16: ServiceSolicitationUuid16AdStruct,
+    ) -> Result<Self, Error> {
+        self.try_add(service_uuid16)?;
+        Ok(self)
+    }
+
+    /// Add a list of 32-bit Service Solicitation UUIDs Advertising Structure to the `ScanResponseData`.
+    pub fn with_service_solicitation_uuid32(
+        mut self,
+        service_uuid32: ServiceSolicitationUuid32AdStruct,
+    ) -> Result<Self, Error> {
+        self.try_add(service_uuid32)?;
+        Ok(self)
+    }
+
+    /// Add a list of 128-bit Service Solicitation UUIDs Advertising Structure to the `ScanResponseData`.
+    pub fn with_service_solicitation_uuid128(
+        mut self,
+        service_uuid128: ServiceSolicitationUuid128AdStruct,
+    ) -> Result<Self, Error> {
+        self.try_add(service_uuid128)?;
         Ok(self)
     }
 
