@@ -14,7 +14,7 @@ pub mod uuid;
 pub use connection_interval_value::ConnectionIntervalValue;
 
 use crate::advertising::advertising_parameters::AdvertisingParameters;
-use crate::advertising::{AdvertisingData, AdvertisingEnable};
+use crate::advertising::{AdvertisingData, AdvertisingEnable, ScanResponseData};
 use crate::hci::command::Command;
 use crate::hci::error_code::HciErrorCode;
 use crate::hci::event::{CommandCompleteEvent, Event};
@@ -137,18 +137,21 @@ where
         &self.supported_le_states
     }
 
-    // TODO: Add scan response data
     pub fn start_advertising(
         &self,
         adv_params: &AdvertisingParameters,
         adv_data: &AdvertisingData,
+        scanresp_data: Option<&ScanResponseData>,
     ) -> Result<(), Error> {
         // TODO: Check state
         self.cmd_le_set_advertising_parameters(adv_params)?;
         // TODO: Read Advertising Channel Tx Power
         self.cmd_le_set_advertising_data(adv_data)?;
-        // TODO: Set real Scan Response Data
-        self.cmd_le_set_scan_response_data()?;
+        let default_scanresp_data = ScanResponseData::default();
+        self.cmd_le_set_scan_response_data(match scanresp_data {
+            Some(scanresp_data) => scanresp_data,
+            None => &default_scanresp_data,
+        })?;
         self.cmd_le_set_advertise_enable(AdvertisingEnable::Enabled)?;
         Ok(())
     }
@@ -259,8 +262,11 @@ where
         self.execute_command(Command::LeSetAdvertisingParameters(parameters))
     }
 
-    fn cmd_le_set_scan_response_data(&self) -> Result<CommandCompleteEvent, Error> {
-        self.execute_command(Command::LeSetScanResponseData)
+    fn cmd_le_set_scan_response_data(
+        &self,
+        data: &ScanResponseData,
+    ) -> Result<CommandCompleteEvent, Error> {
+        self.execute_command(Command::LeSetScanResponseData(data))
     }
 
     fn hci_write(&self, data: &[u8]) -> Result<usize, Error> {
