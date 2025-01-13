@@ -2,6 +2,7 @@ use crate::advertising::ad_struct::{
     AdStruct, AdStructType, AD_STRUCT_DATA_OFFSET, AD_STRUCT_LENGTH_OFFSET, AD_STRUCT_TYPE_OFFSET,
 };
 use crate::advertising::advertising_data::ADVERTISING_DATA_MAX_SIZE;
+use crate::advertising::AdvertisingError;
 use crate::assigned_numbers::{AdType, ServiceUuid};
 use crate::utils::{encode_le_u128, encode_le_u16, encode_le_u32};
 use crate::uuid::{Uuid128, Uuid32};
@@ -42,9 +43,6 @@ impl ServiceSolicitationUuid16AdStruct {
     /// ```
     pub fn try_new(uuids: &[ServiceUuid]) -> Result<Self, Error> {
         let uuids_size = uuids.len() * 2;
-        if (2 + uuids_size) > ADVERTISING_DATA_MAX_SIZE {
-            return Err(Error::BufferTooSmall);
-        }
         let mut s = Self {
             offset: AD_STRUCT_DATA_OFFSET,
             buffer: Default::default(),
@@ -52,7 +50,8 @@ impl ServiceSolicitationUuid16AdStruct {
         s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1 + uuids_size as u8;
         s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::ListOfSolicitationServiceUuid16 as u8;
         for uuid in uuids {
-            s.offset += encode_le_u16(&mut s.buffer[s.offset..], *uuid as u16)?;
+            s.offset += encode_le_u16(&mut s.buffer[s.offset..], *uuid as u16)
+                .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
         }
         Ok(s)
     }
@@ -127,9 +126,6 @@ impl ServiceSolicitationUuid32AdStruct {
     /// # }
     pub fn try_new(uuids: &[impl Into<Uuid32> + Copy]) -> Result<Self, Error> {
         let uuids_size = uuids.len() * 4;
-        if (2 + uuids_size) > ADVERTISING_DATA_MAX_SIZE {
-            return Err(Error::BufferTooSmall);
-        }
         let mut s = Self {
             offset: AD_STRUCT_DATA_OFFSET,
             buffer: Default::default(),
@@ -138,7 +134,8 @@ impl ServiceSolicitationUuid32AdStruct {
         s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::ListOfSolicitationServiceUuid32 as u8;
         for uuid in uuids {
             let uuid = (*uuid).into();
-            s.offset += encode_le_u32(&mut s.buffer[s.offset..], uuid.0)?;
+            s.offset += encode_le_u32(&mut s.buffer[s.offset..], uuid.0)
+                .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
         }
         Ok(s)
     }
@@ -213,9 +210,6 @@ impl ServiceSolicitationUuid128AdStruct {
     /// # }
     pub fn try_new(uuids: &[impl Into<Uuid128> + Copy]) -> Result<Self, Error> {
         let uuids_size = uuids.len() * 16;
-        if (2 + uuids_size) > ADVERTISING_DATA_MAX_SIZE {
-            return Err(Error::BufferTooSmall);
-        }
         let mut s = Self {
             offset: AD_STRUCT_DATA_OFFSET,
             buffer: Default::default(),
@@ -224,7 +218,8 @@ impl ServiceSolicitationUuid128AdStruct {
         s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::ListOfSolicitationServiceUuid128 as u8;
         for uuid in uuids {
             let uuid = (*uuid).into();
-            s.offset += encode_le_u128(&mut s.buffer[s.offset..], uuid.0)?;
+            s.offset += encode_le_u128(&mut s.buffer[s.offset..], uuid.0)
+                .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
         }
         Ok(s)
     }
@@ -333,7 +328,10 @@ mod test {
             .as_slice(),
         )
         .expect_err("Too many Uuid16 to fit in the advertising data");
-        assert!(matches!(err, Error::BufferTooSmall));
+        assert!(matches!(
+            err,
+            Error::Advertising(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)
+        ));
     }
 
     #[test]
@@ -392,7 +390,10 @@ mod test {
             .as_slice(),
         )
         .expect_err("Too many Uuid32 to fit in the advertising data");
-        assert!(matches!(err, Error::BufferTooSmall));
+        assert!(matches!(
+            err,
+            Error::Advertising(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)
+        ));
     }
 
     #[test]
@@ -451,6 +452,9 @@ mod test {
             .as_slice(),
         )
         .expect_err("Too many Uuid128 to fit in the advertising data");
-        assert!(matches!(err, Error::BufferTooSmall));
+        assert!(matches!(
+            err,
+            Error::Advertising(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)
+        ));
     }
 }

@@ -13,6 +13,7 @@ bitflags = "2.6.0"
 embedded-io = "0.6.1"
 embedded-io-async = "0.6.1"
 log = "0.4.22"
+thiserror = { version = "2.0.11", default-features = false }
 
 [build-dependencies]
 convert_case = "0.6.0"

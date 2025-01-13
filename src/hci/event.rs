@@ -2,6 +2,7 @@ use core::cell::RefCell;
 use embedded_io::Error as EmbeddedIoError;
 
 use crate::hci::opcode::OpCode;
+use crate::hci::HciError;
 use crate::utils::{decode_le_u16, decode_le_u64};
 use crate::Error;
 
@@ -11,12 +12,12 @@ enum EventCode {
 }
 
 impl TryFrom<u8> for EventCode {
-    type Error = Error;
+    type Error = HciError;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0x0E => Ok(EventCode::CommandComplete),
-            _ => Err(Error::InvalidEventCode(value)),
+            _ => Err(HciError::InvalidEventCode(value)),
         }
     }
 }
@@ -29,11 +30,11 @@ pub(crate) struct CommandCompleteEvent {
 }
 
 impl TryFrom<EventPacket> for CommandCompleteEvent {
-    type Error = Error;
+    type Error = HciError;
 
     fn try_from(value: EventPacket) -> Result<Self, Self::Error> {
         if value.parameter_total_length < 3 {
-            return Err(Error::InvalidEventPacket);
+            return Err(HciError::InvalidEventPacket);
         }
         let return_parameters_length = value.parameter_total_length - 3;
         Ok(CommandCompleteEvent {
@@ -113,33 +114,33 @@ pub(crate) struct EventParameterData {
 }
 
 impl EventParameterData {
-    pub(crate) fn slice(&self, offset: usize) -> Result<&[u8], Error> {
+    pub(crate) fn slice(&self, offset: usize) -> Result<&[u8], HciError> {
         if offset > self.len {
-            Err(Error::InvalidEventPacket)
+            Err(HciError::InvalidEventPacket)
         } else {
             Ok(&self.data[offset..])
         }
     }
 
-    pub(crate) fn le_u64(&self, offset: usize) -> Result<u64, Error> {
+    pub(crate) fn le_u64(&self, offset: usize) -> Result<u64, HciError> {
         Ok(decode_le_u64(
             self.data[offset..offset + 8]
                 .try_into()
-                .map_err(|_| Error::InvalidEventPacket)?,
+                .map_err(|_| HciError::InvalidEventPacket)?,
         ))
     }
 
-    pub(crate) fn le_u16(&self, offset: usize) -> Result<u16, Error> {
+    pub(crate) fn le_u16(&self, offset: usize) -> Result<u16, HciError> {
         Ok(decode_le_u16(
             self.data[offset..offset + 2]
                 .try_into()
-                .map_err(|_| Error::InvalidEventPacket)?,
+                .map_err(|_| HciError::InvalidEventPacket)?,
         ))
     }
 
-    pub(crate) fn u8(&self, offset: usize) -> Result<u8, Error> {
+    pub(crate) fn u8(&self, offset: usize) -> Result<u8, HciError> {
         if offset + 1 > self.len {
-            Err(Error::InvalidEventPacket)
+            Err(HciError::InvalidEventPacket)
         } else {
             Ok(self.data[offset])
         }

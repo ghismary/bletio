@@ -6,57 +6,57 @@ use embedded_io::Error as EmbeddedIoError;
 pub mod advertising;
 pub mod assigned_numbers;
 mod connection_interval_value;
-mod hci;
+pub mod hci;
 pub mod le_states;
 mod utils;
 pub mod uuid;
 
 pub use connection_interval_value::ConnectionIntervalValue;
 
-use crate::advertising::advertising_parameters::AdvertisingParameters;
-use crate::advertising::{AdvertisingData, AdvertisingEnable, ScanResponseData};
-use crate::hci::command::Command;
-use crate::hci::error_code::HciErrorCode;
-use crate::hci::event::{CommandCompleteEvent, Event};
-use crate::hci::event_mask::EventMask;
-use crate::hci::event_parameter::{
+use advertising::advertising_parameters::AdvertisingParameters;
+use advertising::AdvertisingError;
+use advertising::{AdvertisingData, AdvertisingEnable, ScanResponseData};
+use hci::command::Command;
+use hci::event::{CommandCompleteEvent, Event};
+use hci::event_mask::EventMask;
+use hci::event_parameter::{
     LeFeaturesEventParameter, LeStatesEventParameter, LmpFeaturesEventParameter,
     StatusEventParameter, SupportedCommandsEventParameter,
 };
-use crate::hci::opcode::OpCode;
-use crate::hci::supported_commands::SupportedCommands;
-use crate::hci::supported_features::SupportedFeatures;
-use crate::hci::supported_le_features::SupportedLeFeatures;
-use crate::hci::supported_le_states::SupportedLeStates;
-use crate::hci::PacketType;
+use hci::opcode::OpCode;
+use hci::supported_commands::SupportedCommands;
+use hci::supported_features::SupportedFeatures;
+use hci::supported_le_features::SupportedLeFeatures;
+use hci::supported_le_states::SupportedLeStates;
+use hci::HciError;
+use hci::HciErrorCode;
+use hci::PacketType;
 
-#[derive(Debug)]
+/// Errors that can happen during the BLE stack usage.
+#[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
-    HciAccessDenied,
+    /// Advertising related error.
+    #[error(transparent)]
+    Advertising(#[from] AdvertisingError),
+    /// HCI related error.
+    #[error(transparent)]
+    Hci(#[from] HciError),
+    /// IO error.
+    #[error("IO error {0:?}")]
     IO(embedded_io::ErrorKind),
-    InvalidPacketType(u8),
-    ReceivedUnhandledHciPacket(PacketType),
-    ReceivedUnexpectedHciPacket,
-    InvalidEventCode(u8),
-    InvalidEventPacket,
-    InvalidOpcode(u16),
-    HciError(HciErrorCode),
-    InvalidErrorCode(u8),
-    NonLECapableController,
-    InvalidStateCombination,
-    BufferTooSmall,
-    AdStructAlreadyPresent,
-    AdStructDoesNotFit,
-    InvalidAdStruct,
-    InvalidAdvertisingIntervalValue(u16),
-    InvalidAdvertisingParameters,
-    InvalidConnectionIntervalValue(u16),
-    EmptyServiceUuidListShallBeComplete,
+    /// Invalid connection interval value.
+    #[error(
+        "The connection interval value {0} is invalid, it needs to be between 0x0006 and 0x0C80"
+    )]
+    InvalidConnectionIntervalValue(u16), // TODO: Put somewhere else, in Advertising?
+    /// The Bluetooth controller is not LE capable.
+    #[error("The Bluetooth controller is not LE capable")]
+    NonLeCapableController,
 }
 
 impl From<BorrowMutError> for Error {
     fn from(_value: BorrowMutError) -> Self {
-        Self::HciAccessDenied
+        Self::Hci(HciError::AccessDenied)
     }
 }
 
@@ -100,7 +100,7 @@ where
         self.cmd_read_local_supported_commands()?;
         self.cmd_read_local_supported_features()?;
         if !self.supported_features.has_le_supported_controller() {
-            return Err(Error::NonLECapableController);
+            return Err(Error::NonLeCapableController);
         }
         self.set_event_mask()?;
         // TODO: set LE event mask
@@ -181,7 +181,9 @@ where
             event.return_parameters.slice(0)?.try_into()?;
         match status_event_parameter.status {
             HciErrorCode::Success => Ok(event),
-            _ => Err(Error::HciError(status_event_parameter.status)),
+            _ => Err(Error::Hci(HciError::ErrorCode(
+                status_event_parameter.status,
+            ))),
         }
     }
 
@@ -296,15 +298,17 @@ where
         if let Some(packet_type) = self.hci_read()? {
             match packet_type.try_into()? {
                 PacketType::Command => {
-                    return Err(Error::ReceivedUnhandledHciPacket(PacketType::Command))
+                    return Err(Error::Hci(HciError::InvalidPacketType(
+                        PacketType::Command as u8,
+                    )))
                 }
                 PacketType::AclData => {
                     todo!()
                 }
                 PacketType::SynchronousData => {
-                    return Err(Error::ReceivedUnhandledHciPacket(
-                        PacketType::SynchronousData,
-                    ))
+                    return Err(Error::Hci(HciError::InvalidPacketType(
+                        PacketType::SynchronousData as u8,
+                    )))
                 }
                 PacketType::Event => {
                     let event = Event::read(&self.hci)?;

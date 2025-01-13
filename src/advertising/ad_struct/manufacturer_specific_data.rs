@@ -2,6 +2,7 @@ use crate::advertising::ad_struct::{
     AdStruct, AdStructType, AD_STRUCT_DATA_OFFSET, AD_STRUCT_LENGTH_OFFSET, AD_STRUCT_TYPE_OFFSET,
 };
 use crate::advertising::advertising_data::ADVERTISING_DATA_MAX_SIZE;
+use crate::advertising::AdvertisingError;
 use crate::assigned_numbers::AdType;
 use crate::assigned_numbers::CompanyIdentifier;
 use crate::utils::encode_le_u16;
@@ -45,7 +46,7 @@ impl ManufacturerSpecificDataAdStruct {
     pub fn try_new(manufacturer: CompanyIdentifier, data: &[u8]) -> Result<Self, Error> {
         let data_size = data.len();
         if (4 + data_size) > ADVERTISING_DATA_MAX_SIZE {
-            return Err(Error::BufferTooSmall);
+            return Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
         }
         let mut s = Self {
             buffer: Default::default(),
@@ -53,7 +54,8 @@ impl ManufacturerSpecificDataAdStruct {
         };
         s.buffer[AD_STRUCT_LENGTH_OFFSET] = 3 + data_size as u8;
         s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::ManufacturerSpecificData as u8;
-        encode_le_u16(&mut s.buffer[s.offset..], manufacturer as u16)?;
+        encode_le_u16(&mut s.buffer[s.offset..], manufacturer as u16)
+            .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
         s.offset += 2;
         s.buffer[s.offset..s.offset + data_size].copy_from_slice(data);
         s.offset += data_size;
@@ -121,6 +123,9 @@ mod test {
             ],
         )
         .expect_err("Manufacturer specific data too big");
-        assert!(matches!(err, Error::BufferTooSmall));
+        assert!(matches!(
+            err,
+            Error::Advertising(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)
+        ));
     }
 }
