@@ -1,4 +1,8 @@
-use crate::Error;
+#[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum UtilsError {
+    #[error("Buffer too small")]
+    BufferTooSmall,
+}
 
 pub(crate) fn decode_le_u64(buffer: [u8; 8]) -> u64 {
     ((buffer[7] as u64) << 56)
@@ -15,9 +19,9 @@ pub(crate) fn decode_le_u16(buffer: [u8; 2]) -> u16 {
     ((buffer[1] as u16) << 8) | (buffer[0] as u16)
 }
 
-pub(crate) fn encode_le_u128(buffer: &mut [u8], data: u128) -> Result<usize, Error> {
+pub(crate) fn encode_le_u128(buffer: &mut [u8], data: u128) -> Result<usize, UtilsError> {
     if buffer.len() < 16 {
-        Err(Error::BufferTooSmall)
+        Err(UtilsError::BufferTooSmall)
     } else {
         buffer[0] = (data & 0xFF) as u8;
         buffer[1] = ((data >> 8) & 0xFF) as u8;
@@ -39,9 +43,9 @@ pub(crate) fn encode_le_u128(buffer: &mut [u8], data: u128) -> Result<usize, Err
     }
 }
 
-pub(crate) fn encode_le_u64(buffer: &mut [u8], data: u64) -> Result<usize, Error> {
+pub(crate) fn encode_le_u64(buffer: &mut [u8], data: u64) -> Result<usize, UtilsError> {
     if buffer.len() < 8 {
-        Err(Error::BufferTooSmall)
+        Err(UtilsError::BufferTooSmall)
     } else {
         buffer[0] = (data & 0xFF) as u8;
         buffer[1] = ((data >> 8) & 0xFF) as u8;
@@ -55,9 +59,9 @@ pub(crate) fn encode_le_u64(buffer: &mut [u8], data: u64) -> Result<usize, Error
     }
 }
 
-pub(crate) fn encode_le_u32(buffer: &mut [u8], data: u32) -> Result<usize, Error> {
+pub(crate) fn encode_le_u32(buffer: &mut [u8], data: u32) -> Result<usize, UtilsError> {
     if buffer.len() < 4 {
-        Err(Error::BufferTooSmall)
+        Err(UtilsError::BufferTooSmall)
     } else {
         buffer[0] = (data & 0xFF) as u8;
         buffer[1] = ((data >> 8) & 0xFF) as u8;
@@ -67,9 +71,9 @@ pub(crate) fn encode_le_u32(buffer: &mut [u8], data: u32) -> Result<usize, Error
     }
 }
 
-pub(crate) fn encode_le_u16(buffer: &mut [u8], data: u16) -> Result<usize, Error> {
+pub(crate) fn encode_le_u16(buffer: &mut [u8], data: u16) -> Result<usize, UtilsError> {
     if buffer.len() < 2 {
-        Err(Error::BufferTooSmall)
+        Err(UtilsError::BufferTooSmall)
     } else {
         buffer[0] = (data & 0xFF) as u8;
         buffer[1] = ((data >> 8) & 0xFF) as u8;

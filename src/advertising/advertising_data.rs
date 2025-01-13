@@ -44,6 +44,7 @@ use crate::advertising::ad_struct::{
     ServiceSolicitationUuid16AdStruct, ServiceSolicitationUuid32AdStruct, ServiceUuid128AdStruct,
     ServiceUuid16AdStruct, ServiceUuid32AdStruct, TxPowerLevelAdStruct,
 };
+use crate::advertising::AdvertisingError;
 use crate::Error;
 
 pub(crate) const ADVERTISING_DATA_MAX_SIZE: usize = 31;
@@ -158,7 +159,7 @@ impl AdvertisingDataBuilder {
     fn try_add(&mut self, ad_struct: impl AdStruct) -> Result<(), Error> {
         let ad_struct_type = ad_struct.r#type();
         if ad_struct.is_unique() && self.present_ad_structs.contains(ad_struct_type) {
-            return Err(Error::AdStructAlreadyPresent);
+            return Err(AdvertisingError::AdStructAlreadyPresent)?;
         }
         self.obj.try_add(ad_struct)?;
         self.present_ad_structs |= ad_struct_type;
@@ -191,7 +192,7 @@ impl AdvertisingData {
         let ad_struct_data = ad_struct.encoded_data();
         let ad_struct_size = ad_struct_data.len();
         if self.remaining_size() < ad_struct_size {
-            return Err(Error::BufferTooSmall);
+            return Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
         }
         self.buffer[self.offset..self.offset + ad_struct_size].copy_from_slice(ad_struct_data);
         self.offset += ad_struct_size;
@@ -323,7 +324,7 @@ impl ScanResponseDataBuilder {
     fn try_add(&mut self, ad_struct: impl AdStruct) -> Result<(), Error> {
         let ad_struct_type = ad_struct.r#type();
         if ad_struct.is_unique() && self.present_ad_structs.contains(ad_struct_type) {
-            return Err(Error::AdStructAlreadyPresent);
+            return Err(AdvertisingError::AdStructAlreadyPresent)?;
         }
         self.obj.try_add(ad_struct)?;
         self.present_ad_structs |= ad_struct_type;
@@ -356,7 +357,7 @@ impl ScanResponseData {
         let ad_struct_data = ad_struct.encoded_data();
         let ad_struct_size = ad_struct_data.len();
         if self.remaining_size() < ad_struct_size {
-            return Err(Error::BufferTooSmall);
+            return Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
         }
         self.buffer[self.offset..self.offset + ad_struct_size].copy_from_slice(ad_struct_data);
         self.offset += ad_struct_size;

@@ -28,6 +28,8 @@ use core::ops::RangeInclusive;
 use crate::utils::encode_le_u16;
 use crate::Error;
 
+use super::AdvertisingError;
+
 /// Advertising interval value.
 ///
 /// Used for undirected and low duty cycle directed advertising.
@@ -69,7 +71,7 @@ impl TryFrom<u16> for AdvertisingIntervalValue {
         if (0x0020..=0x4000).contains(&value) {
             Ok(Self { value })
         } else {
-            Err(Error::InvalidAdvertisingIntervalValue(value))
+            Err(AdvertisingError::InvalidAdvertisingIntervalValue(value))?
         }
     }
 }
@@ -210,7 +212,7 @@ impl AdvertisingParametersBuilder {
         if self.obj.is_valid() {
             Ok(self.obj)
         } else {
-            Err(Error::InvalidAdvertisingParameters)
+            Err(AdvertisingError::InvalidAdvertisingParameters)?
         }
     }
 
@@ -309,8 +311,10 @@ impl AdvertisingParameters {
     pub(crate) fn encode(&self) -> Result<([u8; 15], usize), Error> {
         let mut buffer = [0u8; 15];
         let mut offset = 0;
-        offset += encode_le_u16(&mut buffer[offset..], self.interval.start().value)?;
-        offset += encode_le_u16(&mut buffer[offset..], self.interval.end().value)?;
+        offset += encode_le_u16(&mut buffer[offset..], self.interval.start().value)
+            .map_err(|_| AdvertisingError::Internal("Advertising parameters buffer too small"))?;
+        offset += encode_le_u16(&mut buffer[offset..], self.interval.end().value)
+            .map_err(|_| AdvertisingError::Internal("Advertising parameters buffer too small"))?;
         buffer[offset] = self.r#type as u8;
         offset += 1;
         buffer[offset] = self.own_address_type as u8;
@@ -392,7 +396,10 @@ mod test {
             .with_interval(0x0030.try_into()?..=0x0800.try_into()?)
             .try_build()
             .expect_err("The minimum interval for scannable undirected advertising is 0x00A0");
-        assert!(matches!(err, Error::InvalidAdvertisingParameters));
+        assert!(matches!(
+            err,
+            Error::Advertising(AdvertisingError::InvalidAdvertisingParameters)
+        ));
 
         let err = AdvertisingParameters::builder()
             .with_type(AdvertisingType::NonConnectableUndirected)
@@ -401,7 +408,10 @@ mod test {
             .expect_err(
                 "The minimum interval for non-connectable undirected advertising is 0x00A0",
             );
-        assert!(matches!(err, Error::InvalidAdvertisingParameters));
+        assert!(matches!(
+            err,
+            Error::Advertising(AdvertisingError::InvalidAdvertisingParameters)
+        ));
 
         Ok(())
     }

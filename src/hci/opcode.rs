@@ -1,4 +1,4 @@
-use crate::Error;
+use super::HciError;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 #[repr(u8)]
@@ -88,7 +88,7 @@ impl OpCode {
 }
 
 impl TryFrom<u16> for OpCode {
-    type Error = Error;
+    type Error = HciError;
 
     fn try_from(value: u16) -> Result<Self, Self::Error> {
         let ogf = ((value & 0xFC00) >> 10) as u8;
@@ -96,24 +96,24 @@ impl TryFrom<u16> for OpCode {
         Ok(match ogf {
             0x00 => match ocf {
                 0x0000 => OcfNop::Nop.into(),
-                _ => return Err(Error::InvalidOpcode(value)),
+                _ => return Err(HciError::InvalidOpcode(value)),
             },
-            0x01 => return Err(Error::InvalidOpcode(value)),
-            0x02 => return Err(Error::InvalidOpcode(value)),
+            0x01 => return Err(HciError::InvalidOpcode(value)),
+            0x02 => return Err(HciError::InvalidOpcode(value)),
             0x03 => match ocf {
                 0x0001 => OcfControllerAndBaseband::SetEventMask.into(),
                 0x0003 => OcfControllerAndBaseband::Reset.into(),
-                _ => return Err(Error::InvalidOpcode(value)),
+                _ => return Err(HciError::InvalidOpcode(value)),
             },
             0x04 => match ocf {
                 0x0002 => OcfInformationalParameters::ReadLocalSupportedCommands.into(),
                 0x0003 => OcfInformationalParameters::ReadLocalSupportedFeatures.into(),
                 0x0005 => OcfInformationalParameters::ReadBufferSize.into(),
                 0x0009 => OcfInformationalParameters::ReadBdAddr.into(),
-                _ => return Err(Error::InvalidOpcode(value)),
+                _ => return Err(HciError::InvalidOpcode(value)),
             },
-            0x05 => return Err(Error::InvalidOpcode(value)),
-            0x06 => return Err(Error::InvalidOpcode(value)),
+            0x05 => return Err(HciError::InvalidOpcode(value)),
+            0x06 => return Err(HciError::InvalidOpcode(value)),
             0x08 => match ocf {
                 0x0001 => OcfLeController::LeSetEventMask.into(),
                 0x0002 => OcfLeController::LeReadBufferSize.into(),
@@ -130,9 +130,9 @@ impl TryFrom<u16> for OpCode {
                 0x0017 => OcfLeController::LeEncrypt.into(),
                 0x0018 => OcfLeController::LeRand.into(),
                 0x001C => OcfLeController::LeReadSupportedStates.into(),
-                _ => return Err(Error::InvalidOpcode(value)),
+                _ => return Err(HciError::InvalidOpcode(value)),
             },
-            _ => return Err(Error::InvalidOpcode(value)),
+            _ => return Err(HciError::InvalidOpcode(value)),
         })
     }
 }

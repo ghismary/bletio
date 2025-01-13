@@ -4,6 +4,7 @@ use crate::hci::event_mask::EventMask;
 use crate::hci::opcode::{
     OcfControllerAndBaseband, OcfInformationalParameters, OcfLeController, OpCode,
 };
+use crate::hci::HciError;
 use crate::hci::PacketType;
 use crate::Error;
 
@@ -57,9 +58,11 @@ impl Command<'_> {
             Command::LeSetScanResponseData(data) => {
                 CommandPacket::new(self.opcode()).append(data.encoded_data())
             }
-            Command::SetEventMask(event_mask) => {
-                CommandPacket::new(self.opcode()).append(&event_mask.encode()?)
-            }
+            Command::SetEventMask(event_mask) => CommandPacket::new(self.opcode()).append(
+                &event_mask
+                    .encode()
+                    .map_err(|_| HciError::Internal("Command packet too small"))?,
+            ),
         })
     }
 

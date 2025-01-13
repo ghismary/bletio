@@ -3,7 +3,7 @@ use crate::hci::supported_commands::SupportedCommands;
 use crate::hci::supported_features::SupportedFeatures;
 use crate::hci::supported_le_features::SupportedLeFeatures;
 use crate::hci::supported_le_states::SupportedLeStates;
-use crate::Error;
+use crate::hci::HciError;
 
 #[derive(Debug)]
 pub(crate) struct StatusEventParameter {
@@ -11,11 +11,11 @@ pub(crate) struct StatusEventParameter {
 }
 
 impl TryFrom<&[u8]> for StatusEventParameter {
-    type Error = Error;
+    type Error = HciError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         if value.is_empty() {
-            Err(Error::InvalidEventPacket)
+            Err(HciError::InvalidEventPacket)
         } else {
             Ok(StatusEventParameter {
                 status: value[0].try_into()?,
@@ -43,12 +43,12 @@ pub(crate) struct SupportedCommandsEventParameter {
 }
 
 impl TryFrom<&[u8]> for SupportedCommandsEventParameter {
-    type Error = Error;
+    type Error = HciError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         Ok(SupportedCommandsEventParameter {
             value: <[u8; 64]>::try_from(value)
-                .map_err(|_| Error::InvalidEventPacket)?
+                .map_err(|_| HciError::InvalidEventPacket)?
                 .into(),
         })
     }

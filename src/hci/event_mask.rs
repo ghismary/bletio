@@ -1,5 +1,4 @@
-use crate::utils::encode_le_u64;
-use crate::Error;
+use crate::utils::{encode_le_u64, UtilsError};
 
 #[derive(Debug, Default)]
 pub(crate) struct EventMask {
@@ -18,7 +17,7 @@ impl EventMask {
         Self { value: 0 }
     }
 
-    pub(crate) fn encode(&self) -> Result<[u8; 8], Error> {
+    pub(crate) fn encode(&self) -> Result<[u8; 8], UtilsError> {
         let mut buffer = [0; 8];
         encode_le_u64(&mut buffer[..], self.value)?;
         Ok(buffer)
