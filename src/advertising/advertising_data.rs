@@ -39,7 +39,7 @@
 //! ```
 
 use crate::advertising::ad_struct::{
-    AdStruct, AdStructType, FlagsAdStruct, ManufacturerSpecificDataAdStruct,
+    AdStruct, AdStructType, AppearanceAdStruct, FlagsAdStruct, ManufacturerSpecificDataAdStruct,
     PeripheralConnectionIntervalRangeAdStruct, ServiceSolicitationUuid128AdStruct,
     ServiceSolicitationUuid16AdStruct, ServiceSolicitationUuid32AdStruct, ServiceUuid128AdStruct,
     ServiceUuid16AdStruct, ServiceUuid32AdStruct, TxPowerLevelAdStruct,
@@ -67,6 +67,12 @@ impl AdvertisingDataBuilder {
     /// Build the `AdvertisingData`, containing all the Advertising Structures that has been added.
     pub fn build(self) -> AdvertisingData {
         self.obj
+    }
+
+    /// Add an Appearance Advertising Structure to the `AdvertisingData`.
+    pub fn with_appearance(mut self, appearance: AppearanceAdStruct) -> Result<Self, Error> {
+        self.try_add(appearance)?;
+        Ok(self)
     }
 
     /// Add a Flags Advertising Structure to the `AdvertisingData`.
@@ -238,6 +244,12 @@ impl ScanResponseDataBuilder {
     /// Build the `ScanResponseData`, containing all the Advertising Structures that has been added.
     pub fn build(self) -> ScanResponseData {
         self.obj
+    }
+
+    /// Add an Appearance Advertising Structure to the `ScanResponseData`.
+    pub fn with_appearance(mut self, appearance: AppearanceAdStruct) -> Result<Self, Error> {
+        self.try_add(appearance)?;
+        Ok(self)
     }
 
     /// Add a Manufacturer Specific Data Advertising Structure to the `ScanResponseData`.
