@@ -314,6 +314,11 @@ where
                     let event = Event::read(&self.hci)?;
                     return Ok(Some(HciPollResult::Event(event)));
                 }
+                PacketType::IsoData => {
+                    return Err(Error::Hci(HciError::InvalidPacketType(
+                        PacketType::IsoData as u8,
+                    )))
+                }
             }
         }
 

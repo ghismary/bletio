@@ -40,25 +40,49 @@ pub enum HciError {
     InvalidPacketType(u8),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u8)]
-pub(crate) enum PacketType {
+macro_rules! hci_packet_types {
+    (
+        $(
+            $(#[$docs:meta])*
+            $packet_type:ident = $value:expr,
+        )+
+    ) => {
+        /// HCI packet type.
+        ///
+        /// HCI does not provide the ability to differentiate the five HCI packet types. Therefore, if
+        /// the HCI packets are sent via a common physical interface, an HCI packet indicator has
+        /// to be added. This is this packet type.
+        ///
+        /// See [Core Specification 6.0, Vol. 4, Part A, 2](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/uart-transport-layer.html#UUID-361053ee-862f-c591-00bd-1a941a12f949).
+        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+        #[repr(u8)]
+        #[non_exhaustive]
+        pub(crate) enum PacketType {
+            $(
+                $(#[$docs])*
+                $packet_type = $value,
+            )+
+        }
+
+        impl TryFrom<u8> for PacketType {
+            type Error = HciError;
+
+            fn try_from(value: u8) -> Result<Self, Self::Error> {
+                match value {
+                    $(
+                        $value => Ok(PacketType::$packet_type),
+                    )+
+                    _ => Err(HciError::InvalidPacketType(value)),
+                }
+            }
+        }
+    };
+}
+
+hci_packet_types! {
     Command = 0x01,
     AclData = 0x02,
     SynchronousData = 0x03,
     Event = 0x04,
-}
-
-impl TryFrom<u8> for PacketType {
-    type Error = HciError;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            0x01 => Ok(PacketType::Command),
-            0x02 => Ok(PacketType::AclData),
-            0x03 => Ok(PacketType::SynchronousData),
-            0x04 => Ok(PacketType::Event),
-            _ => Err(HciError::InvalidPacketType(value)),
-        }
-    }
+    IsoData = 0x05,
 }
