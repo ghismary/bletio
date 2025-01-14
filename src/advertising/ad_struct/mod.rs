@@ -8,6 +8,7 @@
 //! The formats of each advertising structures and their meanings are defined in the
 //! [Core Specification Supplement, Part A, 1](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-36b7e551-d4cf-9ae3-a8ee-0482fbc1d5bc).
 
+mod appearance;
 pub(crate) mod flags;
 mod manufacturer_specific_data;
 mod peripheral_connection_interval_range;
@@ -15,6 +16,7 @@ mod service_solicitation;
 mod service_uuid;
 pub(crate) mod tx_power_level;
 
+pub use appearance::AppearanceAdStruct;
 use bitflags::bitflags;
 pub use flags::FlagsAdStruct;
 pub use manufacturer_specific_data::ManufacturerSpecificDataAdStruct;
@@ -53,5 +55,6 @@ bitflags! {
         const SERVICE_SOLICITATION_UUID16 = 1 << 7;
         const SERVICE_SOLICITATION_UUID32 = 1 << 8;
         const SERVICE_SOLICITATION_UUID128 = 1 << 9;
+        const APPEARANCE = 1 << 10;
     }
 }

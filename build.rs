@@ -41,6 +41,7 @@ fn main() -> Result<(), BuildRsError> {
     let out_path = Path::new(&out_dir);
 
     generate_ad_types(out_path)?;
+    generate_appearance_values(out_path)?;
     generate_company_identifiers(out_path)?;
     generate_service_uuids(out_path)?;
 
@@ -123,6 +124,147 @@ pub(crate) enum AdType {{
 }}
 "#,
             types_str
+        ),
+    )?;
+
+    Ok(())
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct AppearanceSubValue {
+    value: u8,
+    name: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct AppearanceValue {
+    category: u16,
+    name: String,
+    subcategory: Option<Vec<AppearanceSubValue>>,
+}
+
+#[derive(Debug)]
+struct FlattenedAppearanceValue {
+    value: u16,
+    name: String,
+    category_name: String,
+    normalized_name: String,
+}
+
+impl FlattenedAppearanceValue {
+    fn generate_normalized_name(&mut self, map_count: &mut HashMap<String, usize>) {
+        let mut name = self.name.clone();
+        name = name
+            .replace(",", " ")
+            .replace("/", " ")
+            .replace("(", " ")
+            .replace(")", " ")
+            .split(' ')
+            .map(|s| s.to_case(Case::Pascal))
+            .collect::<Vec<_>>()
+            .join("");
+        if name.starts_with(|p: char| p.is_ascii_digit()) {
+            name = format!("_{name}");
+        }
+        let count = map_count.get(&name).unwrap_or(&0);
+        if *count == 0 {
+            map_count.insert(name.clone(), 1);
+        } else {
+            *map_count.get_mut(&name).unwrap() += 1;
+        }
+        self.normalized_name = name;
+    }
+
+    fn rectify_normalized_name(&mut self, map_count: &HashMap<String, usize>) {
+        let count = map_count.get(&self.normalized_name).unwrap_or(&0);
+        if *count > 1 {
+            self.normalized_name = format!(
+                "{}{}",
+                self.category_name.to_case(Case::Pascal),
+                self.normalized_name
+            );
+        }
+    }
+}
+
+impl Display for FlattenedAppearanceValue {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!(
+            "\t/// `{} - {}` Appearance value\n\t{} = {:#06X},",
+            self.category_name, self.name, self.normalized_name, self.value
+        ))
+    }
+}
+
+impl From<&AppearanceValue> for Vec<FlattenedAppearanceValue> {
+    fn from(value: &AppearanceValue) -> Self {
+        let mut result = vec![];
+        result.push(FlattenedAppearanceValue {
+            value: value.category << 6,
+            name: format!("Generic {}", value.name),
+            category_name: value.name.clone(),
+            normalized_name: Default::default(),
+        });
+        let mut subvalues = value.subcategory.clone().map_or(vec![], |item| {
+            item.iter()
+                .map(|item| FlattenedAppearanceValue {
+                    value: (value.category << 6) | item.value as u16,
+                    name: item.name.clone(),
+                    category_name: value.name.clone(),
+                    normalized_name: Default::default(),
+                })
+                .collect()
+        });
+        result.append(&mut subvalues);
+        result
+    }
+}
+
+fn generate_appearance_values(out_path: &Path) -> Result<(), BuildRsError> {
+    println!("cargo:rerun-if-changed=spec-files/appearance_values.yaml");
+
+    let source_path = Path::new("spec-files/appearance_values.yaml");
+    let yaml_str = fs::read_to_string(source_path)?;
+    let yaml: HashMap<String, Vec<AppearanceValue>> = serde_yml::from_str(&yaml_str)?;
+    let mut flattened_appearance_values: Vec<FlattenedAppearanceValue> = yaml["appearance_values"]
+        .iter()
+        .flat_map(|item| {
+            let flattened_appearance_values: Vec<FlattenedAppearanceValue> = item.into();
+            flattened_appearance_values
+        })
+        .collect();
+    let mut normalized_names_count_map: HashMap<String, usize> = HashMap::new();
+    flattened_appearance_values
+        .iter_mut()
+        .for_each(|item| item.generate_normalized_name(&mut normalized_names_count_map));
+    let appearance_strs: Vec<String> = flattened_appearance_values
+        .iter_mut()
+        .map(|item| {
+            item.rectify_normalized_name(&normalized_names_count_map);
+            item.to_string()
+        })
+        .collect();
+    let appearance_str = appearance_strs.join("\n");
+
+    let dest_path = out_path.join("appearance_values.rs");
+    fs::write(
+        dest_path,
+        format!(
+            r#"
+#[derive(Debug, Clone, Copy)]
+#[repr(u16)]
+#[allow(dead_code)]
+#[non_exhaustive]
+/// Assigned numbers for appearance values defined in
+/// [Assigned Numbers, 2.6](https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/core/appearance_values.yaml).
+///
+/// It is to be used when creating an Appearance Advertising Structure.
+/// See [AppearanceAdStruct::new](crate::advertising::ad_struct::AppearanceAdStruct::new).
+pub enum AppearanceValue {{
+{}
+}}
+"#,
+            appearance_str
         ),
     )?;
 
