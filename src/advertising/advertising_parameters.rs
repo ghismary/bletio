@@ -56,6 +56,10 @@ impl AdvertisingIntervalValue {
     pub fn milliseconds(&self) -> f32 {
         (self.value as f32) * 0.625
     }
+
+    pub(crate) fn value(&self) -> u16 {
+        self.value
+    }
 }
 
 impl Default for AdvertisingIntervalValue {
