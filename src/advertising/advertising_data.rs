@@ -39,10 +39,11 @@
 //! ```
 
 use crate::advertising::ad_struct::{
-    AdStruct, AdStructType, AppearanceAdStruct, FlagsAdStruct, ManufacturerSpecificDataAdStruct,
-    PeripheralConnectionIntervalRangeAdStruct, ServiceSolicitationUuid128AdStruct,
-    ServiceSolicitationUuid16AdStruct, ServiceSolicitationUuid32AdStruct, ServiceUuid128AdStruct,
-    ServiceUuid16AdStruct, ServiceUuid32AdStruct, TxPowerLevelAdStruct,
+    AdStruct, AdStructType, AdvertisingIntervalAdStruct, AppearanceAdStruct, FlagsAdStruct,
+    ManufacturerSpecificDataAdStruct, PeripheralConnectionIntervalRangeAdStruct,
+    ServiceSolicitationUuid128AdStruct, ServiceSolicitationUuid16AdStruct,
+    ServiceSolicitationUuid32AdStruct, ServiceUuid128AdStruct, ServiceUuid16AdStruct,
+    ServiceUuid32AdStruct, TxPowerLevelAdStruct,
 };
 use crate::advertising::AdvertisingError;
 use crate::Error;
@@ -69,19 +70,44 @@ impl AdvertisingDataBuilder {
         self.obj
     }
 
+    /// Add an Advertising Interval Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `interval` — The Advertising Interval Advertising Structure to add.
+    pub fn with_advertising_interval(
+        mut self,
+        interval: AdvertisingIntervalAdStruct,
+    ) -> Result<Self, Error> {
+        self.try_add(interval)?;
+        Ok(self)
+    }
+
     /// Add an Appearance Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `appearance` — The Appearance Advertising Structure to add.
     pub fn with_appearance(mut self, appearance: AppearanceAdStruct) -> Result<Self, Error> {
         self.try_add(appearance)?;
         Ok(self)
     }
 
     /// Add a Flags Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `flags` — The Flags Advertising Structure to add.
     pub fn with_flags(mut self, flags: FlagsAdStruct) -> Result<Self, Error> {
         self.try_add(flags)?;
         Ok(self)
     }
 
     /// Add a Manufacturer Specific Data Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `data` — The Manufacturer Specific Data Advertising Structure to add.
     pub fn with_manufacturer_specific_data(
         mut self,
         data: ManufacturerSpecificDataAdStruct,
@@ -91,6 +117,10 @@ impl AdvertisingDataBuilder {
     }
 
     /// Add a Peripheral Connection Interval Range Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `range` — The Peripheral Connection Interval Range Advertising Structure to add.
     pub fn with_peripheral_connection_interval_range(
         mut self,
         range: PeripheralConnectionIntervalRangeAdStruct,
@@ -100,6 +130,10 @@ impl AdvertisingDataBuilder {
     }
 
     /// Add a list of 16-bit Service Solicitation UUIDs Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `service_uuid16` — The Service Solicitation UUID16 Advertising Structure to add.
     pub fn with_service_solicitation_uuid16(
         mut self,
         service_uuid16: ServiceSolicitationUuid16AdStruct,
@@ -109,6 +143,10 @@ impl AdvertisingDataBuilder {
     }
 
     /// Add a list of 32-bit Service Solicitation UUIDs Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `service_uuid32` — The Service Solicitation UUID32 Advertising Structure to add.
     pub fn with_service_solicitation_uuid32(
         mut self,
         service_uuid32: ServiceSolicitationUuid32AdStruct,
@@ -118,6 +156,10 @@ impl AdvertisingDataBuilder {
     }
 
     /// Add a list of 128-bit Service Solicitation UUIDs Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `service_uuid128` — The Service Solicitation UUID128 Advertising Structure to add.
     pub fn with_service_solicitation_uuid128(
         mut self,
         service_uuid128: ServiceSolicitationUuid128AdStruct,
@@ -127,6 +169,10 @@ impl AdvertisingDataBuilder {
     }
 
     /// Add a list of 16-bit Service UUIDs Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `service_uuid16` — The Service UUID16 Advertising Structure to add.
     pub fn with_service_uuid16(
         mut self,
         service_uuid16: ServiceUuid16AdStruct,
@@ -136,6 +182,10 @@ impl AdvertisingDataBuilder {
     }
 
     /// Add a list of 32-bit Service UUIDs Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `service_uuid32` — The Service UUID32 Advertising Structure to add.
     pub fn with_service_uuid32(
         mut self,
         service_uuid32: ServiceUuid32AdStruct,
@@ -145,6 +195,10 @@ impl AdvertisingDataBuilder {
     }
 
     /// Add a list of 128-bit Service UUIDs Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `service_uuid128` — The Service UUID128 Advertising Structure to add.
     pub fn with_service_uuid128(
         mut self,
         service_uuid128: ServiceUuid128AdStruct,
@@ -154,6 +208,10 @@ impl AdvertisingDataBuilder {
     }
 
     /// Add a TX Power Level Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `tx_power_level` — The TX Power Level Advertising Structure to add.
     pub fn with_tx_power_level(
         mut self,
         tx_power_level: TxPowerLevelAdStruct,
@@ -246,13 +304,34 @@ impl ScanResponseDataBuilder {
         self.obj
     }
 
+    /// Add an Advertising Interval Advertising Structure to the `ScanResponseData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `interval` — The Advertising Interval Advertising Structure to add.
+    pub fn with_advertising_interval(
+        mut self,
+        interval: AdvertisingIntervalAdStruct,
+    ) -> Result<Self, Error> {
+        self.try_add(interval)?;
+        Ok(self)
+    }
+
     /// Add an Appearance Advertising Structure to the `ScanResponseData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `appearance` — The Appearance Advertising Structure to add.
     pub fn with_appearance(mut self, appearance: AppearanceAdStruct) -> Result<Self, Error> {
         self.try_add(appearance)?;
         Ok(self)
     }
 
     /// Add a Manufacturer Specific Data Advertising Structure to the `ScanResponseData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `data` — The Manufacturer Specific Data Advertising Structure to add.
     pub fn with_manufacturer_specific_data(
         mut self,
         data: ManufacturerSpecificDataAdStruct,
@@ -262,6 +341,10 @@ impl ScanResponseDataBuilder {
     }
 
     /// Add a Peripheral Connection Interval Range Advertising Structure to the `ScanResponseData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `range` — The Peripheral Connection Interval Range Advertising Structure to add.
     pub fn with_peripheral_connection_interval_range(
         mut self,
         range: PeripheralConnectionIntervalRangeAdStruct,
@@ -271,6 +354,10 @@ impl ScanResponseDataBuilder {
     }
 
     /// Add a list of 16-bit Service Solicitation UUIDs Advertising Structure to the `ScanResponseData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `service_uuid16` — The Service Solicitation UUID16 Advertising Structure to add.
     pub fn with_service_solicitation_uuid16(
         mut self,
         service_uuid16: ServiceSolicitationUuid16AdStruct,
@@ -280,6 +367,10 @@ impl ScanResponseDataBuilder {
     }
 
     /// Add a list of 32-bit Service Solicitation UUIDs Advertising Structure to the `ScanResponseData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `service_uuid32` — The Service Solicitation UUID32 Advertising Structure to add.
     pub fn with_service_solicitation_uuid32(
         mut self,
         service_uuid32: ServiceSolicitationUuid32AdStruct,
@@ -289,6 +380,10 @@ impl ScanResponseDataBuilder {
     }
 
     /// Add a list of 128-bit Service Solicitation UUIDs Advertising Structure to the `ScanResponseData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `service_uuid128` — The Service Solicitation UUID128 Advertising Structure to add.
     pub fn with_service_solicitation_uuid128(
         mut self,
         service_uuid128: ServiceSolicitationUuid128AdStruct,
@@ -298,6 +393,10 @@ impl ScanResponseDataBuilder {
     }
 
     /// Add a list of 16-bit Service UUIDs Advertising Structure to the `ScanResponseData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `service_uuid16` — The Service UUID16 Advertising Structure to add.
     pub fn with_service_uuid16(
         mut self,
         service_uuid16: ServiceUuid16AdStruct,
@@ -307,6 +406,10 @@ impl ScanResponseDataBuilder {
     }
 
     /// Add a list of 32-bit Service UUIDs Advertising Structure to the `ScanResponseData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `service_uuid32` — The Service UUID32 Advertising Structure to add.
     pub fn with_service_uuid32(
         mut self,
         service_uuid32: ServiceUuid32AdStruct,
@@ -316,6 +419,10 @@ impl ScanResponseDataBuilder {
     }
 
     /// Add a list of 128-bit Service UUIDs Advertising Structure to the `ScanResponseData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `service_uuid128` — The Service UUID128 Advertising Structure to add.
     pub fn with_service_uuid128(
         mut self,
         service_uuid128: ServiceUuid128AdStruct,
@@ -325,6 +432,10 @@ impl ScanResponseDataBuilder {
     }
 
     /// Add a TX Power Level Advertising Structure to the `ScanResponseData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `tx_power_level` — The TX Power Level Advertising Structure to add.
     pub fn with_tx_power_level(
         mut self,
         tx_power_level: TxPowerLevelAdStruct,

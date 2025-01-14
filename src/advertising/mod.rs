@@ -11,6 +11,7 @@ pub mod advertising_parameters;
 pub use ad_struct::flags::Flags;
 pub use ad_struct::tx_power_level::TxPowerLevel;
 pub use advertising_data::{AdvertisingData, ScanResponseData};
+pub use advertising_parameters::AdvertisingIntervalValue;
 
 /// Error occuring in the advertising part of the BLE stack.
 #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
