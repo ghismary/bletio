@@ -1,11 +1,8 @@
-use crate::advertising::ad_struct::{
-    AdStruct, AdStructType, AD_STRUCT_DATA_OFFSET, AD_STRUCT_LENGTH_OFFSET, AD_STRUCT_TYPE_OFFSET,
-};
+use crate::advertising::ad_struct::{AdStruct, AdStructBuffer, AdStructType};
 use crate::advertising::advertising_data::ADVERTISING_DATA_MAX_SIZE;
 use crate::advertising::AdvertisingError;
 use crate::assigned_numbers::AdType;
 use crate::assigned_numbers::CompanyIdentifier;
-use crate::utils::encode_le_u16;
 use crate::Error;
 
 /// Manufacturer specific data.
@@ -17,8 +14,7 @@ use crate::Error;
 /// This is used for example for iBeacons and Eddystone beacons.
 #[derive(Debug, Clone)]
 pub struct ManufacturerSpecificDataAdStruct {
-    buffer: [u8; ADVERTISING_DATA_MAX_SIZE],
-    offset: usize,
+    buffer: AdStructBuffer<ADVERTISING_DATA_MAX_SIZE>,
 }
 
 impl ManufacturerSpecificDataAdStruct {
@@ -49,23 +45,18 @@ impl ManufacturerSpecificDataAdStruct {
             return Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
         }
         let mut s = Self {
-            buffer: Default::default(),
-            offset: AD_STRUCT_DATA_OFFSET,
+            buffer: AdStructBuffer::new(AdType::ManufacturerSpecificData),
         };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 3 + data_size as u8;
-        s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::ManufacturerSpecificData as u8;
         // INVARIANT: The buffer space is known to be enough.
-        encode_le_u16(&mut s.buffer[s.offset..], manufacturer as u16).unwrap();
-        s.offset += 2;
-        s.buffer[s.offset..s.offset + data_size].copy_from_slice(data);
-        s.offset += data_size;
+        s.buffer.encode_le_u16(manufacturer as u16).unwrap();
+        s.buffer.copy_from_slice(data).unwrap();
         Ok(s)
     }
 }
 
 impl AdStruct for ManufacturerSpecificDataAdStruct {
     fn encoded_data(&self) -> &[u8] {
-        &self.buffer[..self.offset]
+        self.buffer.data()
     }
     fn r#type(&self) -> AdStructType {
         AdStructType::MANUFACTURER_SPECIFIC_DATA

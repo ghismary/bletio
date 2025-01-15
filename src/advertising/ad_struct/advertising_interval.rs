@@ -1,10 +1,7 @@
-use crate::advertising::ad_struct::{
-    AdStruct, AdStructType, AD_STRUCT_DATA_OFFSET, AD_STRUCT_LENGTH_OFFSET, AD_STRUCT_TYPE_OFFSET,
-};
+use crate::advertising::ad_struct::{AdStruct, AdStructBuffer, AdStructType};
 
 use crate::advertising::AdvertisingIntervalValue;
 use crate::assigned_numbers::AdType;
-use crate::utils::encode_le_u16;
 
 const ADVERTISING_INTERVAL_AD_STRUCT_SIZE: usize = 4;
 
@@ -16,7 +13,7 @@ const ADVERTISING_INTERVAL_AD_STRUCT_SIZE: usize = 4;
 /// [Core Specification 6.0, Vol. 6, Part B, 4.4.2.2](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/low-energy-controller/link-layer-specification.html#UUID-f6cd1541-800c-c516-b32b-95dd0479840b).
 #[derive(Debug, Clone)]
 pub struct AdvertisingIntervalAdStruct {
-    buffer: [u8; ADVERTISING_INTERVAL_AD_STRUCT_SIZE],
+    buffer: AdStructBuffer<ADVERTISING_INTERVAL_AD_STRUCT_SIZE>,
 }
 
 impl AdvertisingIntervalAdStruct {
@@ -36,19 +33,17 @@ impl AdvertisingIntervalAdStruct {
     pub fn new(interval: AdvertisingIntervalValue) -> Self {
         // TODO: Handle extended/primary advertising interval values and periodic interval values.
         let mut s = Self {
-            buffer: Default::default(),
+            buffer: AdStructBuffer::new(AdType::AdvertisingInterval),
         };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = (ADVERTISING_INTERVAL_AD_STRUCT_SIZE - 1) as u8;
-        s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::AdvertisingInterval as u8;
         // INVARIANT: The buffer space is known to be enough.
-        encode_le_u16(&mut s.buffer[AD_STRUCT_DATA_OFFSET..], interval.value()).unwrap();
+        s.buffer.encode_le_u16(interval.value()).unwrap();
         s
     }
 }
 
 impl AdStruct for AdvertisingIntervalAdStruct {
     fn encoded_data(&self) -> &[u8] {
-        &self.buffer
+        self.buffer.data()
     }
     fn r#type(&self) -> AdStructType {
         AdStructType::ADVERTISING_INTERVAL

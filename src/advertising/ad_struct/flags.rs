@@ -1,8 +1,6 @@
 use bitflags::bitflags;
 
-use crate::advertising::ad_struct::{
-    AdStruct, AdStructType, AD_STRUCT_DATA_OFFSET, AD_STRUCT_LENGTH_OFFSET, AD_STRUCT_TYPE_OFFSET,
-};
+use crate::advertising::ad_struct::{AdStruct, AdStructBuffer, AdStructType};
 use crate::assigned_numbers::AdType;
 
 const FLAGS_AD_STRUCT_SIZE: usize = 3;
@@ -16,7 +14,7 @@ const FLAGS_AD_STRUCT_SIZE: usize = 3;
 /// See [`Flags`] for more information about each of the flags.
 #[derive(Debug, Clone)]
 pub struct FlagsAdStruct {
-    buffer: [u8; FLAGS_AD_STRUCT_SIZE],
+    buffer: AdStructBuffer<FLAGS_AD_STRUCT_SIZE>,
 }
 
 impl FlagsAdStruct {
@@ -37,18 +35,17 @@ impl FlagsAdStruct {
     /// ```
     pub fn new(flags: Flags) -> Self {
         let mut s = Self {
-            buffer: Default::default(),
+            buffer: AdStructBuffer::new(AdType::Flags),
         };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = (FLAGS_AD_STRUCT_SIZE - 1) as u8;
-        s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::Flags as u8;
-        s.buffer[AD_STRUCT_DATA_OFFSET] = flags.bits();
+        // INVARIANT: The buffer space is known to be enough.
+        s.buffer.try_push(flags.bits()).unwrap();
         s
     }
 }
 
 impl AdStruct for FlagsAdStruct {
     fn encoded_data(&self) -> &[u8] {
-        &self.buffer
+        self.buffer.data()
     }
     fn r#type(&self) -> AdStructType {
         AdStructType::FLAGS

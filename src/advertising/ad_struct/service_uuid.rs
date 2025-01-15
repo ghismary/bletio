@@ -1,10 +1,7 @@
-use crate::advertising::ad_struct::{
-    AdStruct, AdStructType, AD_STRUCT_DATA_OFFSET, AD_STRUCT_LENGTH_OFFSET, AD_STRUCT_TYPE_OFFSET,
-};
+use crate::advertising::ad_struct::{AdStruct, AdStructBuffer, AdStructType};
 use crate::advertising::advertising_data::ADVERTISING_DATA_MAX_SIZE;
 use crate::advertising::AdvertisingError;
 use crate::assigned_numbers::{AdType, ServiceUuid};
-use crate::utils::{encode_le_u128, encode_le_u16, encode_le_u32};
 use crate::uuid::{Uuid128, Uuid32};
 use crate::Error;
 
@@ -24,8 +21,7 @@ pub enum ServiceListComplete {
 /// as defined in [Supplement to the Bluetooth Core Specification, Part A, 1.1](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-b1d0edbc-fc9e-507a-efe4-3fd4b4817a52).
 #[derive(Debug, Clone)]
 pub struct ServiceUuid16AdStruct {
-    buffer: [u8; ADVERTISING_DATA_MAX_SIZE],
-    offset: usize,
+    buffer: AdStructBuffer<ADVERTISING_DATA_MAX_SIZE>,
 }
 
 impl ServiceUuid16AdStruct {
@@ -53,18 +49,14 @@ impl ServiceUuid16AdStruct {
         if uuids.is_empty() && complete == ServiceListComplete::Incomplete {
             return Err(AdvertisingError::EmptyServiceUuidListShallBeComplete)?;
         }
-        let uuids_size = uuids.len() * 2;
-        let mut s = Self {
-            offset: AD_STRUCT_DATA_OFFSET,
-            buffer: Default::default(),
-        };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1 + uuids_size as u8;
-        s.buffer[AD_STRUCT_TYPE_OFFSET] = match complete {
+        let mut s = Self::default();
+        s.buffer.set_ad_type(match complete {
             ServiceListComplete::Complete => AdType::CompleteListOfServiceUuid16,
             ServiceListComplete::Incomplete => AdType::IncompleteListOfServiceUuid16,
-        } as u8;
+        });
         for uuid in uuids {
-            s.offset += encode_le_u16(&mut s.buffer[s.offset..], *uuid as u16)
+            s.buffer
+                .encode_le_u16(*uuid as u16)
                 .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
         }
         Ok(s)
@@ -72,35 +64,31 @@ impl ServiceUuid16AdStruct {
 
     #[cfg(test)]
     fn is_complete(&self) -> bool {
-        self.buffer[AD_STRUCT_TYPE_OFFSET] == (AdType::CompleteListOfServiceUuid16 as u8)
+        self.buffer.ad_type() == (AdType::CompleteListOfServiceUuid16 as u8)
     }
 
     #[cfg(test)]
     fn is_empty(&self) -> bool {
-        self.offset == AD_STRUCT_DATA_OFFSET
+        self.buffer.is_empty()
     }
 
     #[cfg(test)]
     fn len(&self) -> usize {
-        (self.offset - AD_STRUCT_DATA_OFFSET) / 2
+        self.buffer.len() / 2
     }
 }
 
 impl Default for ServiceUuid16AdStruct {
     fn default() -> Self {
-        let mut s = Self {
-            offset: AD_STRUCT_DATA_OFFSET,
-            buffer: Default::default(),
-        };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1;
-        s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::CompleteListOfServiceUuid16 as u8;
-        s
+        Self {
+            buffer: AdStructBuffer::new(AdType::CompleteListOfServiceUuid16),
+        }
     }
 }
 
 impl AdStruct for ServiceUuid16AdStruct {
     fn encoded_data(&self) -> &[u8] {
-        &self.buffer[..self.offset]
+        self.buffer.data()
     }
     fn r#type(&self) -> AdStructType {
         AdStructType::SERVICE_UUID16
@@ -117,8 +105,7 @@ impl AdStruct for ServiceUuid16AdStruct {
 /// as defined in [Supplement to the Bluetooth Core Specification, Part A, 1.1](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-b1d0edbc-fc9e-507a-efe4-3fd4b4817a52).
 #[derive(Debug, Clone)]
 pub struct ServiceUuid32AdStruct {
-    buffer: [u8; ADVERTISING_DATA_MAX_SIZE],
-    offset: usize,
+    buffer: AdStructBuffer<ADVERTISING_DATA_MAX_SIZE>,
 }
 
 impl ServiceUuid32AdStruct {
@@ -149,19 +136,14 @@ impl ServiceUuid32AdStruct {
         if uuids.is_empty() && complete == ServiceListComplete::Incomplete {
             return Err(AdvertisingError::EmptyServiceUuidListShallBeComplete)?;
         }
-        let uuids_size = uuids.len() * 4;
-        let mut s = Self {
-            offset: AD_STRUCT_DATA_OFFSET,
-            buffer: Default::default(),
-        };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1 + uuids_size as u8;
-        s.buffer[AD_STRUCT_TYPE_OFFSET] = match complete {
+        let mut s = Self::default();
+        s.buffer.set_ad_type(match complete {
             ServiceListComplete::Complete => AdType::CompleteListOfServiceUuid32,
             ServiceListComplete::Incomplete => AdType::IncompleteListOfServiceUuid32,
-        } as u8;
+        });
         for uuid in uuids {
-            let uuid = (*uuid).into();
-            s.offset += encode_le_u32(&mut s.buffer[s.offset..], uuid.0)
+            s.buffer
+                .encode_le_u32((*uuid).into().0)
                 .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
         }
         Ok(s)
@@ -169,35 +151,31 @@ impl ServiceUuid32AdStruct {
 
     #[cfg(test)]
     fn is_complete(&self) -> bool {
-        self.buffer[AD_STRUCT_TYPE_OFFSET] == (AdType::CompleteListOfServiceUuid32 as u8)
+        self.buffer.ad_type() == (AdType::CompleteListOfServiceUuid32 as u8)
     }
 
     #[cfg(test)]
     fn is_empty(&self) -> bool {
-        self.offset == AD_STRUCT_DATA_OFFSET
+        self.buffer.is_empty()
     }
 
     #[cfg(test)]
     fn len(&self) -> usize {
-        (self.offset - AD_STRUCT_DATA_OFFSET) / 4
+        self.buffer.len() / 4
     }
 }
 
 impl Default for ServiceUuid32AdStruct {
     fn default() -> Self {
-        let mut s = Self {
-            offset: AD_STRUCT_DATA_OFFSET,
-            buffer: Default::default(),
-        };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1;
-        s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::CompleteListOfServiceUuid32 as u8;
-        s
+        Self {
+            buffer: AdStructBuffer::new(AdType::CompleteListOfServiceUuid32),
+        }
     }
 }
 
 impl AdStruct for ServiceUuid32AdStruct {
     fn encoded_data(&self) -> &[u8] {
-        &self.buffer[..self.offset]
+        self.buffer.data()
     }
     fn r#type(&self) -> AdStructType {
         AdStructType::SERVICE_UUID32
@@ -214,8 +192,7 @@ impl AdStruct for ServiceUuid32AdStruct {
 /// as defined in [Supplement to the Bluetooth Core Specification, Part A, 1.1](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-b1d0edbc-fc9e-507a-efe4-3fd4b4817a52).
 #[derive(Debug, Clone)]
 pub struct ServiceUuid128AdStruct {
-    buffer: [u8; ADVERTISING_DATA_MAX_SIZE],
-    offset: usize,
+    buffer: AdStructBuffer<ADVERTISING_DATA_MAX_SIZE>,
 }
 
 impl ServiceUuid128AdStruct {
@@ -246,19 +223,14 @@ impl ServiceUuid128AdStruct {
         if uuids.is_empty() && complete == ServiceListComplete::Incomplete {
             return Err(AdvertisingError::EmptyServiceUuidListShallBeComplete)?;
         }
-        let uuids_size = uuids.len() * 16;
-        let mut s = Self {
-            offset: AD_STRUCT_DATA_OFFSET,
-            buffer: Default::default(),
-        };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1 + uuids_size as u8;
-        s.buffer[AD_STRUCT_TYPE_OFFSET] = match complete {
+        let mut s = Self::default();
+        s.buffer.set_ad_type(match complete {
             ServiceListComplete::Complete => AdType::CompleteListOfServiceUuid128,
             ServiceListComplete::Incomplete => AdType::IncompleteListOfServiceUuid128,
-        } as u8;
+        });
         for uuid in uuids {
-            let uuid = (*uuid).into();
-            s.offset += encode_le_u128(&mut s.buffer[s.offset..], uuid.0)
+            s.buffer
+                .encode_le_u128((*uuid).into().0)
                 .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
         }
         Ok(s)
@@ -266,35 +238,31 @@ impl ServiceUuid128AdStruct {
 
     #[cfg(test)]
     fn is_complete(&self) -> bool {
-        self.buffer[AD_STRUCT_TYPE_OFFSET] == (AdType::CompleteListOfServiceUuid128 as u8)
+        self.buffer.ad_type() == (AdType::CompleteListOfServiceUuid128 as u8)
     }
 
     #[cfg(test)]
     fn is_empty(&self) -> bool {
-        self.offset == AD_STRUCT_DATA_OFFSET
+        self.buffer.is_empty()
     }
 
     #[cfg(test)]
     fn len(&self) -> usize {
-        (self.offset - AD_STRUCT_DATA_OFFSET) / 16
+        self.buffer.len() / 16
     }
 }
 
 impl Default for ServiceUuid128AdStruct {
     fn default() -> Self {
-        let mut s = Self {
-            offset: AD_STRUCT_DATA_OFFSET,
-            buffer: Default::default(),
-        };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1;
-        s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::CompleteListOfServiceUuid128 as u8;
-        s
+        Self {
+            buffer: AdStructBuffer::new(AdType::CompleteListOfServiceUuid128),
+        }
     }
 }
 
 impl AdStruct for ServiceUuid128AdStruct {
     fn encoded_data(&self) -> &[u8] {
-        &self.buffer[..self.offset]
+        self.buffer.data()
     }
     fn r#type(&self) -> AdStructType {
         AdStructType::SERVICE_UUID128

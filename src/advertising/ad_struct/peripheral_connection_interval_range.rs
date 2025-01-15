@@ -1,11 +1,8 @@
 use core::ops::RangeInclusive;
 
-use crate::advertising::ad_struct::{
-    AdStruct, AdStructType, AD_STRUCT_DATA_OFFSET, AD_STRUCT_LENGTH_OFFSET, AD_STRUCT_TYPE_OFFSET,
-};
+use crate::advertising::ad_struct::{AdStruct, AdStructBuffer, AdStructType};
 use crate::assigned_numbers::AdType;
 use crate::connection_interval_value::ConnectionIntervalValue;
-use crate::utils::encode_le_u16;
 
 const PERIPHERAL_CONNECTION_INTERVAL_RANGE_AD_STRUCT_SIZE: usize = 6;
 
@@ -15,7 +12,7 @@ const PERIPHERAL_CONNECTION_INTERVAL_RANGE_AD_STRUCT_SIZE: usize = 6;
 /// [Core Specification 6.0, Vol.3, Part C, 12.3](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/generic-access-profile.html#UUID-7ef0bdcb-4c81-1aea-5f65-4a69eab5c899).
 #[derive(Debug, Clone)]
 pub struct PeripheralConnectionIntervalRangeAdStruct {
-    buffer: [u8; PERIPHERAL_CONNECTION_INTERVAL_RANGE_AD_STRUCT_SIZE],
+    buffer: AdStructBuffer<PERIPHERAL_CONNECTION_INTERVAL_RANGE_AD_STRUCT_SIZE>,
 }
 
 impl PeripheralConnectionIntervalRangeAdStruct {
@@ -60,23 +57,18 @@ impl PeripheralConnectionIntervalRangeAdStruct {
     /// ```
     pub fn new(range: RangeInclusive<ConnectionIntervalValue>) -> Self {
         let mut s = Self {
-            buffer: Default::default(),
+            buffer: AdStructBuffer::new(AdType::PeripheralConnectionIntervalRange),
         };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] =
-            (PERIPHERAL_CONNECTION_INTERVAL_RANGE_AD_STRUCT_SIZE - 1) as u8;
-        s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::PeripheralConnectionIntervalRange as u8;
-        let min = (*range.start()).into();
-        let max = (*range.end()).into();
         // INVARIANT: The buffer space is known to be enough.
-        encode_le_u16(&mut s.buffer[AD_STRUCT_DATA_OFFSET..], min).unwrap();
-        encode_le_u16(&mut s.buffer[AD_STRUCT_DATA_OFFSET + 2..], max).unwrap();
+        s.buffer.encode_le_u16((*range.start()).into()).unwrap();
+        s.buffer.encode_le_u16((*range.end()).into()).unwrap();
         s
     }
 }
 
 impl AdStruct for PeripheralConnectionIntervalRangeAdStruct {
     fn encoded_data(&self) -> &[u8] {
-        &self.buffer
+        self.buffer.data()
     }
     fn r#type(&self) -> AdStructType {
         AdStructType::PERIPHERAL_CONNECTION_INTERVAL_RANGE
