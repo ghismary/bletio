@@ -4,6 +4,90 @@ pub(crate) enum UtilsError {
     BufferTooSmall,
 }
 
+#[derive(Debug, Clone)]
+pub(crate) struct Buffer<const CAP: usize> {
+    pub(crate) data: [u8; CAP],
+    pub(crate) offset: usize,
+}
+
+impl<const CAP: usize> Buffer<CAP> {
+    pub(crate) fn data(&self) -> &[u8] {
+        &self.data[..self.offset]
+    }
+
+    fn is_full(&self) -> bool {
+        self.offset == CAP
+    }
+
+    fn len(&self) -> usize {
+        self.offset
+    }
+
+    pub(crate) fn remaining_len(&self) -> usize {
+        CAP - self.len()
+    }
+
+    pub(crate) fn copy_from_slice(&mut self, data: &[u8]) -> Result<(), UtilsError> {
+        let data_size = data.len();
+        if self.remaining_len() < data_size {
+            Err(UtilsError::BufferTooSmall)
+        } else {
+            self.offset += data_size;
+            self.data[self.offset - data_size..self.offset].copy_from_slice(data);
+            Ok(())
+        }
+    }
+
+    pub(crate) fn encode_le_u16(&mut self, data: u16) -> Result<(), UtilsError> {
+        if self.remaining_len() < 2 {
+            Err(UtilsError::BufferTooSmall)
+        } else {
+            self.offset += 2;
+            encode_le_u16(&mut self.data[self.offset - 2..self.offset], data)?;
+            Ok(())
+        }
+    }
+
+    pub(crate) fn encode_le_u32(&mut self, data: u32) -> Result<(), UtilsError> {
+        if self.remaining_len() < 4 {
+            Err(UtilsError::BufferTooSmall)
+        } else {
+            self.offset += 4;
+            encode_le_u32(&mut self.data[self.offset - 4..self.offset], data)?;
+            Ok(())
+        }
+    }
+
+    pub(crate) fn encode_le_u128(&mut self, data: u128) -> Result<(), UtilsError> {
+        if self.remaining_len() < 16 {
+            Err(UtilsError::BufferTooSmall)
+        } else {
+            self.offset += 16;
+            encode_le_u128(&mut self.data[self.offset - 16..self.offset], data)?;
+            Ok(())
+        }
+    }
+
+    pub(crate) fn try_push(&mut self, data: u8) -> Result<(), UtilsError> {
+        if self.is_full() {
+            Err(UtilsError::BufferTooSmall)
+        } else {
+            self.data[self.offset] = data;
+            self.offset += 1;
+            Ok(())
+        }
+    }
+}
+
+impl<const CAP: usize> Default for Buffer<CAP> {
+    fn default() -> Self {
+        Self {
+            data: [0; CAP],
+            offset: 0,
+        }
+    }
+}
+
 pub(crate) fn decode_le_u64(buffer: [u8; 8]) -> u64 {
     ((buffer[7] as u64) << 56)
         | ((buffer[6] as u64) << 48)

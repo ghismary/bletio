@@ -6,6 +6,7 @@ use crate::hci::opcode::{
 };
 use crate::hci::HciError;
 use crate::hci::PacketType;
+use crate::utils::Buffer;
 use crate::Error;
 
 #[derive(Debug)]
@@ -46,23 +47,22 @@ impl Command<'_> {
             | Command::Reset => CommandPacket::new(self.opcode()),
             Command::LeSetAdvertiseEnable(enable) => {
                 let buffer = [*enable as u8];
-                CommandPacket::new(self.opcode()).append(buffer.as_slice())
+                CommandPacket::new(self.opcode()).append(buffer.as_slice())?
             }
             Command::LeSetAdvertisingData(data) => {
-                CommandPacket::new(self.opcode()).append(data.encoded_data())
+                CommandPacket::new(self.opcode()).append(data.encoded_data())?
             }
             Command::LeSetAdvertisingParameters(parameters) => {
-                let (buffer, len) = parameters.encode()?;
-                CommandPacket::new(self.opcode()).append(&buffer[..len])
+                CommandPacket::new(self.opcode()).append(parameters.encoded_data())?
             }
             Command::LeSetScanResponseData(data) => {
-                CommandPacket::new(self.opcode()).append(data.encoded_data())
+                CommandPacket::new(self.opcode()).append(data.encoded_data())?
             }
             Command::SetEventMask(event_mask) => CommandPacket::new(self.opcode()).append(
                 &event_mask
                     .encode()
-                    .map_err(|_| HciError::Internal("Command packet too small"))?,
-            ),
+                    .map_err(|_| HciError::DataWillNotFitCommandPacket)?,
+            )?,
         })
     }
 
@@ -92,35 +92,44 @@ impl Command<'_> {
     }
 }
 
+// Packet Type (1) + Opcode (2) + Parameter Total Length (1) + Up to 255 bytes of parameters
+const HCI_COMMAND_MAX_SIZE: usize = 259;
+
+const HCI_COMMAND_PACKET_TYPE_OFFSET: usize = 0;
+const HCI_COMMAND_PACKET_OPCODE_OFFSET: usize = 1;
+const HCI_COMMAND_PACKET_LENGTH_OFFSET: usize = 3;
+const HCI_COMMAND_PACKET_DATA_OFFSET: usize = 4;
+
 #[derive(Debug)]
 pub(crate) struct CommandPacket {
-    buffer: [u8; 259], // Packet Type (1) + Opcode (2) + Parameter Total Length (1) + Up to 255 bytes of parameters
-    len: usize,
+    buffer: Buffer<HCI_COMMAND_MAX_SIZE>,
 }
 
 impl CommandPacket {
     fn new(opcode: OpCode) -> Self {
-        let mut packet = Self {
-            buffer: [0; 259],
-            len: 4,
+        let mut buffer = Buffer {
+            data: [0; HCI_COMMAND_MAX_SIZE],
+            offset: HCI_COMMAND_PACKET_OPCODE_OFFSET,
         };
-        packet.buffer[0] = PacketType::Command as u8;
-        packet.buffer[1] = (opcode.value() & 0xff) as u8;
-        packet.buffer[2] = ((opcode.value() & 0xff00) >> 8) as u8;
-        packet
+        buffer.data[HCI_COMMAND_PACKET_TYPE_OFFSET] = PacketType::Command as u8;
+        // INVARIANT: The buffer space is known to be enough.
+        buffer.encode_le_u16(opcode.value()).unwrap();
+        buffer.offset = HCI_COMMAND_PACKET_DATA_OFFSET;
+        Self { buffer }
     }
 
-    #[must_use]
-    pub(crate) fn append(self, data: &[u8]) -> Self {
+    pub(crate) fn append(self, data: &[u8]) -> Result<Self, HciError> {
         let mut packet = self;
         let data_len = data.len();
-        packet.buffer[3] += data_len as u8;
-        packet.buffer[packet.len..packet.len + data_len].copy_from_slice(data);
-        packet.len += data_len;
+        packet.buffer.data[HCI_COMMAND_PACKET_LENGTH_OFFSET] += data_len as u8;
         packet
+            .buffer
+            .copy_from_slice(data)
+            .map_err(|_| HciError::DataWillNotFitCommandPacket)?;
+        Ok(packet)
     }
 
     pub(crate) fn data(&self) -> &[u8] {
-        &self.buffer[0..self.len]
+        self.buffer.data()
     }
 }

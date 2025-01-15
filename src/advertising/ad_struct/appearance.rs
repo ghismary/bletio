@@ -1,9 +1,6 @@
-use crate::advertising::ad_struct::{
-    AdStruct, AdStructType, AD_STRUCT_DATA_OFFSET, AD_STRUCT_LENGTH_OFFSET, AD_STRUCT_TYPE_OFFSET,
-};
+use crate::advertising::ad_struct::{AdStruct, AdStructBuffer, AdStructType};
 
 use crate::assigned_numbers::{AdType, AppearanceValue};
-use crate::utils::encode_le_u16;
 
 const APPEARANCE_AD_STRUCT_SIZE: usize = 4;
 
@@ -15,7 +12,7 @@ const APPEARANCE_AD_STRUCT_SIZE: usize = 4;
 /// [Core Specification 6.0, Vol. 3, Part C, 12.2](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/generic-access-profile.html#UUID-ec0b9e4b-8d14-7280-a0ae-68c61f6f00eb).
 #[derive(Debug, Clone)]
 pub struct AppearanceAdStruct {
-    buffer: [u8; APPEARANCE_AD_STRUCT_SIZE],
+    buffer: AdStructBuffer<APPEARANCE_AD_STRUCT_SIZE>,
 }
 
 impl AppearanceAdStruct {
@@ -34,19 +31,17 @@ impl AppearanceAdStruct {
     /// ```
     pub fn new(appearance: AppearanceValue) -> Self {
         let mut s = Self {
-            buffer: Default::default(),
+            buffer: AdStructBuffer::new(AdType::Appearance),
         };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = (APPEARANCE_AD_STRUCT_SIZE - 1) as u8;
-        s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::Appearance as u8;
         // INVARIANT: The buffer space is known to be enough.
-        encode_le_u16(&mut s.buffer[AD_STRUCT_DATA_OFFSET..], appearance as u16).unwrap();
+        s.buffer.encode_le_u16(appearance as u16).unwrap();
         s
     }
 }
 
 impl AdStruct for AppearanceAdStruct {
     fn encoded_data(&self) -> &[u8] {
-        &self.buffer
+        self.buffer.data()
     }
     fn r#type(&self) -> AdStructType {
         AdStructType::APPEARANCE

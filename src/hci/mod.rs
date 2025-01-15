@@ -17,12 +17,12 @@ pub enum HciError {
     /// HCI access is denied.
     #[error("HCI access is denied")]
     AccessDenied,
+    /// The provided data is too big to fit in an HCI command packet.
+    #[error("The provided data is too big to fit in an HCI command packet")]
+    DataWillNotFitCommandPacket,
     /// HCI error code.
     #[error("HCI error code {0:?}")]
     ErrorCode(HciErrorCode), // TODO: Should it be exposed to the user?
-    /// Internal error.
-    #[error("HCI internal error: {0}")]
-    Internal(&'static str),
     /// Invalid or unhandled HCI error code.
     #[error("Invalid HCI error code {0}")]
     InvalidErrorCode(u8),

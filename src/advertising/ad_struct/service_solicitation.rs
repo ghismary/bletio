@@ -1,10 +1,7 @@
-use crate::advertising::ad_struct::{
-    AdStruct, AdStructType, AD_STRUCT_DATA_OFFSET, AD_STRUCT_LENGTH_OFFSET, AD_STRUCT_TYPE_OFFSET,
-};
+use crate::advertising::ad_struct::{AdStruct, AdStructBuffer, AdStructType};
 use crate::advertising::advertising_data::ADVERTISING_DATA_MAX_SIZE;
 use crate::advertising::AdvertisingError;
 use crate::assigned_numbers::{AdType, ServiceUuid};
-use crate::utils::{encode_le_u128, encode_le_u16, encode_le_u32};
 use crate::uuid::{Uuid128, Uuid32};
 use crate::Error;
 
@@ -18,8 +15,7 @@ use crate::Error;
 /// See [Supplement to the Bluetooth Core Specification, Part A, 1.10](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-302574d9-585b-209a-c32f-c5b6278f3377).
 #[derive(Debug, Clone)]
 pub struct ServiceSolicitationUuid16AdStruct {
-    buffer: [u8; ADVERTISING_DATA_MAX_SIZE],
-    offset: usize,
+    buffer: AdStructBuffer<ADVERTISING_DATA_MAX_SIZE>,
 }
 
 impl ServiceSolicitationUuid16AdStruct {
@@ -42,15 +38,10 @@ impl ServiceSolicitationUuid16AdStruct {
     /// # }
     /// ```
     pub fn try_new(uuids: &[ServiceUuid]) -> Result<Self, Error> {
-        let uuids_size = uuids.len() * 2;
-        let mut s = Self {
-            offset: AD_STRUCT_DATA_OFFSET,
-            buffer: Default::default(),
-        };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1 + uuids_size as u8;
-        s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::ListOfSolicitationServiceUuid16 as u8;
+        let mut s = Self::default();
         for uuid in uuids {
-            s.offset += encode_le_u16(&mut s.buffer[s.offset..], *uuid as u16)
+            s.buffer
+                .encode_le_u16(*uuid as u16)
                 .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
         }
         Ok(s)
@@ -58,30 +49,26 @@ impl ServiceSolicitationUuid16AdStruct {
 
     #[cfg(test)]
     fn is_empty(&self) -> bool {
-        self.offset == AD_STRUCT_DATA_OFFSET
+        self.buffer.is_empty()
     }
 
     #[cfg(test)]
     fn len(&self) -> usize {
-        (self.offset - AD_STRUCT_DATA_OFFSET) / 2
+        self.buffer.len() / 2
     }
 }
 
 impl Default for ServiceSolicitationUuid16AdStruct {
     fn default() -> Self {
-        let mut s = Self {
-            offset: AD_STRUCT_DATA_OFFSET,
-            buffer: Default::default(),
-        };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1;
-        s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::ListOfSolicitationServiceUuid16 as u8;
-        s
+        Self {
+            buffer: AdStructBuffer::new(AdType::ListOfSolicitationServiceUuid16),
+        }
     }
 }
 
 impl AdStruct for ServiceSolicitationUuid16AdStruct {
     fn encoded_data(&self) -> &[u8] {
-        &self.buffer[..self.offset]
+        self.buffer.data()
     }
     fn r#type(&self) -> AdStructType {
         AdStructType::SERVICE_SOLICITATION_UUID16
@@ -102,8 +89,7 @@ impl AdStruct for ServiceSolicitationUuid16AdStruct {
 /// See [Supplement to the Bluetooth Core Specification, Part A, 1.10](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-302574d9-585b-209a-c32f-c5b6278f3377).
 #[derive(Debug, Clone)]
 pub struct ServiceSolicitationUuid32AdStruct {
-    buffer: [u8; ADVERTISING_DATA_MAX_SIZE],
-    offset: usize,
+    buffer: AdStructBuffer<ADVERTISING_DATA_MAX_SIZE>,
 }
 
 impl ServiceSolicitationUuid32AdStruct {
@@ -125,16 +111,10 @@ impl ServiceSolicitationUuid32AdStruct {
     /// # Ok(())
     /// # }
     pub fn try_new(uuids: &[impl Into<Uuid32> + Copy]) -> Result<Self, Error> {
-        let uuids_size = uuids.len() * 4;
-        let mut s = Self {
-            offset: AD_STRUCT_DATA_OFFSET,
-            buffer: Default::default(),
-        };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1 + uuids_size as u8;
-        s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::ListOfSolicitationServiceUuid32 as u8;
+        let mut s = Self::default();
         for uuid in uuids {
-            let uuid = (*uuid).into();
-            s.offset += encode_le_u32(&mut s.buffer[s.offset..], uuid.0)
+            s.buffer
+                .encode_le_u32((*uuid).into().0)
                 .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
         }
         Ok(s)
@@ -142,30 +122,26 @@ impl ServiceSolicitationUuid32AdStruct {
 
     #[cfg(test)]
     fn is_empty(&self) -> bool {
-        self.offset == AD_STRUCT_DATA_OFFSET
+        self.buffer.is_empty()
     }
 
     #[cfg(test)]
     fn len(&self) -> usize {
-        (self.offset - AD_STRUCT_DATA_OFFSET) / 4
+        self.buffer.len() / 4
     }
 }
 
 impl Default for ServiceSolicitationUuid32AdStruct {
     fn default() -> Self {
-        let mut s = Self {
-            offset: AD_STRUCT_DATA_OFFSET,
-            buffer: Default::default(),
-        };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1;
-        s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::ListOfSolicitationServiceUuid32 as u8;
-        s
+        Self {
+            buffer: AdStructBuffer::new(AdType::ListOfSolicitationServiceUuid32),
+        }
     }
 }
 
 impl AdStruct for ServiceSolicitationUuid32AdStruct {
     fn encoded_data(&self) -> &[u8] {
-        &self.buffer[..self.offset]
+        self.buffer.data()
     }
     fn r#type(&self) -> AdStructType {
         AdStructType::SERVICE_SOLICITATION_UUID32
@@ -186,8 +162,7 @@ impl AdStruct for ServiceSolicitationUuid32AdStruct {
 /// See [Supplement to the Bluetooth Core Specification, Part A, 1.10](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-302574d9-585b-209a-c32f-c5b6278f3377).
 #[derive(Debug, Clone)]
 pub struct ServiceSolicitationUuid128AdStruct {
-    buffer: [u8; ADVERTISING_DATA_MAX_SIZE],
-    offset: usize,
+    buffer: AdStructBuffer<ADVERTISING_DATA_MAX_SIZE>,
 }
 
 impl ServiceSolicitationUuid128AdStruct {
@@ -209,16 +184,10 @@ impl ServiceSolicitationUuid128AdStruct {
     /// # Ok(())
     /// # }
     pub fn try_new(uuids: &[impl Into<Uuid128> + Copy]) -> Result<Self, Error> {
-        let uuids_size = uuids.len() * 16;
-        let mut s = Self {
-            offset: AD_STRUCT_DATA_OFFSET,
-            buffer: Default::default(),
-        };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1 + uuids_size as u8;
-        s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::ListOfSolicitationServiceUuid128 as u8;
+        let mut s = Self::default();
         for uuid in uuids {
-            let uuid = (*uuid).into();
-            s.offset += encode_le_u128(&mut s.buffer[s.offset..], uuid.0)
+            s.buffer
+                .encode_le_u128((*uuid).into().0)
                 .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
         }
         Ok(s)
@@ -226,30 +195,26 @@ impl ServiceSolicitationUuid128AdStruct {
 
     #[cfg(test)]
     fn is_empty(&self) -> bool {
-        self.offset == AD_STRUCT_DATA_OFFSET
+        self.buffer.is_empty()
     }
 
     #[cfg(test)]
     fn len(&self) -> usize {
-        (self.offset - AD_STRUCT_DATA_OFFSET) / 16
+        self.buffer.len() / 16
     }
 }
 
 impl Default for ServiceSolicitationUuid128AdStruct {
     fn default() -> Self {
-        let mut s = Self {
-            offset: AD_STRUCT_DATA_OFFSET,
-            buffer: Default::default(),
-        };
-        s.buffer[AD_STRUCT_LENGTH_OFFSET] = 1;
-        s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::ListOfSolicitationServiceUuid128 as u8;
-        s
+        Self {
+            buffer: AdStructBuffer::new(AdType::ListOfSolicitationServiceUuid128),
+        }
     }
 }
 
 impl AdStruct for ServiceSolicitationUuid128AdStruct {
     fn encoded_data(&self) -> &[u8] {
-        &self.buffer[..self.offset]
+        self.buffer.data()
     }
     fn r#type(&self) -> AdStructType {
         AdStructType::SERVICE_SOLICITATION_UUID128

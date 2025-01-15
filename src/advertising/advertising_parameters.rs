@@ -25,10 +25,9 @@
 use bitflags::bitflags;
 use core::ops::RangeInclusive;
 
-use crate::utils::encode_le_u16;
+use crate::advertising::AdvertisingError;
+use crate::utils::Buffer;
 use crate::Error;
-
-use super::AdvertisingError;
 
 /// Advertising interval value.
 ///
@@ -200,9 +199,15 @@ pub enum AdvertisingFilterPolicy {
 }
 
 /// Builder to create [`AdvertisingParameters`].
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct AdvertisingParametersBuilder {
-    obj: AdvertisingParameters,
+    interval: RangeInclusive<AdvertisingIntervalValue>,
+    r#type: AdvertisingType,
+    own_address_type: OwnAddressType,
+    peer_address_type: PeerAddressType,
+    peer_address: PeerAddress,
+    channel_map: AdvertisingChannelMap,
+    filter_policy: AdvertisingFilterPolicy,
 }
 
 impl AdvertisingParametersBuilder {
@@ -213,8 +218,32 @@ impl AdvertisingParametersBuilder {
 
     /// Try building the [`AdvertisingParameters`], checking that every set parameters are valid.
     pub fn try_build(self) -> Result<AdvertisingParameters, Error> {
-        if self.obj.is_valid() {
-            Ok(self.obj)
+        if self.is_valid() {
+            let mut params = AdvertisingParameters {
+                buffer: Buffer::default(),
+            };
+            // INVARIANT: The buffer is known to be able to fit all these data.
+            params
+                .buffer
+                .encode_le_u16(self.interval.start().value)
+                .unwrap();
+            params
+                .buffer
+                .encode_le_u16(self.interval.end().value)
+                .unwrap();
+            params.buffer.try_push(self.r#type as u8).unwrap();
+            params.buffer.try_push(self.own_address_type as u8).unwrap();
+            params
+                .buffer
+                .try_push(self.peer_address_type as u8)
+                .unwrap();
+            params
+                .buffer
+                .copy_from_slice(self.peer_address.value.as_slice())
+                .unwrap();
+            params.buffer.try_push(self.channel_map.bits()).unwrap();
+            params.buffer.try_push(self.filter_policy as u8).unwrap();
+            Ok(params)
         } else {
             Err(AdvertisingError::InvalidAdvertisingParameters)?
         }
@@ -222,76 +251,44 @@ impl AdvertisingParametersBuilder {
 
     /// Define the advertising interval.
     pub fn with_interval(mut self, interval: RangeInclusive<AdvertisingIntervalValue>) -> Self {
-        self.obj.interval = interval;
+        self.interval = interval;
         self
     }
 
     /// Define the advertising type.
     pub fn with_type(mut self, r#type: AdvertisingType) -> Self {
-        self.obj.r#type = r#type;
+        self.r#type = r#type;
         self
     }
 
     /// Define our own address type.
     pub fn with_own_address_type(mut self, own_address_type: OwnAddressType) -> Self {
-        self.obj.own_address_type = own_address_type;
+        self.own_address_type = own_address_type;
         self
     }
 
     /// Define the peer address type.
     pub fn with_peer_address_type(mut self, peer_address_type: PeerAddressType) -> Self {
-        self.obj.peer_address_type = peer_address_type;
+        self.peer_address_type = peer_address_type;
         self
     }
 
     /// Define the peer address.
     pub fn with_peer_address(mut self, peer_address: PeerAddress) -> Self {
-        self.obj.peer_address = peer_address;
+        self.peer_address = peer_address;
         self
     }
 
     /// Define the advertising channels to be used.
     pub fn with_channel_map(mut self, channel_map: AdvertisingChannelMap) -> Self {
-        self.obj.channel_map = channel_map;
+        self.channel_map = channel_map;
         self
     }
 
     /// Defined the advertising filter policy.
     pub fn with_filter_policy(mut self, filter_policy: AdvertisingFilterPolicy) -> Self {
-        self.obj.filter_policy = filter_policy;
+        self.filter_policy = filter_policy;
         self
-    }
-}
-
-/// Advertising parameters to be set before starting advertising.
-///
-/// It contains this information:
-///  - the advertising interval
-///  - the advertising type
-///  - our own address type
-///  - the peer address type
-///  - the peer address
-///  - the advertising channel map
-///  - the advertising filter policy
-///
-/// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
-///
-/// Use the [`AdvertisingParametersBuilder`] to instantiate it.
-#[derive(Debug, Clone)]
-pub struct AdvertisingParameters {
-    interval: RangeInclusive<AdvertisingIntervalValue>,
-    r#type: AdvertisingType,
-    own_address_type: OwnAddressType,
-    peer_address_type: PeerAddressType,
-    peer_address: PeerAddress,
-    channel_map: AdvertisingChannelMap,
-    filter_policy: AdvertisingFilterPolicy,
-}
-
-impl AdvertisingParameters {
-    /// Instantiate a builder to create Advertising Parameters.
-    pub fn builder() -> AdvertisingParametersBuilder {
-        AdvertisingParametersBuilder::new()
     }
 
     fn is_valid(&self) -> bool {
@@ -311,31 +308,9 @@ impl AdvertisingParameters {
                 _ => true,
             }
     }
-
-    pub(crate) fn encode(&self) -> Result<([u8; 15], usize), Error> {
-        let mut buffer = [0u8; 15];
-        let mut offset = 0;
-        offset += encode_le_u16(&mut buffer[offset..], self.interval.start().value)
-            .map_err(|_| AdvertisingError::Internal("Advertising parameters buffer too small"))?;
-        offset += encode_le_u16(&mut buffer[offset..], self.interval.end().value)
-            .map_err(|_| AdvertisingError::Internal("Advertising parameters buffer too small"))?;
-        buffer[offset] = self.r#type as u8;
-        offset += 1;
-        buffer[offset] = self.own_address_type as u8;
-        offset += 1;
-        buffer[offset] = self.peer_address_type as u8;
-        offset += 1;
-        buffer[offset..offset + 6].copy_from_slice(self.peer_address.value.as_slice());
-        offset += 6;
-        buffer[offset] = self.channel_map.bits();
-        offset += 1;
-        buffer[offset] = self.filter_policy as u8;
-        offset += 1;
-        Ok((buffer, offset))
-    }
 }
 
-impl Default for AdvertisingParameters {
+impl Default for AdvertisingParametersBuilder {
     fn default() -> Self {
         Self {
             interval: (AdvertisingIntervalValue::default()..=AdvertisingIntervalValue::default()),
@@ -349,6 +324,45 @@ impl Default for AdvertisingParameters {
     }
 }
 
+const ADVERTISING_PARAMETERS_SIZE: usize = 15;
+
+/// Advertising parameters to be set before starting advertising.
+///
+/// It contains this information:
+///  - the advertising interval
+///  - the advertising type
+///  - our own address type
+///  - the peer address type
+///  - the peer address
+///  - the advertising channel map
+///  - the advertising filter policy
+///
+/// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
+///
+/// Use the [`AdvertisingParametersBuilder`] to instantiate it.
+#[derive(Debug, Clone)]
+pub struct AdvertisingParameters {
+    buffer: Buffer<ADVERTISING_PARAMETERS_SIZE>,
+}
+
+impl AdvertisingParameters {
+    /// Instantiate a builder to create Advertising Parameters.
+    pub fn builder() -> AdvertisingParametersBuilder {
+        AdvertisingParametersBuilder::new()
+    }
+
+    pub(crate) fn encoded_data(&self) -> &[u8] {
+        self.buffer.data()
+    }
+}
+
+impl Default for AdvertisingParameters {
+    fn default() -> Self {
+        // INVARIANT: The default builder values are known to be valid.
+        AdvertisingParametersBuilder::default().try_build().unwrap()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -357,14 +371,11 @@ mod test {
     fn test_default_advertising_parameters() -> Result<(), Error> {
         let adv_params = AdvertisingParameters::default();
         assert_eq!(
-            adv_params.encode()?,
-            (
-                [
-                    0x00, 0x08, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                    0x07, 0x00
-                ],
-                15
-            )
+            adv_params.encoded_data(),
+            &[
+                0x00, 0x08, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07,
+                0x00
+            ],
         );
 
         Ok(())
@@ -380,14 +391,11 @@ mod test {
             .with_filter_policy(AdvertisingFilterPolicy::ScanAllAndConnectionFilterAcceptList)
             .try_build()?;
         assert_eq!(
-            adv_params.encode()?,
-            (
-                [
-                    0x00, 0x01, 0x20, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                    0x05, 0x02
-                ],
-                15
-            )
+            adv_params.encoded_data(),
+            &[
+                0x00, 0x01, 0x20, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05,
+                0x02
+            ],
         );
 
         Ok(())
