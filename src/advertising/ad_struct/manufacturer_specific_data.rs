@@ -54,8 +54,8 @@ impl ManufacturerSpecificDataAdStruct {
         };
         s.buffer[AD_STRUCT_LENGTH_OFFSET] = 3 + data_size as u8;
         s.buffer[AD_STRUCT_TYPE_OFFSET] = AdType::ManufacturerSpecificData as u8;
-        encode_le_u16(&mut s.buffer[s.offset..], manufacturer as u16)
-            .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
+        // INVARIANT: The buffer space is known to be enough.
+        encode_le_u16(&mut s.buffer[s.offset..], manufacturer as u16).unwrap();
         s.offset += 2;
         s.buffer[s.offset..s.offset + data_size].copy_from_slice(data);
         s.offset += data_size;

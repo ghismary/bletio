@@ -311,6 +311,12 @@ mod test {
 
     #[test]
     fn test_service_uuid16_ad_struct_creation_success() -> Result<(), Error> {
+        let value = ServiceUuid16AdStruct::default();
+        assert_eq!(value.len(), 0);
+        assert_eq!(value.encoded_data(), &[0x01, 0x03]);
+        assert!(value.r#type().contains(AdStructType::SERVICE_UUID16));
+        assert!(value.is_unique());
+
         let value = ServiceUuid16AdStruct::try_new(
             [
                 ServiceUuid::LinkLoss,
@@ -397,6 +403,12 @@ mod test {
 
     #[test]
     fn test_service_uuid32_ad_struct_creation_success() -> Result<(), Error> {
+        let value = ServiceUuid32AdStruct::default();
+        assert_eq!(value.len(), 0);
+        assert_eq!(value.encoded_data(), &[0x01, 0x05]);
+        assert!(value.r#type().contains(AdStructType::SERVICE_UUID32));
+        assert!(value.is_unique());
+
         let value = ServiceUuid32AdStruct::try_new(
             [
                 Uuid32(0x0000_1803),
@@ -477,6 +489,12 @@ mod test {
 
     #[test]
     fn test_service_uuid128_ad_struct_creation_success() -> Result<(), Error> {
+        let value = ServiceUuid128AdStruct::default();
+        assert_eq!(value.len(), 0);
+        assert_eq!(value.encoded_data(), &[0x01, 0x07]);
+        assert!(value.r#type().contains(AdStructType::SERVICE_UUID128));
+        assert!(value.is_unique());
+
         let value = ServiceUuid128AdStruct::try_new(
             [Uuid128(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640)].as_slice(),
             ServiceListComplete::Incomplete,
