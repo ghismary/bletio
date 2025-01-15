@@ -266,6 +266,14 @@ mod test {
 
     #[test]
     fn test_service_solicitation_uuid16_ad_struct_creation_success() -> Result<(), Error> {
+        let value = ServiceSolicitationUuid16AdStruct::default();
+        assert_eq!(value.len(), 0);
+        assert_eq!(value.encoded_data(), &[0x01, 0x14]);
+        assert!(value
+            .r#type()
+            .contains(AdStructType::SERVICE_SOLICITATION_UUID16));
+        assert!(!value.is_unique());
+
         let value = ServiceSolicitationUuid16AdStruct::try_new(
             [ServiceUuid::LinkLoss, ServiceUuid::Battery].as_slice(),
         )?;
@@ -336,6 +344,14 @@ mod test {
 
     #[test]
     fn test_service_solicitation_uuid32_ad_struct_creation_success() -> Result<(), Error> {
+        let value = ServiceSolicitationUuid32AdStruct::default();
+        assert_eq!(value.len(), 0);
+        assert_eq!(value.encoded_data(), &[0x01, 0x1F]);
+        assert!(value
+            .r#type()
+            .contains(AdStructType::SERVICE_SOLICITATION_UUID32));
+        assert!(!value.is_unique());
+
         let value = ServiceSolicitationUuid32AdStruct::try_new(
             [Uuid32(0x0000_1803), Uuid32(0x0000_180F)].as_slice(),
         )?;
@@ -398,6 +414,14 @@ mod test {
 
     #[test]
     fn test_service_solicitation_uuid128_ad_struct_creation_success() -> Result<(), Error> {
+        let value = ServiceSolicitationUuid128AdStruct::default();
+        assert_eq!(value.len(), 0);
+        assert_eq!(value.encoded_data(), &[0x01, 0x15]);
+        assert!(value
+            .r#type()
+            .contains(AdStructType::SERVICE_SOLICITATION_UUID128));
+        assert!(!value.is_unique());
+
         let value = ServiceSolicitationUuid128AdStruct::try_new(
             [Uuid128(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640)].as_slice(),
         )?;

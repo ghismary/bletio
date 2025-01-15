@@ -90,15 +90,7 @@ impl PartialOrd for ConnectionIntervalValueType {
                 ConnectionIntervalValueType::Defined(v1),
                 ConnectionIntervalValueType::Defined(v2),
             ) => v1.partial_cmp(v2),
-            (ConnectionIntervalValueType::Undefined, ConnectionIntervalValueType::Defined(_)) => {
-                Some(core::cmp::Ordering::Less)
-            }
-            (ConnectionIntervalValueType::Defined(_), ConnectionIntervalValueType::Undefined) => {
-                Some(core::cmp::Ordering::Greater)
-            }
-            (ConnectionIntervalValueType::Undefined, ConnectionIntervalValueType::Undefined) => {
-                None
-            }
+            _ => Some(core::cmp::Ordering::Less),
         }
     }
 }
@@ -106,31 +98,37 @@ impl PartialOrd for ConnectionIntervalValueType {
 #[cfg(test)]
 mod test {
     use super::*;
+    use approx::assert_relative_eq;
+    use claim::{assert_ge, assert_le};
 
     #[test]
     fn test_connection_interval_value_creation_success() -> Result<(), Error> {
         let value: ConnectionIntervalValue = 0x0006.try_into()?;
         let u16_value: u16 = value.into();
         assert_eq!(u16_value, 0x0006);
+        assert_relative_eq!(value.milliseconds().unwrap(), 7.5f32, epsilon = 1.0e-6);
 
-        let value: ConnectionIntervalValue = 0x0C80.try_into()?;
+        let value = ConnectionIntervalValue::try_new(0x0C80)?;
         let u16_value: u16 = value.into();
         assert_eq!(u16_value, 0x0C80);
+        assert_relative_eq!(value.milliseconds().unwrap(), 4000f32, epsilon = 1.0e-6);
 
         let value = ConnectionIntervalValue::undefined();
         let u16_value: u16 = value.into();
         assert_eq!(u16_value, 0xFFFF);
+        assert!(value.milliseconds().is_none());
 
         let value = ConnectionIntervalValue::default();
         let u16_value: u16 = value.into();
         assert_eq!(u16_value, 0xFFFF);
+        assert!(value.milliseconds().is_none());
 
         Ok(())
     }
 
     #[test]
     fn test_connection_interval_value_creation_failure() {
-        let result: Result<ConnectionIntervalValue, Error> = 0x0000.try_into();
+        let result = ConnectionIntervalValue::try_new(0x0000);
         let err = result.expect_err("Invalid connection interval value");
         assert!(matches!(err, Error::InvalidConnectionIntervalValue(0x0000)));
 
@@ -138,12 +136,37 @@ mod test {
         let err = result.expect_err("Invalid connection interval value");
         assert!(matches!(err, Error::InvalidConnectionIntervalValue(0x0005)));
 
-        let result: Result<ConnectionIntervalValue, Error> = 0x0C81.try_into();
+        let result = ConnectionIntervalValue::try_new(0x0C81);
         let err = result.expect_err("Invalid connection interval value");
         assert!(matches!(err, Error::InvalidConnectionIntervalValue(0x0C81)));
 
         let result: Result<ConnectionIntervalValue, Error> = 0xFFFF.try_into();
         let err = result.expect_err("Invalid connection interval value");
         assert!(matches!(err, Error::InvalidConnectionIntervalValue(0xFFFF)));
+    }
+
+    #[test]
+    fn test_connection_interval_value_comparison() -> Result<(), Error> {
+        let value1: ConnectionIntervalValue = 0x0020.try_into()?;
+        let value2 = ConnectionIntervalValue::try_new(0x0020)?;
+        assert_eq!(value1, value2);
+
+        let value1 = ConnectionIntervalValue::undefined();
+        let value2 = ConnectionIntervalValue::undefined();
+        assert_ne!(value1, value2);
+        assert_le!(value1, value2);
+        assert_le!(value2, value1);
+
+        let value1: ConnectionIntervalValue = 0x0006.try_into()?;
+        let value2 = ConnectionIntervalValue::try_new(0x0C80)?;
+        assert_le!(value1, value2);
+        assert_ge!(value2, value1);
+
+        let value1 = ConnectionIntervalValue::undefined();
+        let value2 = ConnectionIntervalValue::try_new(0x0100)?;
+        assert_le!(value1, value2);
+        assert_le!(value2, value1);
+
+        Ok(())
     }
 }
