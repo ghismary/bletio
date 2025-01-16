@@ -17,7 +17,7 @@ thiserror = { version = "2.0.11", default-features = false }
 
 [dev-dependencies]
 approx = "0.5.1"
-claim = "0.5.0"
+claims = "0.8.0"
 
 [build-dependencies]
 convert_case = "0.6.0"
