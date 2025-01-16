@@ -99,7 +99,7 @@ impl PartialOrd for ConnectionIntervalValueType {
 mod test {
     use super::*;
     use approx::assert_relative_eq;
-    use claim::{assert_ge, assert_le};
+    use claims::{assert_ge, assert_le};
 
     #[test]
     fn test_connection_interval_value_creation_success() -> Result<(), Error> {
