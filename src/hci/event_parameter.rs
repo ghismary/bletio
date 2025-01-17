@@ -32,7 +32,7 @@ pub(crate) struct LmpFeaturesEventParameter {
 impl From<u64> for LmpFeaturesEventParameter {
     fn from(value: u64) -> Self {
         LmpFeaturesEventParameter {
-            value: value.into(),
+            value: SupportedFeatures::from_bits_retain(value),
         }
     }
 }
@@ -62,7 +62,7 @@ pub(crate) struct LeFeaturesEventParameter {
 impl From<u64> for LeFeaturesEventParameter {
     fn from(value: u64) -> Self {
         LeFeaturesEventParameter {
-            value: value.into(),
+            value: SupportedLeFeatures::from_bits_retain(value),
         }
     }
 }

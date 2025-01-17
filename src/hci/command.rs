@@ -16,7 +16,7 @@ pub(crate) enum Command<'a> {
     // LeEncrypt(Key, Data),
     // LeRand,
     LeReadBufferSize,
-    LeReadLocalSupportedFeatures,
+    LeReadLocalSupportedFeaturesPage0,
     LeReadSupportedStates,
     // LeReadWhiteListSize,
     // LeRemoveDeviceFromWhiteList(AddressType, Address),
@@ -39,7 +39,7 @@ impl Command<'_> {
     pub(crate) fn encode(&self) -> Result<CommandPacket, Error> {
         Ok(match self {
             Command::LeReadBufferSize
-            | Command::LeReadLocalSupportedFeatures
+            | Command::LeReadLocalSupportedFeaturesPage0
             | Command::LeReadSupportedStates
             | Command::ReadBufferSize
             | Command::ReadLocalSupportedCommands
@@ -69,7 +69,7 @@ impl Command<'_> {
     pub(crate) fn opcode(&self) -> OpCode {
         match self {
             Command::LeReadBufferSize => OcfLeController::LeReadBufferSize.into(),
-            Command::LeReadLocalSupportedFeatures => {
+            Command::LeReadLocalSupportedFeaturesPage0 => {
                 OcfLeController::LeReadLocalSupportedFeatures.into()
             }
             Command::LeReadSupportedStates => OcfLeController::LeReadSupportedStates.into(),

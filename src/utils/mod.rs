@@ -1,91 +1,13 @@
+mod bit_flags_array;
+mod buffer;
+
+pub(crate) use bit_flags_array::{bitflags_array, BitFlagsArray};
+pub(crate) use buffer::Buffer;
+
 #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum UtilsError {
     #[error("Buffer too small")]
     BufferTooSmall,
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct Buffer<const CAP: usize> {
-    pub(crate) data: [u8; CAP],
-    pub(crate) offset: usize,
-}
-
-impl<const CAP: usize> Buffer<CAP> {
-    pub(crate) fn data(&self) -> &[u8] {
-        &self.data[..self.offset]
-    }
-
-    fn is_full(&self) -> bool {
-        self.offset == CAP
-    }
-
-    fn len(&self) -> usize {
-        self.offset
-    }
-
-    pub(crate) fn remaining_len(&self) -> usize {
-        CAP - self.len()
-    }
-
-    pub(crate) fn copy_from_slice(&mut self, data: &[u8]) -> Result<(), UtilsError> {
-        let data_size = data.len();
-        if self.remaining_len() < data_size {
-            Err(UtilsError::BufferTooSmall)
-        } else {
-            self.offset += data_size;
-            self.data[self.offset - data_size..self.offset].copy_from_slice(data);
-            Ok(())
-        }
-    }
-
-    pub(crate) fn encode_le_u16(&mut self, data: u16) -> Result<(), UtilsError> {
-        if self.remaining_len() < 2 {
-            Err(UtilsError::BufferTooSmall)
-        } else {
-            self.offset += 2;
-            encode_le_u16(&mut self.data[self.offset - 2..self.offset], data)?;
-            Ok(())
-        }
-    }
-
-    pub(crate) fn encode_le_u32(&mut self, data: u32) -> Result<(), UtilsError> {
-        if self.remaining_len() < 4 {
-            Err(UtilsError::BufferTooSmall)
-        } else {
-            self.offset += 4;
-            encode_le_u32(&mut self.data[self.offset - 4..self.offset], data)?;
-            Ok(())
-        }
-    }
-
-    pub(crate) fn encode_le_u128(&mut self, data: u128) -> Result<(), UtilsError> {
-        if self.remaining_len() < 16 {
-            Err(UtilsError::BufferTooSmall)
-        } else {
-            self.offset += 16;
-            encode_le_u128(&mut self.data[self.offset - 16..self.offset], data)?;
-            Ok(())
-        }
-    }
-
-    pub(crate) fn try_push(&mut self, data: u8) -> Result<(), UtilsError> {
-        if self.is_full() {
-            Err(UtilsError::BufferTooSmall)
-        } else {
-            self.data[self.offset] = data;
-            self.offset += 1;
-            Ok(())
-        }
-    }
-}
-
-impl<const CAP: usize> Default for Buffer<CAP> {
-    fn default() -> Self {
-        Self {
-            data: [0; CAP],
-            offset: 0,
-        }
-    }
 }
 
 pub(crate) fn decode_le_u64(buffer: [u8; 8]) -> u64 {
@@ -184,12 +106,68 @@ mod test {
     }
 
     #[test]
-    fn test_encode_le_u64() {
+    fn test_encode_le_u128_success() {
+        let mut buffer = [0; 16];
+        assert!(encode_le_u128(&mut buffer[..], 21345817372864405881847059188222722561).is_ok());
+        assert_eq!(
+            [
+                0x01u8, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D,
+                0x0E, 0x0F, 0x10
+            ],
+            buffer,
+        );
+    }
+
+    #[test]
+    fn test_encode_le_u128_failure() {
+        let mut buffer = [0; 5];
+        let err = encode_le_u128(&mut buffer[..], 21345817372864405881847059188222722561)
+            .expect_err("Buffer too small");
+        assert!(matches!(err, UtilsError::BufferTooSmall));
+    }
+
+    #[test]
+    fn test_encode_le_u64_success() {
         let mut buffer = [0; 8];
         assert!(encode_le_u64(&mut buffer[..], 578437695752307201).is_ok());
         assert_eq!(
             [0x01u8, 0x02u8, 0x03u8, 0x04u8, 0x05u8, 0x06u8, 0x07u8, 0x08u8],
             buffer,
         );
+    }
+
+    #[test]
+    fn test_encode_le_u64_failure() {
+        let mut buffer = [0; 4];
+        let err = encode_le_u64(&mut buffer[..], 578437695752307201).expect_err("Buffer too small");
+        assert!(matches!(err, UtilsError::BufferTooSmall));
+    }
+
+    #[test]
+    fn test_encode_le_u32_success() {
+        let mut buffer = [0; 4];
+        assert!(encode_le_u32(&mut buffer[..], 67305985).is_ok());
+        assert_eq!([0x01u8, 0x02u8, 0x03u8, 0x04u8], buffer,);
+    }
+
+    #[test]
+    fn test_encode_le_u32_failure() {
+        let mut buffer = [0; 3];
+        let err = encode_le_u32(&mut buffer[..], 67305985).expect_err("Buffer too small");
+        assert!(matches!(err, UtilsError::BufferTooSmall));
+    }
+
+    #[test]
+    fn test_encode_le_u16_success() {
+        let mut buffer = [0; 2];
+        assert!(encode_le_u16(&mut buffer[..], 513).is_ok());
+        assert_eq!([0x01u8, 0x02u8], buffer);
+    }
+
+    #[test]
+    fn test_encode_le_u16_failure() {
+        let mut buffer = [0; 1];
+        let err = encode_le_u16(&mut buffer[..], 513).expect_err("Buffer too small");
+        assert!(matches!(err, UtilsError::BufferTooSmall));
     }
 }
