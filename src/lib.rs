@@ -1,5 +1,6 @@
 #![no_std]
 
+use bitflags::Flags;
 use core::cell::{BorrowMutError, RefCell};
 use embedded_io::Error as EmbeddedIoError;
 
@@ -25,12 +26,8 @@ use hci::event_parameter::{
 };
 use hci::opcode::OpCode;
 use hci::supported_commands::SupportedCommands;
-use hci::supported_features::SupportedFeatures;
-use hci::supported_le_features::SupportedLeFeatures;
 use hci::supported_le_states::SupportedLeStates;
-use hci::HciError;
-use hci::HciErrorCode;
-use hci::PacketType;
+use hci::{HciError, HciErrorCode, PacketType, SupportedFeatures, SupportedLeFeatures};
 
 /// Errors that can happen during the BLE stack usage.
 #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
@@ -99,22 +96,28 @@ where
 
         self.cmd_read_local_supported_commands()?;
         self.cmd_read_local_supported_features()?;
-        if !self.supported_features.has_le_supported_controller() {
+        if !self
+            .supported_features
+            .contains(SupportedFeatures::LE_SUPPORTED_CONTROLLER)
+        {
             return Err(Error::NonLeCapableController);
         }
         self.set_event_mask()?;
         // TODO: set LE event mask
         self.cmd_le_read_buffer_size()?;
         if (self.le_data_packet_length == 0)
-            || (self.num_le_data_packets == 0) && self.supported_commands.has_read_buffer_size()
+            || (self.num_le_data_packets == 0)
+                && self
+                    .supported_commands
+                    .contains(SupportedCommands::READ_BUFFER_SIZE)
         {
             self.cmd_read_buffer_size()?;
         }
         if self
             .supported_commands
-            .has_le_read_local_supported_features()
+            .contains(SupportedCommands::LE_READ_LOCAL_SUPPORTED_FEATURES_PAGE_0)
         {
-            self.cmd_le_read_local_supported_features()?;
+            self.cmd_le_read_local_supported_features_page_0()?;
         }
         self.cmd_le_read_supported_states()?; // TODO: needed??
 
@@ -220,8 +223,10 @@ where
         Ok(event)
     }
 
-    fn cmd_le_read_local_supported_features(&mut self) -> Result<CommandCompleteEvent, Error> {
-        let event = self.execute_command(Command::LeReadLocalSupportedFeatures)?;
+    fn cmd_le_read_local_supported_features_page_0(
+        &mut self,
+    ) -> Result<CommandCompleteEvent, Error> {
+        let event = self.execute_command(Command::LeReadLocalSupportedFeaturesPage0)?;
         let le_features_event_parameter: LeFeaturesEventParameter =
             event.return_parameters.le_u64(1)?.into();
         self.supported_le_features = le_features_event_parameter.value;

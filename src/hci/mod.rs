@@ -5,11 +5,13 @@ pub(crate) mod event_mask;
 pub(crate) mod event_parameter;
 pub(crate) mod opcode;
 pub(crate) mod supported_commands;
-pub(crate) mod supported_features;
-pub(crate) mod supported_le_features;
+mod supported_features;
+mod supported_le_features;
 pub(crate) mod supported_le_states;
 
 pub use error_code::HciErrorCode;
+pub use supported_features::SupportedFeatures;
+pub use supported_le_features::SupportedLeFeatures;
 
 /// Error occuring in the HCI part of the BLE stack.
 #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]

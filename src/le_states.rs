@@ -87,6 +87,7 @@ mod test {
             ))
         )
     }
+
     #[test]
     fn test_inverted_combined_states_eq() {
         assert_eq!(
@@ -108,6 +109,17 @@ mod test {
             LeState::Combined(LeCombinedState(
                 LeSingleState::ActiveScanning,
                 LeSingleState::ActiveScanning
+            ))
+        )
+    }
+
+    #[test]
+    fn test_single_and_combined_states_ne() {
+        assert_ne!(
+            LeState::Single(LeSingleState::ActiveScanning),
+            LeState::Combined(LeCombinedState(
+                LeSingleState::ConnectableAdvertising,
+                LeSingleState::PassiveScanning
             ))
         )
     }
