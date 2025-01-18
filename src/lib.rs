@@ -9,10 +9,12 @@ pub mod assigned_numbers;
 mod connection_interval_value;
 pub mod hci;
 pub mod le_states;
+mod supported_le_features;
 mod utils;
 pub mod uuid;
 
 pub use connection_interval_value::ConnectionIntervalValue;
+pub use supported_le_features::SupportedLeFeatures;
 
 use advertising::advertising_parameters::AdvertisingParameters;
 use advertising::AdvertisingError;
@@ -27,7 +29,7 @@ use hci::event_parameter::{
 use hci::opcode::OpCode;
 use hci::supported_commands::SupportedCommands;
 use hci::supported_le_states::SupportedLeStates;
-use hci::{HciError, HciErrorCode, PacketType, SupportedFeatures, SupportedLeFeatures};
+use hci::{HciError, HciErrorCode, PacketType, SupportedFeatures};
 
 /// Errors that can happen during the BLE stack usage.
 #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]

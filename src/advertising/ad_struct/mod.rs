@@ -13,6 +13,7 @@ use bitflags::bitflags;
 mod advertising_interval;
 mod appearance;
 pub(crate) mod flags;
+mod le_supported_features;
 mod manufacturer_specific_data;
 mod peripheral_connection_interval_range;
 mod service_solicitation;
@@ -25,6 +26,7 @@ use crate::utils::Buffer;
 pub use advertising_interval::AdvertisingIntervalAdStruct;
 pub use appearance::AppearanceAdStruct;
 pub use flags::FlagsAdStruct;
+pub use le_supported_features::LeSupportedFeaturesAdStruct;
 pub use manufacturer_specific_data::ManufacturerSpecificDataAdStruct;
 pub use peripheral_connection_interval_range::PeripheralConnectionIntervalRangeAdStruct;
 pub use service_solicitation::{
@@ -59,6 +61,7 @@ bitflags! {
         const SERVICE_SOLICITATION_UUID128 = 1 << 9;
         const APPEARANCE = 1 << 10;
         const ADVERTISING_INTERVAL = 1 << 11;
+        const LE_SUPPORTED_FEATURES = 1 << 12;
     }
 }
 
@@ -103,6 +106,14 @@ impl<const CAP: usize> AdStructBuffer<CAP> {
             .encode_le_u32(data)
             .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
         self.buffer.data[AD_STRUCT_LENGTH_OFFSET] += 4;
+        Ok(())
+    }
+
+    pub(crate) fn encode_le_u64(&mut self, data: u64) -> Result<(), AdvertisingError> {
+        self.buffer
+            .encode_le_u64(data)
+            .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
+        self.buffer.data[AD_STRUCT_LENGTH_OFFSET] += 8;
         Ok(())
     }
 
@@ -269,6 +280,43 @@ mod test {
 
         let err = buffer
             .encode_le_u32(0x0000180F)
+            .expect_err("Buffer too small");
+        assert!(matches!(
+            err,
+            AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket
+        ));
+    }
+
+    #[test]
+    fn test_adstructbuffer_encode_le_u64_success() -> Result<(), AdvertisingError> {
+        let mut buffer = AdStructBuffer::<12>::new(AdType::LeSupportedFeatures);
+        assert!(buffer.is_empty());
+        assert_eq!(buffer.len(), 0);
+        assert_eq!(buffer.ad_type(), AdType::LeSupportedFeatures as u8);
+        assert_eq!(buffer.data(), &[0x01, 0x27]);
+
+        buffer.encode_le_u64(0x0102030405060708)?;
+        assert!(!buffer.is_empty());
+        assert_eq!(buffer.len(), 8);
+        assert_eq!(buffer.ad_type(), AdType::LeSupportedFeatures as u8);
+        assert_eq!(
+            buffer.data(),
+            &[0x09, 0x27, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01]
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_adstructbuffer_encode_le_u64_failure() {
+        let mut buffer = AdStructBuffer::<8>::new(AdType::LeSupportedFeatures);
+        assert!(buffer.is_empty());
+        assert_eq!(buffer.len(), 0);
+        assert_eq!(buffer.ad_type(), AdType::LeSupportedFeatures as u8);
+        assert_eq!(buffer.data(), &[0x01, 0x27]);
+
+        let err = buffer
+            .encode_le_u64(0x0102030405060708)
             .expect_err("Buffer too small");
         assert!(matches!(
             err,
