@@ -58,11 +58,9 @@ impl Command<'_> {
             Command::LeSetScanResponseData(data) => {
                 CommandPacket::new(self.opcode()).append(data.encoded_data())?
             }
-            Command::SetEventMask(event_mask) => CommandPacket::new(self.opcode()).append(
-                &event_mask
-                    .encode()
-                    .map_err(|_| HciError::DataWillNotFitCommandPacket)?,
-            )?,
+            Command::SetEventMask(event_mask) => {
+                CommandPacket::new(self.opcode()).append(&event_mask.encode())?
+            }
         })
     }
 
