@@ -36,6 +36,9 @@ pub enum AdvertisingError {
     /// The advertising parameters are not valid, probably because the advertising type is ScannableUndirected or NonConnectableUndirected, and the minimum advertising interval value is less than 0x00A0.
     #[error("The advertising parameters are not valid, probably because the advertising type is ScannableUndirected or NonConnectableUndirected, and the minimum advertising interval value is less than 0x00A0")]
     InvalidAdvertisingParameters,
+    /// The provided custom URI scheme is not valid.
+    #[error("The URI scheme \"{0}\" is not valid")]
+    InvalidCustomUriScheme(&'static str),
 }
 
 /// Enable/disable advertising.
