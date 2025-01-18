@@ -43,7 +43,7 @@ use crate::advertising::ad_struct::{
     LeSupportedFeaturesAdStruct, ManufacturerSpecificDataAdStruct,
     PeripheralConnectionIntervalRangeAdStruct, ServiceSolicitationUuid128AdStruct,
     ServiceSolicitationUuid16AdStruct, ServiceSolicitationUuid32AdStruct, ServiceUuid128AdStruct,
-    ServiceUuid16AdStruct, ServiceUuid32AdStruct, TxPowerLevelAdStruct,
+    ServiceUuid16AdStruct, ServiceUuid32AdStruct, TxPowerLevelAdStruct, UriAdStruct,
 };
 use crate::advertising::AdvertisingError;
 use crate::Error;
@@ -233,6 +233,16 @@ impl AdvertisingDataBuilder {
         Ok(self)
     }
 
+    /// Add an URI Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `uri` — The URI Advertising Structure to add.
+    pub fn with_uri(mut self, uri: UriAdStruct) -> Result<Self, Error> {
+        self.try_add(uri)?;
+        Ok(self)
+    }
+
     fn try_add(&mut self, ad_struct: impl AdStruct) -> Result<(), Error> {
         let ad_struct_type = ad_struct.r#type();
         if ad_struct.is_unique() && self.present_ad_structs.contains(ad_struct_type) {
@@ -340,7 +350,7 @@ impl ScanResponseDataBuilder {
         Ok(self)
     }
 
-    /// Add a LE Supported Features Advertising Structure to the `AdvertisingData`.
+    /// Add a LE Supported Features Advertising Structure to the `ScanResponseData`.
     ///
     /// # Arguments
     ///
@@ -467,6 +477,16 @@ impl ScanResponseDataBuilder {
         tx_power_level: TxPowerLevelAdStruct,
     ) -> Result<Self, Error> {
         self.try_add(tx_power_level)?;
+        Ok(self)
+    }
+
+    /// Add an URI Advertising Structure to the `ScanResponseData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `uri` — The URI Advertising Structure to add.
+    pub fn with_uri(mut self, uri: UriAdStruct) -> Result<Self, Error> {
+        self.try_add(uri)?;
         Ok(self)
     }
 

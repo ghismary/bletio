@@ -44,6 +44,7 @@ fn main() -> Result<(), BuildRsError> {
     generate_appearance_values(out_path)?;
     generate_company_identifiers(out_path)?;
     generate_service_uuids(out_path)?;
+    generate_uri_schemes(out_path)?;
 
     Ok(())
 }
@@ -114,7 +115,7 @@ fn generate_ad_types(out_path: &Path) -> Result<(), BuildRsError> {
         dest_path,
         format!(
             r#"
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 #[allow(dead_code)]
 #[non_exhaustive]
@@ -251,7 +252,7 @@ fn generate_appearance_values(out_path: &Path) -> Result<(), BuildRsError> {
         dest_path,
         format!(
             r#"
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u16)]
 #[allow(dead_code)]
 #[non_exhaustive]
@@ -358,7 +359,7 @@ fn generate_company_identifiers(out_path: &Path) -> Result<(), BuildRsError> {
         dest_path,
         format!(
             r#"
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u16)]
 #[non_exhaustive]
 /// Assigned numbers for company identifiers defined in
@@ -421,7 +422,7 @@ fn generate_service_uuids(out_path: &Path) -> Result<(), BuildRsError> {
         dest_path,
         format!(
             r#"
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u16)]
 #[non_exhaustive]
 /// Assigned numbers for Bluetooth GATT services defined in
@@ -434,6 +435,69 @@ pub enum ServiceUuid {{
 }}
 "#,
             uuids_str
+        ),
+    )?;
+
+    Ok(())
+}
+
+#[derive(Debug, Deserialize)]
+struct UriScheme {
+    value: u16,
+    name: String,
+}
+
+impl UriScheme {
+    fn normalized_name(&self) -> String {
+        self.name
+            .replace(':', "")
+            .replace(['.', '-'], " ")
+            .to_case(Case::Pascal)
+    }
+}
+
+impl Display for UriScheme {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!(
+            "\t/// \"{}\" URI scheme\n\t{} = {:#06X},",
+            self.name,
+            self.normalized_name(),
+            self.value
+        ))
+    }
+}
+
+fn generate_uri_schemes(out_path: &Path) -> Result<(), BuildRsError> {
+    println!("cargo:rerun-if-changed=spec-files/uri_schemes.yaml");
+
+    let source_path = Path::new("spec-files/uri_schemes.yaml");
+    let yaml_str = fs::read_to_string(source_path)?;
+    let yaml: HashMap<String, Vec<UriScheme>> = serde_yml::from_str(&yaml_str)?;
+    let uri_scheme_strs: Vec<String> = yaml["uri_schemes"]
+        .iter()
+        .filter(|item| item.value != 0x0001)
+        .map(|item| item.to_string())
+        .collect();
+    let uri_scheme_str = uri_scheme_strs.join("\n");
+
+    let dest_path = out_path.join("uri_schemes.rs");
+    fs::write(
+        dest_path,
+        format!(
+            r#"
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u16)]
+#[non_exhaustive]
+/// Assigned numbers for Bluetooth URI schemes defined in
+/// [Assigned Numbers, 2.7](https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/core/uri_schemes.yaml).
+///
+/// It is be used when creating a Uniform Resource Identifier Advertising Structure.
+/// See [UriAdStruct::try_new](crate::advertising::ad_struct::UriAdStruct::try_new).
+pub enum ProvisionedUriScheme {{
+{}
+}}
+"#,
+            uri_scheme_str
         ),
     )?;
 
