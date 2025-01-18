@@ -1,9 +1,9 @@
 use crate::hci::error_code::HciErrorCode;
 use crate::hci::supported_commands::SupportedCommands;
 use crate::hci::supported_features::SupportedFeatures;
-use crate::hci::supported_le_features::SupportedLeFeatures;
 use crate::hci::supported_le_states::SupportedLeStates;
 use crate::hci::HciError;
+use crate::SupportedLeFeatures;
 
 #[derive(Debug)]
 pub(crate) struct StatusEventParameter {

@@ -40,10 +40,10 @@
 
 use crate::advertising::ad_struct::{
     AdStruct, AdStructType, AdvertisingIntervalAdStruct, AppearanceAdStruct, FlagsAdStruct,
-    ManufacturerSpecificDataAdStruct, PeripheralConnectionIntervalRangeAdStruct,
-    ServiceSolicitationUuid128AdStruct, ServiceSolicitationUuid16AdStruct,
-    ServiceSolicitationUuid32AdStruct, ServiceUuid128AdStruct, ServiceUuid16AdStruct,
-    ServiceUuid32AdStruct, TxPowerLevelAdStruct,
+    LeSupportedFeaturesAdStruct, ManufacturerSpecificDataAdStruct,
+    PeripheralConnectionIntervalRangeAdStruct, ServiceSolicitationUuid128AdStruct,
+    ServiceSolicitationUuid16AdStruct, ServiceSolicitationUuid32AdStruct, ServiceUuid128AdStruct,
+    ServiceUuid16AdStruct, ServiceUuid32AdStruct, TxPowerLevelAdStruct,
 };
 use crate::advertising::AdvertisingError;
 use crate::Error;
@@ -100,6 +100,19 @@ impl AdvertisingDataBuilder {
     /// * `flags` — The Flags Advertising Structure to add.
     pub fn with_flags(mut self, flags: FlagsAdStruct) -> Result<Self, Error> {
         self.try_add(flags)?;
+        Ok(self)
+    }
+
+    /// Add a LE Supported Features Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `features` — The LE Supported Features Advertising Structure to add.
+    pub fn with_le_supported_features(
+        mut self,
+        features: LeSupportedFeaturesAdStruct,
+    ) -> Result<Self, Error> {
+        self.try_add(features)?;
         Ok(self)
     }
 
@@ -324,6 +337,19 @@ impl ScanResponseDataBuilder {
     /// * `appearance` — The Appearance Advertising Structure to add.
     pub fn with_appearance(mut self, appearance: AppearanceAdStruct) -> Result<Self, Error> {
         self.try_add(appearance)?;
+        Ok(self)
+    }
+
+    /// Add a LE Supported Features Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `features` — The LE Supported Features Advertising Structure to add.
+    pub fn with_le_supported_features(
+        mut self,
+        features: LeSupportedFeaturesAdStruct,
+    ) -> Result<Self, Error> {
+        self.try_add(features)?;
         Ok(self)
     }
 
