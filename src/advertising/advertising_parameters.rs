@@ -149,6 +149,19 @@ pub struct PeerAddress {
     value: [u8; 6],
 }
 
+impl PeerAddress {
+    /// Create a peer address.
+    pub fn new(address: [u8; 6]) -> Self {
+        address.into()
+    }
+}
+
+impl From<[u8; 6]> for PeerAddress {
+    fn from(value: [u8; 6]) -> Self {
+        Self { value }
+    }
+}
+
 /// Channel map of the channels to use for advertising.
 ///
 /// Defaults to all the 3 channels (37, 38 & 39).
@@ -302,7 +315,7 @@ impl AdvertisingParametersBuilder {
                 }
                 AdvertisingType::ConnectableHighDutyCycleDirected
                 | AdvertisingType::ConnectableLowDutyCycleDirected => {
-                    // TODO: Check validity of peer address type and peer address
+                    // TODO: Check validity of peer address type and peer address. Can it be checked?
                     true
                 }
                 _ => true,
@@ -366,6 +379,71 @@ impl Default for AdvertisingParameters {
 #[cfg(test)]
 mod test {
     use super::*;
+    use approx::assert_relative_eq;
+
+    #[test]
+    fn test_advertising_interval_value_default() {
+        let value = AdvertisingIntervalValue::default();
+        assert_eq!(value.value(), 0x800);
+        assert_relative_eq!(value.milliseconds(), 1280f32, epsilon = 1.0e-6);
+    }
+
+    #[test]
+    fn test_advertising_interval_value_creation_success() -> Result<(), Error> {
+        let value = AdvertisingIntervalValue::try_new(0x0020)?;
+        assert_eq!(value.value(), 0x0020);
+        assert_relative_eq!(value.milliseconds(), 20f32, epsilon = 1.0e-6);
+
+        let value = AdvertisingIntervalValue::try_from(0x4000)?;
+        assert_eq!(value.value(), 0x4000);
+        assert_relative_eq!(value.milliseconds(), 10240f32, epsilon = 1.0e-6);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_advertising_interval_value_creation_failure() {
+        let err = AdvertisingIntervalValue::try_new(0x0010)
+            .expect_err("Invalid advertising interval value");
+        assert!(matches!(
+            err,
+            Error::Advertising(AdvertisingError::InvalidAdvertisingIntervalValue(0x0010))
+        ));
+
+        let err = AdvertisingIntervalValue::try_from(0x8000)
+            .expect_err("Invalid advertising interval value");
+        assert!(matches!(
+            err,
+            Error::Advertising(AdvertisingError::InvalidAdvertisingIntervalValue(0x8000))
+        ));
+    }
+
+    #[test]
+    fn test_advertising_channel_map() {
+        let value = AdvertisingChannelMap::default();
+        assert_eq!(
+            value.bits(),
+            (AdvertisingChannelMap::CHANNEL37
+                | AdvertisingChannelMap::CHANNEL38
+                | AdvertisingChannelMap::CHANNEL39)
+                .bits()
+        );
+
+        let value = AdvertisingChannelMap::new();
+        assert_eq!(
+            value.bits(),
+            (AdvertisingChannelMap::CHANNEL37
+                | AdvertisingChannelMap::CHANNEL38
+                | AdvertisingChannelMap::CHANNEL39)
+                .bits()
+        );
+    }
+
+    #[test]
+    fn test_peer_address() {
+        let address = PeerAddress::new([0x01, 0x02, 0x03, 0x04, 0x05, 0x06]);
+        assert_eq!(address.value, [0x01, 0x02, 0x03, 0x04, 0x05, 0x06]);
+    }
 
     #[test]
     fn test_default_advertising_parameters() -> Result<(), Error> {
@@ -388,12 +466,14 @@ mod test {
             .with_interval(0x0100.try_into()?..=0x0120.try_into()?)
             .with_channel_map(AdvertisingChannelMap::CHANNEL37 | AdvertisingChannelMap::CHANNEL39)
             .with_own_address_type(OwnAddressType::RandomDeviceAddress)
+            .with_peer_address_type(PeerAddressType::Public)
+            .with_peer_address([0x01, 0x02, 0x03, 0x04, 0x05, 0x06].into())
             .with_filter_policy(AdvertisingFilterPolicy::ScanAllAndConnectionFilterAcceptList)
             .try_build()?;
         assert_eq!(
             adv_params.encoded_data(),
             &[
-                0x00, 0x01, 0x20, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05,
+                0x00, 0x01, 0x20, 0x01, 0x01, 0x01, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x05,
                 0x02
             ],
         );
