@@ -165,15 +165,13 @@ where
     }
 
     fn set_event_mask(&self) -> Result<CommandCompleteEvent, Error> {
-        let event_mask = EventMask::new()
-            .clear()
-            .hardware_error(true)
-            .data_buffer_overflow(true)
-            .le_meta_event(true)
-            .disconnection_complete(true)
-            .read_remote_version_information_complete(true)
-            .encryption_change(true)
-            .encryption_key_refresh_complete(true);
+        let event_mask = EventMask::HARDWARE_ERROR
+            | EventMask::DATA_BUFFER_OVERFLOW
+            | EventMask::LE_META
+            | EventMask::DISCONNECTION_COMPLETE
+            | EventMask::READ_REMOTE_VERSION_INFORMATION_COMLETE
+            | EventMask::ENCRYPTION_CHANGE
+            | EventMask::ENCRYPTION_KEY_REFRESH_COMPLETE;
         self.cmd_set_event_mask(event_mask)
     }
 
