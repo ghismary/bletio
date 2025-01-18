@@ -153,3 +153,198 @@ impl<const CAP: usize> Default for AdStructBuffer<CAP> {
         Self { buffer }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_adstructbuffer() {
+        let mut buffer = AdStructBuffer::<8>::new(AdType::PeripheralConnectionIntervalRange);
+        assert!(buffer.is_empty());
+        assert_eq!(buffer.len(), 0);
+        assert_eq!(
+            buffer.ad_type(),
+            AdType::PeripheralConnectionIntervalRange as u8
+        );
+        assert_eq!(buffer.data(), &[0x01, 0x12]);
+
+        buffer.set_ad_type(AdType::Appearance);
+        assert!(buffer.is_empty());
+        assert_eq!(buffer.len(), 0);
+        assert_eq!(buffer.ad_type(), AdType::Appearance as u8);
+        assert_eq!(buffer.data(), &[0x01, 0x19]);
+    }
+
+    #[test]
+    fn test_adstructbuffer_copy_from_slice_success() -> Result<(), AdvertisingError> {
+        let mut buffer = AdStructBuffer::<8>::new(AdType::ShortenedLocalName);
+        assert!(buffer.is_empty());
+        assert_eq!(buffer.len(), 0);
+        assert_eq!(buffer.ad_type(), AdType::ShortenedLocalName as u8);
+        assert_eq!(buffer.data(), &[0x01, 0x08]);
+
+        buffer.copy_from_slice("name".as_bytes())?;
+        assert!(!buffer.is_empty());
+        assert_eq!(buffer.len(), 4);
+        assert_eq!(buffer.ad_type(), AdType::ShortenedLocalName as u8);
+        assert_eq!(buffer.data(), &[0x05, 0x08, 0x6E, 0x61, 0x6D, 0x65]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_adstructbuffer_copy_from_slice_failure() {
+        let mut buffer = AdStructBuffer::<8>::new(AdType::CompleteLocalName);
+        assert!(buffer.is_empty());
+        assert_eq!(buffer.len(), 0);
+        assert_eq!(buffer.ad_type(), AdType::CompleteLocalName as u8);
+        assert_eq!(buffer.data(), &[0x01, 0x09]);
+
+        let err = buffer
+            .copy_from_slice("complete-name".as_bytes())
+            .expect_err("Buffer too small");
+        assert!(matches!(
+            err,
+            AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket
+        ));
+    }
+
+    #[test]
+    fn test_adstructbuffer_encode_le_u16_success() -> Result<(), AdvertisingError> {
+        let mut buffer = AdStructBuffer::<8>::new(AdType::CompleteListOfServiceUuid16);
+        assert!(buffer.is_empty());
+        assert_eq!(buffer.len(), 0);
+        assert_eq!(buffer.ad_type(), AdType::CompleteListOfServiceUuid16 as u8);
+        assert_eq!(buffer.data(), &[0x01, 0x03]);
+
+        buffer.encode_le_u16(0x180F)?;
+        assert!(!buffer.is_empty());
+        assert_eq!(buffer.len(), 2);
+        assert_eq!(buffer.ad_type(), AdType::CompleteListOfServiceUuid16 as u8);
+        assert_eq!(buffer.data(), &[0x03, 0x03, 0x0F, 0x18]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_adstructbuffer_encode_le_u16_failure() {
+        let mut buffer = AdStructBuffer::<3>::new(AdType::CompleteListOfServiceUuid16);
+        assert!(buffer.is_empty());
+        assert_eq!(buffer.len(), 0);
+        assert_eq!(buffer.ad_type(), AdType::CompleteListOfServiceUuid16 as u8);
+        assert_eq!(buffer.data(), &[0x01, 0x03]);
+
+        let err = buffer.encode_le_u16(0x180F).expect_err("Buffer too small");
+        assert!(matches!(
+            err,
+            AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket
+        ));
+    }
+
+    #[test]
+    fn test_adstructbuffer_encode_le_u32_success() -> Result<(), AdvertisingError> {
+        let mut buffer = AdStructBuffer::<8>::new(AdType::CompleteListOfServiceUuid32);
+        assert!(buffer.is_empty());
+        assert_eq!(buffer.len(), 0);
+        assert_eq!(buffer.ad_type(), AdType::CompleteListOfServiceUuid32 as u8);
+        assert_eq!(buffer.data(), &[0x01, 0x05]);
+
+        buffer.encode_le_u32(0x0000180F)?;
+        assert!(!buffer.is_empty());
+        assert_eq!(buffer.len(), 4);
+        assert_eq!(buffer.ad_type(), AdType::CompleteListOfServiceUuid32 as u8);
+        assert_eq!(buffer.data(), &[0x05, 0x05, 0x0F, 0x18, 0x00, 0x00]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_adstructbuffer_encode_le_u32_failure() {
+        let mut buffer = AdStructBuffer::<4>::new(AdType::CompleteListOfServiceUuid32);
+        assert!(buffer.is_empty());
+        assert_eq!(buffer.len(), 0);
+        assert_eq!(buffer.ad_type(), AdType::CompleteListOfServiceUuid32 as u8);
+        assert_eq!(buffer.data(), &[0x01, 0x05]);
+
+        let err = buffer
+            .encode_le_u32(0x0000180F)
+            .expect_err("Buffer too small");
+        assert!(matches!(
+            err,
+            AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket
+        ));
+    }
+
+    #[test]
+    fn test_adstructbuffer_encode_le_u128_success() -> Result<(), AdvertisingError> {
+        let mut buffer = AdStructBuffer::<32>::new(AdType::CompleteListOfServiceUuid128);
+        assert!(buffer.is_empty());
+        assert_eq!(buffer.len(), 0);
+        assert_eq!(buffer.ad_type(), AdType::CompleteListOfServiceUuid128 as u8);
+        assert_eq!(buffer.data(), &[0x01, 0x07]);
+
+        buffer.encode_le_u128(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640)?;
+        assert!(!buffer.is_empty());
+        assert_eq!(buffer.len(), 16);
+        assert_eq!(buffer.ad_type(), AdType::CompleteListOfServiceUuid128 as u8);
+        assert_eq!(
+            buffer.data(),
+            &[
+                0x11, 0x07, 0x40, 0xD6, 0x6E, 0xFD, 0xD0, 0x11, 0x2C, 0xAD, 0x9E, 0x4C, 0x7D, 0x22,
+                0x7E, 0x28, 0xA1, 0xF5
+            ]
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_adstructbuffer_encode_le_u128_failure() {
+        let mut buffer = AdStructBuffer::<16>::new(AdType::CompleteListOfServiceUuid128);
+        assert!(buffer.is_empty());
+        assert_eq!(buffer.len(), 0);
+        assert_eq!(buffer.ad_type(), AdType::CompleteListOfServiceUuid128 as u8);
+        assert_eq!(buffer.data(), &[0x01, 0x07]);
+
+        let err = buffer
+            .encode_le_u128(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640)
+            .expect_err("Buffer too small");
+        assert!(matches!(
+            err,
+            AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket
+        ));
+    }
+
+    #[test]
+    fn test_adstructbuffer_try_push_success() -> Result<(), AdvertisingError> {
+        let mut buffer = AdStructBuffer::<8>::new(AdType::TxPowerLevel);
+        assert!(buffer.is_empty());
+        assert_eq!(buffer.len(), 0);
+        assert_eq!(buffer.ad_type(), AdType::TxPowerLevel as u8);
+        assert_eq!(buffer.data(), &[0x01, 0x0A]);
+
+        buffer.try_push(0x19)?;
+        assert!(!buffer.is_empty());
+        assert_eq!(buffer.len(), 1);
+        assert_eq!(buffer.ad_type(), AdType::TxPowerLevel as u8);
+        assert_eq!(buffer.data(), &[0x02, 0x0A, 0x19]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_adstructbuffer_try_push_failure() {
+        let mut buffer = AdStructBuffer::<2>::new(AdType::TxPowerLevel);
+        assert!(buffer.is_empty());
+        assert_eq!(buffer.len(), 0);
+        assert_eq!(buffer.ad_type(), AdType::TxPowerLevel as u8);
+        assert_eq!(buffer.data(), &[0x01, 0x0A]);
+
+        let err = buffer.try_push(0x19).expect_err("Buffer too small");
+        assert!(matches!(
+            err,
+            AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket
+        ));
+    }
+}

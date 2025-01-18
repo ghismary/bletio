@@ -212,3 +212,21 @@ hci_error_codes! {
     /// The result of the requested operation would yield too few physical channels.
     InsufficientChannels = 0x48,
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_hci_error_code_creation_success() -> Result<(), HciError> {
+        let value: HciErrorCode = 0x3A.try_into()?;
+        assert_eq!(value, HciErrorCode::ControllerBusy);
+        Ok(())
+    }
+
+    #[test]
+    fn test_hci_error_code_creation_failure() {
+        let err = HciErrorCode::try_from(0x93).expect_err("Invalid HCI error code");
+        assert!(matches!(err, HciError::InvalidErrorCode(0x93)));
+    }
+}
