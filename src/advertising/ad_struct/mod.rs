@@ -19,7 +19,7 @@ mod peripheral_connection_interval_range;
 mod service_solicitation;
 mod service_uuid;
 pub(crate) mod tx_power_level;
-mod uri;
+pub mod uri;
 
 use crate::advertising::AdvertisingError;
 use crate::assigned_numbers::AdType;
@@ -38,7 +38,7 @@ pub use service_uuid::{
     ServiceListComplete, ServiceUuid128AdStruct, ServiceUuid16AdStruct, ServiceUuid32AdStruct,
 };
 pub use tx_power_level::TxPowerLevelAdStruct;
-pub use uri::{CustomUriScheme, Uri, UriAdStruct, UriScheme};
+pub use uri::{custom_uri_scheme, CustomUriScheme, Uri, UriAdStruct, UriScheme};
 
 pub(crate) trait AdStruct {
     fn encoded_data(&self) -> &[u8];
