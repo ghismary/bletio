@@ -60,7 +60,7 @@ mod test {
     use crate::Error;
 
     #[test]
-    fn test_appearance_ad_struct() -> Result<(), Error> {
+    fn test_advertising_interval_ad_struct() -> Result<(), Error> {
         let value = AdvertisingIntervalAdStruct::new(AdvertisingIntervalValue::default());
         assert_eq!(value.encoded_data(), &[0x03, 0x1A, 0x00, 0x08]);
         assert!(value.r#type().contains(AdStructType::ADVERTISING_INTERVAL));
