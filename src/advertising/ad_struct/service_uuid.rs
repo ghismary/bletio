@@ -55,9 +55,7 @@ impl ServiceUuid16AdStruct {
             ServiceListComplete::Incomplete => AdType::IncompleteListOfServiceUuid16,
         });
         for uuid in uuids {
-            s.buffer
-                .encode_le_u16(*uuid as u16)
-                .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
+            s.buffer.encode_le_u16(*uuid as u16)?;
         }
         Ok(s)
     }
@@ -142,9 +140,7 @@ impl ServiceUuid32AdStruct {
             ServiceListComplete::Incomplete => AdType::IncompleteListOfServiceUuid32,
         });
         for uuid in uuids {
-            s.buffer
-                .encode_le_u32((*uuid).into().0)
-                .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
+            s.buffer.encode_le_u32((*uuid).into().0)?;
         }
         Ok(s)
     }
@@ -229,9 +225,7 @@ impl ServiceUuid128AdStruct {
             ServiceListComplete::Incomplete => AdType::IncompleteListOfServiceUuid128,
         });
         for uuid in uuids {
-            s.buffer
-                .encode_le_u128((*uuid).into().0)
-                .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
+            s.buffer.encode_le_u128((*uuid).into().0)?;
         }
         Ok(s)
     }
