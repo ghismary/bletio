@@ -9,17 +9,16 @@ keywords = ["no-std", "ble", "bluetooth"]
 categories = ["embedded", "no-std"]
 
 [dependencies]
-bitflags = "2.8.0"
-embedded-io = "0.6.1"
-embedded-io-async = "0.6.1"
-log = "0.4.22"
-thiserror = { version = "2.0.11", default-features = false }
+bitflags = "2.8"
+embedded-io = "0.6"
+embedded-io-async = "0.6"
+thiserror = { version = "2.0", default-features = false }
 
 [dev-dependencies]
-approx = "0.5.1"
-claims = "0.8.0"
+approx = "0.5"
+claims = "0.8"
 
 [build-dependencies]
-convert_case = "0.6.0"
-serde = { version = "1.0.217", features = ["derive"] }
+convert_case = "0.7"
+serde = { version = "1.0", features = ["derive"] }
 serde_yml = "0.0.12"
