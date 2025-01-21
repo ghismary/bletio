@@ -1,6 +1,5 @@
 use crate::advertising::ad_struct::{AdStruct, AdStructBuffer, AdStructType};
 use crate::advertising::advertising_data::ADVERTISING_DATA_MAX_SIZE;
-use crate::advertising::AdvertisingError;
 use crate::assigned_numbers::AdType;
 use crate::assigned_numbers::CompanyIdentifier;
 use crate::Error;
@@ -40,16 +39,11 @@ impl ManufacturerSpecificDataAdStruct {
     /// # }
     /// ```
     pub fn try_new(manufacturer: CompanyIdentifier, data: &[u8]) -> Result<Self, Error> {
-        let data_size = data.len();
-        if (4 + data_size) > ADVERTISING_DATA_MAX_SIZE {
-            return Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
-        }
         let mut s = Self {
             buffer: AdStructBuffer::new(AdType::ManufacturerSpecificData),
         };
-        // INVARIANT: The buffer space is known to be enough.
-        s.buffer.encode_le_u16(manufacturer as u16).unwrap();
-        s.buffer.copy_from_slice(data).unwrap();
+        s.buffer.encode_le_u16(manufacturer as u16)?;
+        s.buffer.copy_from_slice(data)?;
         Ok(s)
     }
 }
@@ -70,6 +64,7 @@ impl AdStruct for ManufacturerSpecificDataAdStruct {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::advertising::AdvertisingError;
 
     #[test]
     fn test_manufacturer_specific_data_ad_struct_creation_success() -> Result<(), Error> {

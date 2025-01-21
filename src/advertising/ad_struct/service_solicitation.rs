@@ -1,6 +1,5 @@
 use crate::advertising::ad_struct::{AdStruct, AdStructBuffer, AdStructType};
 use crate::advertising::advertising_data::ADVERTISING_DATA_MAX_SIZE;
-use crate::advertising::AdvertisingError;
 use crate::assigned_numbers::{AdType, ServiceUuid};
 use crate::uuid::{Uuid128, Uuid32};
 use crate::Error;
@@ -40,9 +39,7 @@ impl ServiceSolicitationUuid16AdStruct {
     pub fn try_new(uuids: &[ServiceUuid]) -> Result<Self, Error> {
         let mut s = Self::default();
         for uuid in uuids {
-            s.buffer
-                .encode_le_u16(*uuid as u16)
-                .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
+            s.buffer.encode_le_u16(*uuid as u16)?;
         }
         Ok(s)
     }
@@ -113,9 +110,7 @@ impl ServiceSolicitationUuid32AdStruct {
     pub fn try_new(uuids: &[impl Into<Uuid32> + Copy]) -> Result<Self, Error> {
         let mut s = Self::default();
         for uuid in uuids {
-            s.buffer
-                .encode_le_u32((*uuid).into().0)
-                .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
+            s.buffer.encode_le_u32((*uuid).into().0)?;
         }
         Ok(s)
     }
@@ -186,9 +181,7 @@ impl ServiceSolicitationUuid128AdStruct {
     pub fn try_new(uuids: &[impl Into<Uuid128> + Copy]) -> Result<Self, Error> {
         let mut s = Self::default();
         for uuid in uuids {
-            s.buffer
-                .encode_le_u128((*uuid).into().0)
-                .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
+            s.buffer.encode_le_u128((*uuid).into().0)?;
         }
         Ok(s)
     }
@@ -228,6 +221,7 @@ impl AdStruct for ServiceSolicitationUuid128AdStruct {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::advertising::AdvertisingError;
 
     #[test]
     fn test_service_solicitation_uuid16_ad_struct_creation_success() -> Result<(), Error> {
