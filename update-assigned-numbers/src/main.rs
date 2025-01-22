@@ -1,52 +1,45 @@
-use std::collections::HashMap;
-use std::env;
-use std::env::VarError;
-use std::fmt::{Display, Formatter};
-use std::fs;
-use std::io::Error;
-use std::path::Path;
+use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter},
+    fs,
+    path::{Path, PathBuf},
+    process::Command,
+};
 
+use clap::{arg, command, value_parser};
 use convert_case::{Case, Casing};
+use git2::Repository;
 use serde::Deserialize;
 
-#[derive(Debug)]
-enum BuildRsError {
-    EnvironmentVar,
-    IO,
-    Yaml,
-}
+const BLUETOOTH_SIG_URL: &str = "https://bitbucket.org/bluetooth-SIG/public.git";
 
-impl From<VarError> for BuildRsError {
-    fn from(_value: VarError) -> Self {
-        BuildRsError::EnvironmentVar
+fn main() -> Result<(), anyhow::Error> {
+    let matches = command!()
+        .arg(
+            arg!([output_folder] "The folder where to output the generated files")
+                .required(true)
+                .value_parser(value_parser!(PathBuf)),
+        )
+        .get_matches();
+
+    if let Some(output_folder) = matches.get_one::<PathBuf>("output_folder") {
+        let repository_folder = tempdir::TempDir::new("update-assigned-numbers")?;
+        let revision = clone_repository(repository_folder.path())?;
+
+        generate_ad_types(repository_folder.path(), output_folder.as_path(), &revision)?;
+        generate_appearance_values(repository_folder.path(), output_folder.as_path(), &revision)?;
+        generate_company_identifiers(repository_folder.path(), output_folder.as_path(), &revision)?;
+        generate_service_uuids(repository_folder.path(), output_folder.as_path(), &revision)?;
+        generate_uri_schemes(repository_folder.path(), output_folder.as_path(), &revision)?;
     }
-}
-
-impl From<Error> for BuildRsError {
-    fn from(_value: Error) -> Self {
-        BuildRsError::IO
-    }
-}
-
-impl From<serde_yml::Error> for BuildRsError {
-    fn from(_value: serde_yml::Error) -> Self {
-        BuildRsError::Yaml
-    }
-}
-
-fn main() -> Result<(), BuildRsError> {
-    println!("cargo::rerun-if-changed=build.rs");
-
-    let out_dir = env::var("OUT_DIR")?;
-    let out_path = Path::new(&out_dir);
-
-    generate_ad_types(out_path)?;
-    generate_appearance_values(out_path)?;
-    generate_company_identifiers(out_path)?;
-    generate_service_uuids(out_path)?;
-    generate_uri_schemes(out_path)?;
 
     Ok(())
+}
+
+fn clone_repository(local_path: &Path) -> Result<String, anyhow::Error> {
+    let repository = Repository::clone(BLUETOOTH_SIG_URL, local_path)?;
+    let obj = repository.revparse_single("main")?;
+    Ok(obj.id().to_string())
 }
 
 #[derive(Debug, Deserialize)]
@@ -97,10 +90,12 @@ impl Display for AdType {
     }
 }
 
-fn generate_ad_types(out_path: &Path) -> Result<(), BuildRsError> {
-    println!("cargo:rerun-if-changed=spec-files/ad_types.yaml");
-
-    let source_path = Path::new("spec-files/ad_types.yaml");
+fn generate_ad_types(
+    repository_folder: &Path,
+    output_folder: &Path,
+    revision: &str,
+) -> Result<(), anyhow::Error> {
+    let source_path = repository_folder.join("assigned_numbers/core/ad_types.yaml");
     let yaml_str = fs::read_to_string(source_path)?;
     let yaml: HashMap<String, Vec<AdType>> = serde_yml::from_str(&yaml_str)?;
     let types_strs: Vec<String> = yaml["ad_types"]
@@ -110,11 +105,14 @@ fn generate_ad_types(out_path: &Path) -> Result<(), BuildRsError> {
         .collect();
     let types_str = types_strs.join("\n");
 
-    let dest_path = out_path.join("ad_types.rs");
+    let dest_path = output_folder.join("ad_types.rs");
     fs::write(
-        dest_path,
+        &dest_path,
         format!(
-            r#"
+            r#"//! Assigned numbers for Bluetooth Common Data Types.
+//!
+//! FILE GENERATED FROM REVISION {} OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 #[allow(dead_code)]
@@ -124,9 +122,11 @@ pub(crate) enum AdType {{
 {}
 }}
 "#,
-            types_str
+            revision, types_str
         ),
     )?;
+
+    rustfmt(dest_path.as_path())?;
 
     Ok(())
 }
@@ -221,10 +221,12 @@ impl From<&AppearanceValue> for Vec<FlattenedAppearanceValue> {
     }
 }
 
-fn generate_appearance_values(out_path: &Path) -> Result<(), BuildRsError> {
-    println!("cargo:rerun-if-changed=spec-files/appearance_values.yaml");
-
-    let source_path = Path::new("spec-files/appearance_values.yaml");
+fn generate_appearance_values(
+    repository_folder: &Path,
+    output_folder: &Path,
+    revision: &str,
+) -> Result<(), anyhow::Error> {
+    let source_path = repository_folder.join("assigned_numbers/core/appearance_values.yaml");
     let yaml_str = fs::read_to_string(source_path)?;
     let yaml: HashMap<String, Vec<AppearanceValue>> = serde_yml::from_str(&yaml_str)?;
     let mut flattened_appearance_values: Vec<FlattenedAppearanceValue> = yaml["appearance_values"]
@@ -247,11 +249,14 @@ fn generate_appearance_values(out_path: &Path) -> Result<(), BuildRsError> {
         .collect();
     let appearance_str = appearance_strs.join("\n");
 
-    let dest_path = out_path.join("appearance_values.rs");
+    let dest_path = output_folder.join("appearance_values.rs");
     fs::write(
-        dest_path,
+        &dest_path,
         format!(
-            r#"
+            r#"//! Assigned numbers for appearance values.
+//!
+//! FILE GENERATED FROM REVISION {} OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u16)]
 #[allow(dead_code)]
@@ -265,9 +270,11 @@ pub enum AppearanceValue {{
 {}
 }}
 "#,
-            appearance_str
+            revision, appearance_str
         ),
     )?;
+
+    rustfmt(dest_path.as_path())?;
 
     Ok(())
 }
@@ -330,10 +337,13 @@ impl Display for CompanyIdentifier {
     }
 }
 
-fn generate_company_identifiers(out_path: &Path) -> Result<(), BuildRsError> {
-    println!("cargo:rerun-if-changed=spec-files/company_identifiers.yaml");
-
-    let source_path = Path::new("spec-files/company_identifiers.yaml");
+fn generate_company_identifiers(
+    repository_folder: &Path,
+    output_folder: &Path,
+    revision: &str,
+) -> Result<(), anyhow::Error> {
+    let source_path =
+        repository_folder.join("assigned_numbers/company_identifiers/company_identifiers.yaml");
     let yaml_str = fs::read_to_string(source_path)?;
     let mut yaml: HashMap<String, Vec<CompanyIdentifier>> = serde_yml::from_str(&yaml_str)?;
     let mut normalized_names_count_map: HashMap<String, usize> = HashMap::new();
@@ -354,11 +364,14 @@ fn generate_company_identifiers(out_path: &Path) -> Result<(), BuildRsError> {
         .collect();
     let company_identifiers_str = company_identifiers.join("\n");
 
-    let dest_path = out_path.join("company_identifiers.rs");
+    let dest_path = output_folder.join("company_identifiers.rs");
     fs::write(
-        dest_path,
+        &dest_path,
         format!(
-            r#"
+            r#"//! Assigned numbers for company identifiers.
+//!
+//! FILE GENERATED FROM REVISION {} OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u16)]
 #[non_exhaustive]
@@ -371,9 +384,11 @@ pub enum CompanyIdentifier {{
 {}
 }}
 "#,
-            company_identifiers_str
+            revision, company_identifiers_str
         ),
     )?;
+
+    rustfmt(dest_path.as_path())?;
 
     Ok(())
 }
@@ -408,20 +423,25 @@ impl Display for ServiceUuid {
     }
 }
 
-fn generate_service_uuids(out_path: &Path) -> Result<(), BuildRsError> {
-    println!("cargo:rerun-if-changed=spec-files/service_uuids.yaml");
-
-    let source_path = Path::new("spec-files/service_uuids.yaml");
+fn generate_service_uuids(
+    repository_folder: &Path,
+    output_folder: &Path,
+    revision: &str,
+) -> Result<(), anyhow::Error> {
+    let source_path = repository_folder.join("assigned_numbers/uuids/service_uuids.yaml");
     let yaml_str = fs::read_to_string(source_path)?;
     let yaml: HashMap<String, Vec<ServiceUuid>> = serde_yml::from_str(&yaml_str)?;
     let uuids_strs: Vec<String> = yaml["uuids"].iter().map(|item| item.to_string()).collect();
     let uuids_str = uuids_strs.join("\n");
 
-    let dest_path = out_path.join("service_uuids.rs");
+    let dest_path = output_folder.join("service_uuids.rs");
     fs::write(
-        dest_path,
+        &dest_path,
         format!(
-            r#"
+            r#"//! Assigned numbers for Bluetooth GATT services.
+//!
+//! FILE GENERATED FROM REVISION {} OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u16)]
 #[non_exhaustive]
@@ -434,9 +454,11 @@ pub enum ServiceUuid {{
 {}
 }}
 "#,
-            uuids_str
+            revision, uuids_str
         ),
     )?;
+
+    rustfmt(dest_path.as_path())?;
 
     Ok(())
 }
@@ -467,10 +489,12 @@ impl Display for UriScheme {
     }
 }
 
-fn generate_uri_schemes(out_path: &Path) -> Result<(), BuildRsError> {
-    println!("cargo:rerun-if-changed=spec-files/uri_schemes.yaml");
-
-    let source_path = Path::new("spec-files/uri_schemes.yaml");
+fn generate_uri_schemes(
+    repository_folder: &Path,
+    output_folder: &Path,
+    revision: &str,
+) -> Result<(), anyhow::Error> {
+    let source_path = repository_folder.join("assigned_numbers/core/uri_schemes.yaml");
     let yaml_str = fs::read_to_string(source_path)?;
     let yaml: HashMap<String, Vec<UriScheme>> = serde_yml::from_str(&yaml_str)?;
     let uri_scheme_strs: Vec<String> = yaml["uri_schemes"]
@@ -480,11 +504,14 @@ fn generate_uri_schemes(out_path: &Path) -> Result<(), BuildRsError> {
         .collect();
     let uri_scheme_str = uri_scheme_strs.join("\n");
 
-    let dest_path = out_path.join("uri_schemes.rs");
+    let dest_path = output_folder.join("uri_schemes.rs");
     fs::write(
-        dest_path,
+        &dest_path,
         format!(
-            r#"
+            r#"//! Assigned numbers for Bluetooth URI schemes.
+//!
+//! FILE GENERATED FROM REVISION {} OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u16)]
 #[non_exhaustive]
@@ -497,9 +524,20 @@ pub enum ProvisionedUriScheme {{
 {}
 }}
 "#,
-            uri_scheme_str
+            revision, uri_scheme_str
         ),
     )?;
 
+    rustfmt(dest_path.as_path())?;
+
+    Ok(())
+}
+
+fn rustfmt(file_path: &Path) -> Result<(), anyhow::Error> {
+    Command::new("rustfmt")
+        .arg("--edition")
+        .arg("2021")
+        .arg(file_path)
+        .output()?;
     Ok(())
 }
