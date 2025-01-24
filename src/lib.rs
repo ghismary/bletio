@@ -59,11 +59,8 @@ impl From<BorrowMutError> for Error {
     }
 }
 
-pub struct BleStack<T>
-where
-    T: embedded_io::Read + embedded_io::Write,
-{
-    hci: RefCell<T>,
+#[derive(Debug)]
+struct ControllerCapabilities {
     supported_commands: SupportedCommands,
     supported_features: SupportedFeatures,
     supported_le_features: SupportedLeFeatures,
@@ -73,14 +70,9 @@ where
     num_le_data_packets: usize,
 }
 
-impl<T> BleStack<T>
-where
-    T: embedded_io::Read + embedded_io::Write,
-    <T as embedded_io::ErrorType>::Error: embedded_io::Error,
-{
-    pub fn new(hci: T) -> Self {
+impl Default for ControllerCapabilities {
+    fn default() -> Self {
         Self {
-            hci: hci.into(),
             supported_commands: SupportedCommands::default(),
             supported_features: SupportedFeatures::default(),
             supported_le_features: SupportedLeFeatures::default(),
@@ -90,15 +82,36 @@ where
             num_le_data_packets: 1,
         }
     }
+}
 
+pub struct BleDevice<T>
+where
+    T: embedded_io::Read + embedded_io::Write,
+{
+    hci: RefCell<T>,
+    controller_capabilities: ControllerCapabilities,
+}
+
+impl<T> BleDevice<T>
+where
+    T: embedded_io::Read + embedded_io::Write,
+    <T as embedded_io::ErrorType>::Error: embedded_io::Error,
+{
+    pub fn new(hci: T) -> Self {
+        Self {
+            hci: hci.into(),
+            controller_capabilities: Default::default(),
+        }
+    }
+
+    // Perform setup has described in Core specification 4.2, Vol. 6, Part D, 2.1
     pub fn setup(&mut self) -> Result<(), Error> {
-        // Perform setup has described in Core specification 4.2, Vol. 6, Part D, 2.1
-
         self.cmd_reset()?;
 
         self.cmd_read_local_supported_commands()?;
         self.cmd_read_local_supported_features()?;
         if !self
+            .controller_capabilities
             .supported_features
             .contains(SupportedFeatures::LE_SUPPORTED_CONTROLLER)
         {
@@ -107,15 +120,17 @@ where
         self.set_event_mask()?;
         // TODO: set LE event mask
         self.cmd_le_read_buffer_size()?;
-        if (self.le_data_packet_length == 0)
-            || (self.num_le_data_packets == 0)
+        if (self.controller_capabilities.le_data_packet_length == 0)
+            || (self.controller_capabilities.num_le_data_packets == 0)
                 && self
+                    .controller_capabilities
                     .supported_commands
                     .contains(SupportedCommands::READ_BUFFER_SIZE)
         {
             self.cmd_read_buffer_size()?;
         }
         if self
+            .controller_capabilities
             .supported_commands
             .contains(SupportedCommands::LE_READ_LOCAL_SUPPORTED_FEATURES_PAGE_0)
         {
@@ -127,19 +142,19 @@ where
     }
 
     pub fn supported_commands(&self) -> &SupportedCommands {
-        &self.supported_commands
+        &self.controller_capabilities.supported_commands
     }
 
     pub fn supported_features(&self) -> &SupportedFeatures {
-        &self.supported_features
+        &self.controller_capabilities.supported_features
     }
 
     pub fn supported_le_features(&self) -> &SupportedLeFeatures {
-        &self.supported_le_features
+        &self.controller_capabilities.supported_le_features
     }
 
     pub fn supported_le_states(&self) -> &SupportedLeStates {
-        &self.supported_le_states
+        &self.controller_capabilities.supported_le_states
     }
 
     pub fn start_advertising(
@@ -196,7 +211,8 @@ where
 
     fn cmd_reset(&mut self) -> Result<CommandCompleteEvent, Error> {
         let event = self.execute_command(Command::Reset)?;
-        self.num_hci_command_packets = event.num_hci_command_packets as usize;
+        self.controller_capabilities.num_hci_command_packets =
+            event.num_hci_command_packets as usize;
         Ok(event)
     }
 
@@ -204,7 +220,7 @@ where
         let event = self.execute_command(Command::ReadLocalSupportedCommands)?;
         let supported_commands_event_parameter: SupportedCommandsEventParameter =
             event.return_parameters.slice(1)?[..64].try_into()?;
-        self.supported_commands = supported_commands_event_parameter.value;
+        self.controller_capabilities.supported_commands = supported_commands_event_parameter.value;
         Ok(event)
     }
 
@@ -212,14 +228,16 @@ where
         let event = self.execute_command(Command::ReadLocalSupportedFeatures)?;
         let lmp_features_event_parameter: LmpFeaturesEventParameter =
             event.return_parameters.le_u64(1)?.into();
-        self.supported_features = lmp_features_event_parameter.value;
+        self.controller_capabilities.supported_features = lmp_features_event_parameter.value;
         Ok(event)
     }
 
     fn cmd_read_buffer_size(&mut self) -> Result<CommandCompleteEvent, Error> {
         let event = self.execute_command(Command::ReadBufferSize)?;
-        self.le_data_packet_length = event.return_parameters.le_u16(1)? as usize;
-        self.num_le_data_packets = event.return_parameters.le_u16(4)? as usize;
+        self.controller_capabilities.le_data_packet_length =
+            event.return_parameters.le_u16(1)? as usize;
+        self.controller_capabilities.num_le_data_packets =
+            event.return_parameters.le_u16(4)? as usize;
         Ok(event)
     }
 
@@ -229,14 +247,15 @@ where
         let event = self.execute_command(Command::LeReadLocalSupportedFeaturesPage0)?;
         let le_features_event_parameter: LeFeaturesEventParameter =
             event.return_parameters.le_u64(1)?.into();
-        self.supported_le_features = le_features_event_parameter.value;
+        self.controller_capabilities.supported_le_features = le_features_event_parameter.value;
         Ok(event)
     }
 
     fn cmd_le_read_buffer_size(&mut self) -> Result<CommandCompleteEvent, Error> {
         let event = self.execute_command(Command::LeReadBufferSize)?;
-        self.le_data_packet_length = event.return_parameters.le_u16(1)? as usize;
-        self.num_le_data_packets = event.return_parameters.u8(3)? as usize;
+        self.controller_capabilities.le_data_packet_length =
+            event.return_parameters.le_u16(1)? as usize;
+        self.controller_capabilities.num_le_data_packets = event.return_parameters.u8(3)? as usize;
         Ok(event)
     }
 
@@ -244,7 +263,7 @@ where
         let event = self.execute_command(Command::LeReadSupportedStates)?;
         let le_states_event_parameter: LeStatesEventParameter =
             event.return_parameters.le_u64(1)?.into();
-        self.supported_le_states = le_states_event_parameter.value;
+        self.controller_capabilities.supported_le_states = le_states_event_parameter.value;
         Ok(event)
     }
 
