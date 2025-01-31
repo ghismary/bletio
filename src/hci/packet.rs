@@ -77,6 +77,8 @@ pub(crate) mod parser {
 
 #[cfg(test)]
 mod test {
+    use core::num::{NonZeroU16, NonZeroU8};
+
     use super::*;
     use crate::{
         hci::{
@@ -302,12 +304,39 @@ mod test {
             ));
             if let EventParameter::StatusAndBufferSize(param) = event.parameter {
                 assert_eq!(param.status, HciErrorCode::Success);
-                assert_eq!(param.acl_data_packet_length, 255);
-                assert_eq!(param.synchronous_data_packet_length, 255);
-                assert_eq!(param.total_num_acl_data_packets, 24);
+                assert_eq!(param.acl_data_packet_length, NonZeroU16::new(255).unwrap());
+                assert_eq!(
+                    param.synchronous_data_packet_length,
+                    NonZeroU8::new(255).unwrap()
+                );
+                assert_eq!(
+                    param.total_num_acl_data_packets,
+                    NonZeroU16::new(24).unwrap()
+                );
                 assert_eq!(param.total_num_synchronous_packets, 12);
             }
         }
+    }
+
+    #[test]
+    fn test_command_complete_event_for_read_buffer_size_command_parsing_failure_invalid_acl_data_packet_length(
+    ) {
+        let err = parser::packet(&[4, 14, 11, 1, 5, 16, 0, 0, 0, 255, 24, 0, 12, 0]);
+        assert!(err.is_err());
+    }
+
+    #[test]
+    fn test_command_complete_event_for_read_buffer_size_command_parsing_failure_invalid_synchronous_data_packet_length(
+    ) {
+        let err = parser::packet(&[4, 14, 11, 1, 5, 16, 0, 255, 0, 0, 24, 0, 12, 0]);
+        assert!(err.is_err());
+    }
+
+    #[test]
+    fn test_command_complete_event_for_read_buffer_size_command_parsing_failure_invalid_total_num_acl_data_packets(
+    ) {
+        let err = parser::packet(&[4, 14, 11, 1, 5, 16, 0, 255, 0, 255, 0, 0, 12, 0]);
+        assert!(err.is_err());
     }
 
     #[test]

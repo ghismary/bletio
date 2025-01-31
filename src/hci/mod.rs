@@ -8,6 +8,7 @@ mod supported_features;
 pub(crate) mod supported_le_states;
 
 use core::future::Future;
+use core::num::{NonZeroU16, NonZeroU8};
 
 pub(crate) use command::{HciCommand, HciCommandOpCode};
 pub use error_code::HciErrorCode;
@@ -198,7 +199,9 @@ where
         }
     }
 
-    pub(crate) async fn cmd_read_buffer_size(&mut self) -> Result<(u16, u8, u16, u16), Error> {
+    pub(crate) async fn cmd_read_buffer_size(
+        &mut self,
+    ) -> Result<(NonZeroU16, NonZeroU8, NonZeroU16, u16), Error> {
         let event = self.execute_command(HciCommand::ReadBufferSize).await?;
         match event.parameter {
             EventParameter::StatusAndBufferSize(param) if param.status.is_success() => Ok((
