@@ -235,4 +235,10 @@ mod test {
         let err = HciErrorCode::try_from(0x93).expect_err("Invalid HCI error code");
         assert!(matches!(err, HciError::InvalidErrorCode(0x93)));
     }
+
+    #[test]
+    fn test_hci_error_code_is_success() {
+        assert!(HciErrorCode::Success.is_success());
+        assert!(!HciErrorCode::PacketTooLong.is_success());
+    }
 }

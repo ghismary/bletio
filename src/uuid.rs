@@ -120,7 +120,7 @@ mod test {
 
     #[test]
     fn test_uuid16_to_uuid128_conversion() {
-        let uuid16 = Uuid16(0x180F);
+        let uuid16: Uuid16 = 0x180Fu16.into();
         let uuid128: Uuid128 = uuid16.into();
         assert_eq!(uuid128.0, 0x0000180F_0000_1000_8000_00805F9B34FB);
         assert_eq!(uuid16, uuid128);

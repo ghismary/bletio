@@ -79,4 +79,12 @@ mod test {
             &[0x90, 0x88, 0x00, 0x02, 0x00, 0x80, 0x00, 0x20]
         );
     }
+
+    #[test]
+    fn test_eventmask_parsing() {
+        let (rest, event_mask) =
+            parser::event_mask(&[0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]).unwrap();
+        assert!(rest.is_empty());
+        assert_eq!(event_mask, EventMask::HARDWARE_ERROR);
+    }
 }

@@ -259,4 +259,22 @@ mod test {
 
         Ok(())
     }
+
+    #[test]
+    fn test_buffer_try_from_success() -> Result<(), UtilsError> {
+        let data = [0x00, 0x01, 0x02, 0x03];
+        let buffer: Buffer<64> = Buffer::try_from(data.as_slice())?;
+        assert!(!buffer.is_full());
+        assert_eq!(buffer.len(), 4);
+        assert_eq!(buffer.remaining_len(), 60);
+        assert_eq!(buffer.data(), data.as_slice());
+        Ok(())
+    }
+
+    #[test]
+    fn test_buffer_try_from_failure() {
+        let data = [0x00, 0x01, 0x02, 0x03];
+        let err: Result<Buffer<2>, UtilsError> = Buffer::try_from(data.as_slice());
+        assert!(matches!(err, Err(UtilsError::BufferTooSmall)));
+    }
 }

@@ -294,3 +294,17 @@ pub(crate) mod parser {
         ))
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_event_code() {
+        let event_code: EventCode = 0x0Eu8.into();
+        assert!(matches!(event_code, EventCode::CommandComplete));
+
+        let event_code: EventCode = 0xFFu8.into();
+        assert!(matches!(event_code, EventCode::Unsupported(0xFF)));
+    }
+}

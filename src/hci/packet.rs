@@ -91,6 +91,37 @@ mod test {
     use bitflags::Flags;
 
     #[test]
+    fn test_valid_packet_type() -> Result<(), HciError> {
+        let hci_packet_type: HciPacketType = 4u8.try_into()?;
+        assert_eq!(hci_packet_type, HciPacketType::Event);
+        Ok(())
+    }
+
+    #[test]
+    fn test_invalid_packet_type() {
+        let err: Result<HciPacketType, HciError> = 10u8.try_into();
+        assert!(matches!(err, Err(HciError::InvalidPacketType(_))));
+    }
+
+    #[test]
+    fn test_nop_command_parsing() {
+        let (rest, hci_packet) = parser::packet(&[1, 0, 0, 0]).unwrap();
+        assert!(matches!(hci_packet, HciPacket::Command(HciCommand::Nop)));
+        assert!(rest.is_empty());
+    }
+
+    #[test]
+    fn test_unsupported_command_parsing() {
+        // Use Flush command
+        let (rest, hci_packet) = parser::packet(&[1, 8, 12, 0]).unwrap();
+        assert!(matches!(
+            hci_packet,
+            HciPacket::Command(HciCommand::Unsupported(0x0C08))
+        ));
+        assert!(rest.is_empty());
+    }
+
+    #[test]
     fn test_nop_event_parsing() {
         let (rest, hci_packet) = parser::packet(&[4, 14, 3, 1, 0, 0]).unwrap();
         assert!(matches!(
@@ -506,5 +537,23 @@ mod test {
                 assert_eq!(param.status, HciErrorCode::Success);
             }
         }
+    }
+
+    #[test]
+    fn test_command_complete_event_for_unsupported_command_parsing() {
+        // Using Flush command opcode
+        let err = parser::packet(&[4, 14, 4, 1, 08, 12, 0]);
+        assert!(err.is_err());
+    }
+
+    #[test]
+    fn test_unsupported_event_parsing() {
+        // Using Inquiry Complete event
+        let (rest, hci_packet) = parser::packet(&[4, 1, 1, 0]).unwrap();
+        assert!(matches!(
+            hci_packet,
+            HciPacket::Event(Event::Unsupported(1))
+        ));
+        assert!(rest.is_empty());
     }
 }
