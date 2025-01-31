@@ -85,7 +85,7 @@ pub const fn custom_uri_scheme_has_only_valid_chars<T: CustomUriSchemeOnlyValidC
 #[doc(hidden)]
 pub const fn check_custom_uri_scheme_has_only_valid_chars(scheme: &str) -> bool {
     let mut i = 0;
-    while i < scheme.as_bytes().len() {
+    while i < scheme.len() {
         let c = scheme.as_bytes()[i] as char;
         if !(c.is_ascii_alphanumeric() || c == '-' || c == '.') {
             return false;
@@ -142,7 +142,7 @@ pub const fn check_custom_uri_scheme_has_alphanumeric_last_char(scheme: &str) ->
     if scheme.is_empty() {
         return true; // Not really true, but the check on emptiness will trigger
     }
-    let c = scheme.as_bytes()[scheme.as_bytes().len() - 1];
+    let c = scheme.as_bytes()[scheme.len() - 1];
     c.is_ascii_alphanumeric()
 }
 
