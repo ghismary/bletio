@@ -1,9 +1,9 @@
+use core::num::{NonZeroU16, NonZeroU8};
+
 use crate::{
     hci::{HciCommandOpCode, HciErrorCode, SupportedCommands, SupportedFeatures},
-    SupportedLeFeatures,
+    SupportedLeFeatures, SupportedLeStates,
 };
-
-use super::supported_le_states::SupportedLeStates;
 
 #[derive(Debug)]
 pub(crate) enum Event {
@@ -80,9 +80,9 @@ pub(crate) struct StatusAndSupportedFeaturesEventParameter {
 #[derive(Debug)]
 pub(crate) struct StatusAndBufferSizeEventParameter {
     pub(crate) status: HciErrorCode,
-    pub(crate) acl_data_packet_length: u16,
-    pub(crate) synchronous_data_packet_length: u8,
-    pub(crate) total_num_acl_data_packets: u16,
+    pub(crate) acl_data_packet_length: NonZeroU16,
+    pub(crate) synchronous_data_packet_length: NonZeroU8,
+    pub(crate) total_num_acl_data_packets: NonZeroU16,
     pub(crate) total_num_synchronous_packets: u16,
 }
 
@@ -106,6 +106,8 @@ pub(crate) struct StatusAndSupportedLeStatesEventParameter {
 }
 
 pub(crate) mod parser {
+    use core::num::{NonZeroU16, NonZeroU8};
+
     use nom::{
         bytes::take,
         combinator::{eof, fail, map, map_res},
@@ -150,9 +152,14 @@ pub(crate) mod parser {
         map(le_u64(), SupportedFeatures::from_bits_retain).parse(input)
     }
 
-    fn buffer_size(input: &[u8]) -> IResult<&[u8], (u16, u8, u16, u16)> {
-        // TODO: Check that the first three values are non-zero
-        (le_u16(), le_u8(), le_u16(), le_u16()).parse(input)
+    fn buffer_size(input: &[u8]) -> IResult<&[u8], (NonZeroU16, NonZeroU8, NonZeroU16, u16)> {
+        (
+            map_res(le_u16(), TryInto::try_into),
+            map_res(le_u8(), TryInto::try_into),
+            map_res(le_u16(), TryInto::try_into),
+            le_u16(),
+        )
+            .parse(input)
     }
 
     fn le_buffer_size(input: &[u8]) -> IResult<&[u8], (u16, u8)> {

@@ -2,6 +2,7 @@
 
 use bitflags::Flags;
 use core::marker::PhantomData;
+use core::num::NonZeroU16;
 
 pub mod advertising;
 pub mod assigned_numbers;
@@ -55,8 +56,8 @@ struct ControllerCapabilities {
     supported_features: SupportedFeatures,
     supported_le_features: SupportedLeFeatures,
     supported_le_states: SupportedLeStates,
-    le_data_packet_length: u16,
-    num_le_data_packets: u16,
+    le_data_packet_length: NonZeroU16,
+    num_le_data_packets: NonZeroU16,
 }
 
 impl Default for ControllerCapabilities {
@@ -66,8 +67,8 @@ impl Default for ControllerCapabilities {
             supported_features: SupportedFeatures::default(),
             supported_le_features: SupportedLeFeatures::default(),
             supported_le_states: SupportedLeStates::default(),
-            le_data_packet_length: 255,
-            num_le_data_packets: 1,
+            le_data_packet_length: NonZeroU16::MIN,
+            num_le_data_packets: NonZeroU16::MIN,
         }
     }
 }
@@ -128,22 +129,29 @@ where
         hci.cmd_set_event_mask(event_mask).await?;
         // TODO: set LE event mask
 
-        (
-            controller_capabilities.le_data_packet_length,
-            controller_capabilities.num_le_data_packets,
-        ) = hci.cmd_le_read_buffer_size().await?;
-        if (controller_capabilities.le_data_packet_length == 0)
-            || (controller_capabilities.num_le_data_packets == 0)
-                && controller_capabilities
+        let (le_data_packet_length, num_le_data_packets) = hci.cmd_le_read_buffer_size().await?;
+        let le_data_packet_length: Result<NonZeroU16, _> = le_data_packet_length.try_into();
+        let num_le_data_packets: Result<NonZeroU16, _> = num_le_data_packets.try_into();
+        match (le_data_packet_length, num_le_data_packets) {
+            (Err(_), Ok(_)) | (Ok(_), Err(_)) | (Err(_), Err(_)) => {
+                if controller_capabilities
                     .supported_commands
                     .contains(SupportedCommands::READ_BUFFER_SIZE)
-        {
-            (
-                controller_capabilities.le_data_packet_length,
-                _,
-                controller_capabilities.num_le_data_packets,
-                _,
-            ) = hci.cmd_read_buffer_size().await?;
+                {
+                    (
+                        controller_capabilities.le_data_packet_length,
+                        _,
+                        controller_capabilities.num_le_data_packets,
+                        _,
+                    ) = hci.cmd_read_buffer_size().await?;
+                } else {
+                    return Err(Error::NonLeCapableController);
+                }
+            }
+            (Ok(le_data_packet_length), Ok(num_le_data_packets)) => {
+                controller_capabilities.le_data_packet_length = le_data_packet_length;
+                controller_capabilities.num_le_data_packets = num_le_data_packets;
+            }
         }
         if controller_capabilities
             .supported_commands
