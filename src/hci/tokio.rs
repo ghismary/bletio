@@ -16,3 +16,24 @@ impl<F: Future> WithTimeout for F {
             .map_err(|_| HciDriverError::Timeout)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use tokio::time::sleep;
+
+    use super::*;
+
+    #[tokio::test(flavor = "current_thread", start_paused = true)]
+    async fn test_with_timeout_not_triggered() {
+        assert!(sleep(Duration::from_millis(500))
+            .with_timeout(1000)
+            .await
+            .is_ok())
+    }
+
+    #[tokio::test(flavor = "current_thread", start_paused = true)]
+    async fn test_with_timeout_triggered() {
+        let err = sleep(Duration::from_millis(1000)).with_timeout(500).await;
+        assert!(matches!(err, Err(HciDriverError::Timeout)));
+    }
+}

@@ -7,6 +7,7 @@ pub(crate) mod supported_commands;
 mod supported_features;
 pub(crate) mod supported_le_states;
 
+#[coverage(off)]
 #[cfg(feature = "embassy")]
 mod embassy;
 #[cfg(feature = "tokio")]
