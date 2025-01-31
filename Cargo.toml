@@ -10,8 +10,8 @@ categories = ["embedded", "no-std"]
 
 [dependencies]
 bitflags = "2.8"
-embedded-io = "0.6"
-embedded-io-async = "0.6"
+embassy-time = "0.4"
+nom = { version = "8.0", default-features = false }
 thiserror = { version = "2.0", default-features = false }
 
 [dev-dependencies]

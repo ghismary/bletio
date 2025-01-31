@@ -34,6 +34,12 @@ macro_rules! hci_error_codes {
     };
 }
 
+impl HciErrorCode {
+    pub fn is_success(&self) -> bool {
+        matches!(self, Self::Success)
+    }
+}
+
 hci_error_codes! {
     /// Success.
     Success = 0x00,
