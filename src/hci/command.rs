@@ -268,4 +268,210 @@ pub(crate) mod parser {
     }
 }
 
-// TEST [1, 3, 12, 0]
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_hci_command_opcode_from() {
+        let value = 0x0000u16;
+        let opcode: HciCommandOpCode = value.into();
+        assert_eq!(opcode, HciCommandOpCode::Nop);
+        assert_eq!(opcode.value(), value);
+
+        let value = 0x200Au16;
+        let opcode: HciCommandOpCode = value.into();
+        assert_eq!(opcode, HciCommandOpCode::LeSetAdvertisingEnable);
+        assert_eq!(opcode.value(), value);
+
+        // Use Flush command
+        let value = 0x0C08u16;
+        let opcode: HciCommandOpCode = value.into();
+        assert_eq!(opcode, HciCommandOpCode::Unsupported(0x0C08));
+        assert_eq!(opcode.value(), value);
+    }
+
+    #[test]
+    fn test_command_packet_default() {
+        let packet = CommandPacket::new(HciCommandOpCode::Nop);
+        assert_eq!(packet.data(), &[1, 0, 0, 0]);
+    }
+
+    #[test]
+    fn test_command_packet_with_append_success() -> Result<(), Error> {
+        let mut packet = CommandPacket::new(HciCommandOpCode::LeSetAdvertisingEnable);
+        packet = packet.append(&[1])?;
+        assert_eq!(packet.data(), &[1, 10, 32, 1, 1]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_command_packet_with_append_failure() {
+        let packet = CommandPacket::new(HciCommandOpCode::ReadBufferSize);
+        let data = [0u8; 320];
+        let err = packet.append(data.as_slice());
+        assert!(matches!(err, Err(HciError::DataWillNotFitCommandPacket)));
+    }
+
+    #[test]
+    fn test_encode_nop_command() -> Result<(), Error> {
+        let command = HciCommand::Nop;
+        let packet = command.encode()?;
+        assert_eq!(packet.data(), &[1, 0, 0, 0]);
+        assert_eq!(command.opcode(), HciCommandOpCode::Nop);
+        Ok(())
+    }
+
+    #[test]
+    fn test_encode_le_read_buffer_size_command() -> Result<(), Error> {
+        let command = HciCommand::LeReadBufferSize;
+        let packet = command.encode()?;
+        assert_eq!(packet.data(), &[1, 2, 32, 0]);
+        assert_eq!(command.opcode(), HciCommandOpCode::LeReadBufferSize);
+        Ok(())
+    }
+
+    #[test]
+    fn test_encode_le_read_local_supported_features_page_0_command() -> Result<(), Error> {
+        let command = HciCommand::LeReadLocalSupportedFeaturesPage0;
+        let packet = command.encode()?;
+        assert_eq!(packet.data(), &[1, 3, 32, 0]);
+        assert_eq!(
+            command.opcode(),
+            HciCommandOpCode::LeReadLocalSupportedFeaturesPage0
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_encode_le_read_supported_states_command() -> Result<(), Error> {
+        let command = HciCommand::LeReadSupportedStates;
+        let packet = command.encode()?;
+        assert_eq!(packet.data(), &[1, 28, 32, 0]);
+        assert_eq!(command.opcode(), HciCommandOpCode::LeReadSupportedStates);
+        Ok(())
+    }
+
+    #[test]
+    fn test_encode_read_buffer_size_command() -> Result<(), Error> {
+        let command = HciCommand::ReadBufferSize;
+        let packet = command.encode()?;
+        assert_eq!(packet.data(), &[1, 5, 16, 0]);
+        assert_eq!(command.opcode(), HciCommandOpCode::ReadBufferSize);
+        Ok(())
+    }
+
+    #[test]
+    fn test_encode_read_local_supported_commands_command() -> Result<(), Error> {
+        let command = HciCommand::ReadLocalSupportedCommands;
+        let packet = command.encode()?;
+        assert_eq!(packet.data(), &[1, 2, 16, 0]);
+        assert_eq!(
+            command.opcode(),
+            HciCommandOpCode::ReadLocalSupportedCommands
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_encode_read_local_supported_features_command() -> Result<(), Error> {
+        let command = HciCommand::ReadLocalSupportedFeatures;
+        let packet = command.encode()?;
+        assert_eq!(packet.data(), &[1, 3, 16, 0]);
+        assert_eq!(
+            command.opcode(),
+            HciCommandOpCode::ReadLocalSupportedFeatures
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_encode_reset_command() -> Result<(), Error> {
+        let command = HciCommand::Reset;
+        let packet = command.encode()?;
+        assert_eq!(packet.data(), &[1, 3, 12, 0]);
+        assert_eq!(command.opcode(), HciCommandOpCode::Reset);
+        Ok(())
+    }
+
+    #[test]
+    fn test_encode_le_set_advertising_enable_command() -> Result<(), Error> {
+        let command = HciCommand::LeSetAdvertisingEnable(AdvertisingEnable::Enabled);
+        let packet = command.encode()?;
+        assert_eq!(packet.data(), &[1, 10, 32, 1, 1]);
+        assert_eq!(command.opcode(), HciCommandOpCode::LeSetAdvertisingEnable);
+        Ok(())
+    }
+
+    #[test]
+    fn test_encode_le_set_advertising_data_command() -> Result<(), Error> {
+        let adv_data = AdvertisingData::default();
+        let command = HciCommand::LeSetAdvertisingData(&adv_data);
+        let packet = command.encode()?;
+        assert_eq!(
+            packet.data(),
+            &[
+                1, 8, 32, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(command.opcode(), HciCommandOpCode::LeSetAdvertisingData);
+        Ok(())
+    }
+
+    #[test]
+    fn test_encode_le_set_advertising_parameters_command() -> Result<(), Error> {
+        let adv_params = AdvertisingParameters::default();
+        let command = HciCommand::LeSetAdvertisingParameters(&adv_params);
+        let packet = command.encode()?;
+        assert_eq!(
+            packet.data(),
+            &[1, 6, 32, 15, 0, 8, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0]
+        );
+        assert_eq!(
+            command.opcode(),
+            HciCommandOpCode::LeSetAdvertisingParameters
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_encode_le_set_scan_response_data_command() -> Result<(), Error> {
+        let scanresp_data = ScanResponseData::default();
+        let command = HciCommand::LeSetScanResponseData(&scanresp_data);
+        let packet = command.encode()?;
+        assert_eq!(
+            packet.data(),
+            &[
+                1, 9, 32, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0
+            ]
+        );
+        assert_eq!(command.opcode(), HciCommandOpCode::LeSetScanResponseData);
+        Ok(())
+    }
+
+    #[test]
+    fn test_encode_set_event_mask_command() -> Result<(), Error> {
+        let event_mask = EventMask::HARDWARE_ERROR
+            | EventMask::DATA_BUFFER_OVERFLOW
+            | EventMask::DISCONNECTION_COMPLETE;
+        let command = HciCommand::SetEventMask(event_mask);
+        let packet = command.encode()?;
+        assert_eq!(packet.data(), &[1, 1, 12, 8, 16, 128, 0, 2, 0, 0, 0, 0]);
+        assert_eq!(command.opcode(), HciCommandOpCode::SetEventMask);
+        Ok(())
+    }
+
+    #[test]
+    fn test_encode_unsupported_command() {
+        // Use Flush command
+        let command = HciCommand::Unsupported(0x0C08);
+        let err = command.encode();
+        assert!(matches!(
+            err,
+            Err(Error::Hci(HciError::InvalidCommand(0x0C08)))
+        ));
+        assert_eq!(command.opcode(), HciCommandOpCode::Unsupported(0x0C08));
+    }
+}
