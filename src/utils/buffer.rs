@@ -15,7 +15,7 @@ impl<const CAP: usize> Buffer<CAP> {
         self.offset == CAP
     }
 
-    fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.offset
     }
 
@@ -90,6 +90,20 @@ impl<const CAP: usize> Default for Buffer<CAP> {
         Self {
             data: [0; CAP],
             offset: 0,
+        }
+    }
+}
+
+impl<const CAP: usize> TryFrom<&[u8]> for Buffer<CAP> {
+    type Error = UtilsError;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        if value.len() > CAP {
+            Err(UtilsError::BufferTooSmall)
+        } else {
+            let mut s = Self::default();
+            s.copy_from_slice(value)?;
+            Ok(s)
         }
     }
 }

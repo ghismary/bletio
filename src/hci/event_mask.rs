@@ -41,6 +41,20 @@ impl Default for EventMask {
     }
 }
 
+pub(crate) mod parser {
+    use nom::{
+        combinator::{all_consuming, map},
+        number::le_u64,
+        IResult, Parser,
+    };
+
+    use super::EventMask;
+
+    pub(crate) fn event_mask(input: &[u8]) -> IResult<&[u8], EventMask> {
+        all_consuming(map(le_u64(), EventMask::from_bits_retain)).parse(input)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
