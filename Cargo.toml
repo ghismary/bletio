@@ -18,14 +18,13 @@ bitflags = "2.8"
 embassy-time = { version = "0.4", optional = true }
 nom = { version = "8.0", default-features = false }
 thiserror = { version = "2.0", default-features = false }
-tokio = { version = "1.43", default-features = false, features = [
-    "rt",
-    "time",
-], optional = true }
+tokio = { version = "1.43", features = ["rt", "time"], optional = true }
 
 [dev-dependencies]
 approx = "0.5"
 claims = "0.8"
+tokio = { version = "1.43", features = ["rt", "time", "macros", "test-util"] }
+tokio-macros = "2.5"
 
 [workspace]
 members = ["update-assigned-numbers"]
