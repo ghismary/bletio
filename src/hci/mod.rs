@@ -7,6 +7,11 @@ pub(crate) mod supported_commands;
 mod supported_features;
 pub(crate) mod supported_le_states;
 
+#[cfg(feature = "embassy")]
+mod embassy;
+#[cfg(feature = "tokio")]
+mod tokio;
+
 use core::future::Future;
 use core::num::{NonZeroU16, NonZeroU8};
 
@@ -91,16 +96,6 @@ pub trait WithTimeout {
         self,
         timeout: u16,
     ) -> impl Future<Output = Result<Self::Output, HciDriverError>>;
-}
-
-impl<F: Future> WithTimeout for F {
-    type Output = F::Output;
-
-    async fn with_timeout(self, timeout_ms: u16) -> Result<Self::Output, HciDriverError> {
-        embassy_time::with_timeout(embassy_time::Duration::from_millis(timeout_ms as u64), self)
-            .await
-            .map_err(|_| HciDriverError::Timeout)
-    }
 }
 
 #[derive(Debug, Clone, Default)]

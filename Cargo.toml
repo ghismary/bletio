@@ -8,11 +8,20 @@ license = "MIT OR Apache-2.0"
 keywords = ["no-std", "ble", "bluetooth"]
 categories = ["embedded", "no-std"]
 
+[features]
+default = ["tokio"]
+embassy = ["dep:embassy-time"]
+tokio = ["dep:tokio"]
+
 [dependencies]
 bitflags = "2.8"
-embassy-time = "0.4"
+embassy-time = { version = "0.4", optional = true }
 nom = { version = "8.0", default-features = false }
 thiserror = { version = "2.0", default-features = false }
+tokio = { version = "1.43", default-features = false, features = [
+    "rt",
+    "time",
+], optional = true }
 
 [dev-dependencies]
 approx = "0.5"

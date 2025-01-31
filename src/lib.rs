@@ -1,5 +1,8 @@
 #![no_std]
 
+#[cfg(all(feature = "embassy", feature = "tokio"))]
+compile_error!("feature \"embassy\" and feature \"tokio\" cannot be enabled at the same time");
+
 use bitflags::Flags;
 use core::marker::PhantomData;
 use core::num::NonZeroU16;
