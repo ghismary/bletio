@@ -353,7 +353,7 @@ const ADVERTISING_PARAMETERS_SIZE: usize = 15;
 /// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
 ///
 /// Use the [`AdvertisingParametersBuilder`] to instantiate it.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AdvertisingParameters {
     buffer: Buffer<ADVERTISING_PARAMETERS_SIZE>,
 }

@@ -5,7 +5,7 @@ use crate::{
     SupportedLeFeatures, SupportedLeStates,
 };
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) enum Event {
     CommandComplete(CommandCompleteEvent),
     Unsupported(u8),
@@ -27,7 +27,7 @@ impl From<u8> for EventCode {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) struct CommandCompleteEvent {
     pub(crate) num_hci_command_packets: u8,
     pub(crate) opcode: HciCommandOpCode,
@@ -38,17 +38,17 @@ impl CommandCompleteEvent {
     pub(crate) fn new(
         num_hci_command_packets: u8,
         opcode: HciCommandOpCode,
-        parameter: EventParameter,
+        parameter: impl Into<EventParameter>,
     ) -> Self {
         Self {
             num_hci_command_packets,
             opcode,
-            parameter,
+            parameter: parameter.into(),
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) enum EventParameter {
     Empty,
     Status(StatusEventParameter),
@@ -60,24 +60,42 @@ pub(crate) enum EventParameter {
     StatusAndSupportedLeStates(StatusAndSupportedLeStatesEventParameter),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) struct StatusEventParameter {
     pub(crate) status: HciErrorCode,
 }
 
-#[derive(Debug)]
+impl From<StatusEventParameter> for EventParameter {
+    fn from(value: StatusEventParameter) -> Self {
+        Self::Status(value)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) struct StatusAndSupportedCommandsEventParameter {
     pub(crate) status: HciErrorCode,
     pub(crate) supported_commands: SupportedCommands,
 }
 
-#[derive(Debug)]
+impl From<StatusAndSupportedCommandsEventParameter> for EventParameter {
+    fn from(value: StatusAndSupportedCommandsEventParameter) -> Self {
+        Self::StatusAndSupportedCommands(value)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) struct StatusAndSupportedFeaturesEventParameter {
     pub(crate) status: HciErrorCode,
     pub(crate) supported_features: SupportedFeatures,
 }
 
-#[derive(Debug)]
+impl From<StatusAndSupportedFeaturesEventParameter> for EventParameter {
+    fn from(value: StatusAndSupportedFeaturesEventParameter) -> Self {
+        Self::StatusAndSupportedFeatures(value)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) struct StatusAndBufferSizeEventParameter {
     pub(crate) status: HciErrorCode,
     pub(crate) acl_data_packet_length: NonZeroU16,
@@ -86,23 +104,47 @@ pub(crate) struct StatusAndBufferSizeEventParameter {
     pub(crate) total_num_synchronous_packets: u16,
 }
 
-#[derive(Debug)]
+impl From<StatusAndBufferSizeEventParameter> for EventParameter {
+    fn from(value: StatusAndBufferSizeEventParameter) -> Self {
+        Self::StatusAndBufferSize(value)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) struct StatusAndLeBufferSizeEventParameter {
     pub(crate) status: HciErrorCode,
     pub(crate) le_acl_data_packet_length: u16,
     pub(crate) total_num_le_acl_data_packets: u8,
 }
 
-#[derive(Debug)]
+impl From<StatusAndLeBufferSizeEventParameter> for EventParameter {
+    fn from(value: StatusAndLeBufferSizeEventParameter) -> Self {
+        Self::StatusAndLeBufferSize(value)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) struct StatusAndSupportedLeFeaturesEventParameter {
     pub(crate) status: HciErrorCode,
     pub(crate) supported_le_features: SupportedLeFeatures,
 }
 
-#[derive(Debug)]
+impl From<StatusAndSupportedLeFeaturesEventParameter> for EventParameter {
+    fn from(value: StatusAndSupportedLeFeaturesEventParameter) -> Self {
+        Self::StatusAndSupportedLeFeatures(value)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) struct StatusAndSupportedLeStatesEventParameter {
     pub(crate) status: HciErrorCode,
     pub(crate) supported_le_states: SupportedLeStates,
+}
+
+impl From<StatusAndSupportedLeStatesEventParameter> for EventParameter {
+    fn from(value: StatusAndSupportedLeStatesEventParameter) -> Self {
+        Self::StatusAndSupportedLeStates(value)
+    }
 }
 
 pub(crate) mod parser {
@@ -190,29 +232,27 @@ pub(crate) mod parser {
             | HciCommandOpCode::LeSetScanResponseData => {
                 let (rest, error_code) = hci_error_code(return_parameters)?;
                 eof(rest)?;
-                EventParameter::Status(StatusEventParameter { status: error_code })
+                StatusEventParameter { status: error_code }.into()
             }
             HciCommandOpCode::ReadLocalSupportedCommands => {
                 let (rest, error_code) = hci_error_code(return_parameters)?;
                 let (rest, supported_commands) = supported_commands(rest)?;
                 eof(rest)?;
-                EventParameter::StatusAndSupportedCommands(
-                    StatusAndSupportedCommandsEventParameter {
-                        status: error_code,
-                        supported_commands,
-                    },
-                )
+                StatusAndSupportedCommandsEventParameter {
+                    status: error_code,
+                    supported_commands,
+                }
+                .into()
             }
             HciCommandOpCode::ReadLocalSupportedFeatures => {
                 let (rest, status) = hci_error_code(return_parameters)?;
                 let (rest, supported_features) = supported_features(rest)?;
                 eof(rest)?;
-                EventParameter::StatusAndSupportedFeatures(
-                    StatusAndSupportedFeaturesEventParameter {
-                        status,
-                        supported_features,
-                    },
-                )
+                StatusAndSupportedFeaturesEventParameter {
+                    status,
+                    supported_features,
+                }
+                .into()
             }
             HciCommandOpCode::ReadBufferSize => {
                 let (rest, status) = hci_error_code(return_parameters)?;
@@ -226,46 +266,46 @@ pub(crate) mod parser {
                     ),
                 ) = buffer_size(rest)?;
                 eof(rest)?;
-                EventParameter::StatusAndBufferSize(StatusAndBufferSizeEventParameter {
+                StatusAndBufferSizeEventParameter {
                     status,
                     acl_data_packet_length,
                     synchronous_data_packet_length,
                     total_num_acl_data_packets,
                     total_num_synchronous_packets,
-                })
+                }
+                .into()
             }
             HciCommandOpCode::LeReadBufferSize => {
                 let (rest, status) = hci_error_code(return_parameters)?;
                 let (rest, (le_acl_data_packet_length, total_num_le_acl_data_packets)) =
                     le_buffer_size(rest)?;
                 eof(rest)?;
-                EventParameter::StatusAndLeBufferSize(StatusAndLeBufferSizeEventParameter {
+                StatusAndLeBufferSizeEventParameter {
                     status,
                     le_acl_data_packet_length,
                     total_num_le_acl_data_packets,
-                })
+                }
+                .into()
             }
             HciCommandOpCode::LeReadLocalSupportedFeaturesPage0 => {
                 let (rest, status) = hci_error_code(return_parameters)?;
                 let (rest, supported_le_features) = le_supported_features_page_0(rest)?;
                 eof(rest)?;
-                EventParameter::StatusAndSupportedLeFeatures(
-                    StatusAndSupportedLeFeaturesEventParameter {
-                        status,
-                        supported_le_features,
-                    },
-                )
+                StatusAndSupportedLeFeaturesEventParameter {
+                    status,
+                    supported_le_features,
+                }
+                .into()
             }
             HciCommandOpCode::LeReadSupportedStates => {
                 let (rest, status) = hci_error_code(return_parameters)?;
                 let (rest, supported_le_states) = le_supported_states(rest)?;
                 eof(rest)?;
-                EventParameter::StatusAndSupportedLeStates(
-                    StatusAndSupportedLeStatesEventParameter {
-                        status,
-                        supported_le_states,
-                    },
-                )
+                StatusAndSupportedLeStatesEventParameter {
+                    status,
+                    supported_le_states,
+                }
+                .into()
             }
             HciCommandOpCode::Unsupported(_) => {
                 fail::<_, &[u8], _>().parse(return_parameters)?;
