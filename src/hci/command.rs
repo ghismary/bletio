@@ -82,7 +82,7 @@ hci_command_opcodes! {
     (LeReadSupportedStates, LE_READ_SUPPORTED_STATES) = (LE_CONTROLLER_OGF, 0x001C),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) enum HciCommand<'a> {
     // LeAddDeviceToFilterAcceptList(AddressType, Address),
     // LeClearFilterAcceptList,

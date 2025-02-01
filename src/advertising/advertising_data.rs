@@ -263,7 +263,7 @@ impl AdvertisingDataBuilder {
 /// [Supplement to the Bluetooth Core Specification, Part A, 1](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-36b7e551-d4cf-9ae3-a8ee-0482fbc1d5bc).
 ///
 /// Use the [`AdvertisingDataBuilder`] to instantiate it.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct AdvertisingData {
     buffer: [u8; ADVERTISING_DATA_MAX_SIZE + 1],
     offset: usize,
@@ -510,7 +510,7 @@ impl ScanResponseDataBuilder {
 /// [Supplement to the Bluetooth Core Specification, Part A, 1](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-36b7e551-d4cf-9ae3-a8ee-0482fbc1d5bc).
 ///
 /// Use the [`ScanResponseDataBuilder`] to instantiate it.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ScanResponseData {
     buffer: [u8; ADVERTISING_DATA_MAX_SIZE + 1],
     offset: usize,

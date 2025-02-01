@@ -23,6 +23,7 @@ tokio = { version = "1.43", features = ["rt", "time"], optional = true }
 [dev-dependencies]
 approx = "0.5"
 claims = "0.8"
+rstest = "0.24"
 tokio = { version = "1.43", features = ["rt", "time", "macros", "test-util"] }
 tokio-macros = "2.5"
 

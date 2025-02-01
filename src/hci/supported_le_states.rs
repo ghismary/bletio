@@ -1,6 +1,6 @@
 use crate::le_states::{LeCombinedState, LeSingleState, LeState};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct SupportedLeStates {
     value: u64,
 }
@@ -12,7 +12,11 @@ impl From<u64> for SupportedLeStates {
 }
 
 impl SupportedLeStates {
-    pub fn is_supported(&self, state: LeState) -> bool {
+    pub fn is_supported(&self, state: impl Into<LeState>) -> bool {
+        self.is_supported_internal(state.into())
+    }
+
+    fn is_supported_internal(&self, state: LeState) -> bool {
         let state = state.simplify();
         match state {
             LeState::Single(LeSingleState::NonConnectableAdvertising) => {
@@ -180,6 +184,7 @@ impl SupportedLeStates {
 #[cfg(test)]
 mod test {
     use super::*;
+    use rstest::*;
 
     #[test]
     fn test_single_state_is_supported() {
@@ -212,222 +217,122 @@ mod test {
         )
     }
 
-    #[test]
-    fn test_all_states_supported() {
-        let supported_states: SupportedLeStates = 0x0000_03FF_FFFF_FFFF.into();
-        assert!(supported_states
-            .is_supported(LeState::Single(LeSingleState::NonConnectableAdvertising)));
-        assert!(supported_states.is_supported(LeState::Single(LeSingleState::ScannableAdvertising)));
+    #[fixture]
+    fn all_supported_states() -> SupportedLeStates {
+        0x0000_03FF_FFFF_FFFF.into()
+    }
+
+    #[rstest]
+    fn test_unsupported_combined_state(all_supported_states: SupportedLeStates) {
         assert!(
-            supported_states.is_supported(LeState::Single(LeSingleState::ConnectableAdvertising))
-        );
-        assert!(supported_states.is_supported(LeState::Single(
-            LeSingleState::HighDutyCycleDirectedAdvertising
-        )));
-        assert!(supported_states.is_supported(LeState::Single(LeSingleState::PassiveScanning)));
-        assert!(supported_states.is_supported(LeState::Single(LeSingleState::ActiveScanning)));
-        assert!(supported_states.is_supported(LeState::Single(LeSingleState::Initiating)));
-        assert!(supported_states.is_supported(LeState::Single(LeSingleState::ConnectionSlaveRole)));
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::NonConnectableAdvertising,
-                LeSingleState::PassiveScanning,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::ScannableAdvertising,
-                LeSingleState::PassiveScanning,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::ConnectableAdvertising,
-                LeSingleState::PassiveScanning,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::HighDutyCycleDirectedAdvertising,
-                LeSingleState::PassiveScanning,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::NonConnectableAdvertising,
-                LeSingleState::ActiveScanning,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::ScannableAdvertising,
-                LeSingleState::ActiveScanning,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::ConnectableAdvertising,
-                LeSingleState::ActiveScanning,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::HighDutyCycleDirectedAdvertising,
-                LeSingleState::ActiveScanning,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::NonConnectableAdvertising,
-                LeSingleState::Initiating,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::ScannableAdvertising,
-                LeSingleState::Initiating,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::NonConnectableAdvertising,
+            !all_supported_states.is_supported(LeState::Combined(LeCombinedState(
                 LeSingleState::ConnectionMasterRole,
+                LeSingleState::ConnectionSlaveRole
             )))
         );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::ScannableAdvertising,
-                LeSingleState::ConnectionMasterRole,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::NonConnectableAdvertising,
-                LeSingleState::ConnectionSlaveRole,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::ScannableAdvertising,
-                LeSingleState::ConnectionSlaveRole,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::PassiveScanning,
-                LeSingleState::Initiating,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::ActiveScanning,
-                LeSingleState::Initiating,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::PassiveScanning,
-                LeSingleState::ConnectionMasterRole,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::ActiveScanning,
-                LeSingleState::ConnectionMasterRole,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::PassiveScanning,
-                LeSingleState::ConnectionSlaveRole,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::ActiveScanning,
-                LeSingleState::ConnectionSlaveRole,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::Initiating,
-                LeSingleState::ConnectionMasterRole,
-            )))
-        );
-        assert!(supported_states.is_supported(LeState::Single(
-            LeSingleState::LowDutyCycleDirectedAdvertising
-        )));
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::LowDutyCycleDirectedAdvertising,
-                LeSingleState::PassiveScanning,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::LowDutyCycleDirectedAdvertising,
-                LeSingleState::ActiveScanning,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::ConnectableAdvertising,
-                LeSingleState::Initiating,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::HighDutyCycleDirectedAdvertising,
-                LeSingleState::Initiating,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::LowDutyCycleDirectedAdvertising,
-                LeSingleState::Initiating,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::ConnectableAdvertising,
-                LeSingleState::ConnectionMasterRole,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::HighDutyCycleDirectedAdvertising,
-                LeSingleState::ConnectionMasterRole,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::LowDutyCycleDirectedAdvertising,
-                LeSingleState::ConnectionMasterRole,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::ConnectableAdvertising,
-                LeSingleState::ConnectionSlaveRole,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::HighDutyCycleDirectedAdvertising,
-                LeSingleState::ConnectionSlaveRole,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::LowDutyCycleDirectedAdvertising,
-                LeSingleState::ConnectionSlaveRole,
-            )))
-        );
-        assert!(
-            supported_states.is_supported(LeState::Combined(LeCombinedState(
-                LeSingleState::Initiating,
-                LeSingleState::ConnectionSlaveRole,
-            )))
-        );
+    }
+
+    #[rstest]
+    #[case(LeSingleState::NonConnectableAdvertising)]
+    #[case(LeSingleState::ScannableAdvertising)]
+    #[case(LeSingleState::ConnectableAdvertising)]
+    #[case(LeSingleState::HighDutyCycleDirectedAdvertising)]
+    #[case(LeSingleState::PassiveScanning)]
+    #[case(LeSingleState::ActiveScanning)]
+    #[case(LeSingleState::Initiating)]
+    #[case(LeSingleState::ConnectionSlaveRole)]
+    #[case(LeCombinedState(
+        LeSingleState::NonConnectableAdvertising,
+        LeSingleState::PassiveScanning,
+    ))]
+    #[case(LeCombinedState(LeSingleState::ScannableAdvertising, LeSingleState::PassiveScanning,))]
+    #[case(LeCombinedState(LeSingleState::ConnectableAdvertising, LeSingleState::PassiveScanning,))]
+    #[case(LeCombinedState(
+        LeSingleState::HighDutyCycleDirectedAdvertising,
+        LeSingleState::PassiveScanning,
+    ))]
+    #[case(LeCombinedState(
+        LeSingleState::NonConnectableAdvertising,
+        LeSingleState::ActiveScanning,
+    ))]
+    #[case(LeCombinedState(LeSingleState::ScannableAdvertising, LeSingleState::ActiveScanning,))]
+    #[case(LeCombinedState(LeSingleState::ConnectableAdvertising, LeSingleState::ActiveScanning,))]
+    #[case(LeCombinedState(
+        LeSingleState::HighDutyCycleDirectedAdvertising,
+        LeSingleState::ActiveScanning,
+    ))]
+    #[case(LeCombinedState(LeSingleState::NonConnectableAdvertising, LeSingleState::Initiating,))]
+    #[case(LeCombinedState(LeSingleState::ScannableAdvertising, LeSingleState::Initiating,))]
+    #[case(LeCombinedState(
+        LeSingleState::NonConnectableAdvertising,
+        LeSingleState::ConnectionMasterRole,
+    ))]
+    #[case(LeCombinedState(
+        LeSingleState::ScannableAdvertising,
+        LeSingleState::ConnectionMasterRole,
+    ))]
+    #[case(LeCombinedState(
+        LeSingleState::NonConnectableAdvertising,
+        LeSingleState::ConnectionSlaveRole,
+    ))]
+    #[case(LeCombinedState(
+        LeSingleState::ScannableAdvertising,
+        LeSingleState::ConnectionSlaveRole,
+    ))]
+    #[case(LeCombinedState(LeSingleState::PassiveScanning, LeSingleState::Initiating,))]
+    #[case(LeCombinedState(LeSingleState::ActiveScanning, LeSingleState::Initiating,))]
+    #[case(LeCombinedState(LeSingleState::PassiveScanning, LeSingleState::ConnectionMasterRole,))]
+    #[case(LeCombinedState(LeSingleState::ActiveScanning, LeSingleState::ConnectionMasterRole,))]
+    #[case(LeCombinedState(LeSingleState::PassiveScanning, LeSingleState::ConnectionSlaveRole,))]
+    #[case(LeCombinedState(LeSingleState::ActiveScanning, LeSingleState::ConnectionSlaveRole,))]
+    #[case(LeCombinedState(LeSingleState::Initiating, LeSingleState::ConnectionMasterRole,))]
+    #[case(LeSingleState::LowDutyCycleDirectedAdvertising)]
+    #[case(LeCombinedState(
+        LeSingleState::LowDutyCycleDirectedAdvertising,
+        LeSingleState::PassiveScanning,
+    ))]
+    #[case(LeCombinedState(
+        LeSingleState::LowDutyCycleDirectedAdvertising,
+        LeSingleState::ActiveScanning,
+    ))]
+    #[case(LeCombinedState(LeSingleState::ConnectableAdvertising, LeSingleState::Initiating,))]
+    #[case(LeCombinedState(
+        LeSingleState::HighDutyCycleDirectedAdvertising,
+        LeSingleState::Initiating,
+    ))]
+    #[case(LeCombinedState(
+        LeSingleState::LowDutyCycleDirectedAdvertising,
+        LeSingleState::Initiating,
+    ))]
+    #[case(LeCombinedState(
+        LeSingleState::ConnectableAdvertising,
+        LeSingleState::ConnectionMasterRole,
+    ))]
+    #[case(LeCombinedState(
+        LeSingleState::HighDutyCycleDirectedAdvertising,
+        LeSingleState::ConnectionMasterRole,
+    ))]
+    #[case(LeCombinedState(
+        LeSingleState::LowDutyCycleDirectedAdvertising,
+        LeSingleState::ConnectionMasterRole,
+    ))]
+    #[case(LeCombinedState(
+        LeSingleState::ConnectableAdvertising,
+        LeSingleState::ConnectionSlaveRole,
+    ))]
+    #[case(LeCombinedState(
+        LeSingleState::HighDutyCycleDirectedAdvertising,
+        LeSingleState::ConnectionSlaveRole,
+    ))]
+    #[case(LeCombinedState(
+        LeSingleState::LowDutyCycleDirectedAdvertising,
+        LeSingleState::ConnectionSlaveRole,
+    ))]
+    #[case(LeCombinedState(LeSingleState::Initiating, LeSingleState::ConnectionSlaveRole,))]
+    fn test_all_states_supported(
+        all_supported_states: SupportedLeStates,
+        #[case] state: impl Into<LeState>,
+    ) {
+        assert!(all_supported_states.is_supported_internal(state.into()));
     }
 }

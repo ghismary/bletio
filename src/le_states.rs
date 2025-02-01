@@ -33,6 +33,18 @@ impl LeState {
     }
 }
 
+impl From<LeSingleState> for LeState {
+    fn from(value: LeSingleState) -> Self {
+        Self::Single(value)
+    }
+}
+
+impl From<LeCombinedState> for LeState {
+    fn from(value: LeCombinedState) -> Self {
+        Self::Combined(value)
+    }
+}
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum LeSingleState {
     ScannableAdvertising,
@@ -59,68 +71,50 @@ impl PartialEq for LeCombinedState {
 #[cfg(test)]
 mod test {
     use super::*;
+    use rstest::rstest;
 
-    #[test]
-    fn test_same_combined_states_eq() {
-        assert_eq!(
-            LeState::Combined(LeCombinedState(
-                LeSingleState::NonConnectableAdvertising,
-                LeSingleState::PassiveScanning
-            )),
-            LeState::Combined(LeCombinedState(
-                LeSingleState::NonConnectableAdvertising,
-                LeSingleState::PassiveScanning
-            ))
+    #[rstest]
+    #[case::same_combined_states(
+        LeCombinedState(
+            LeSingleState::NonConnectableAdvertising,
+            LeSingleState::PassiveScanning
+        ),
+        LeCombinedState(
+            LeSingleState::NonConnectableAdvertising,
+            LeSingleState::PassiveScanning
         )
+    )]
+    #[case::inverted_combined_states(
+        LeCombinedState(
+            LeSingleState::NonConnectableAdvertising,
+            LeSingleState::PassiveScanning
+        ),
+        LeCombinedState(
+            LeSingleState::PassiveScanning,
+            LeSingleState::NonConnectableAdvertising
+        )
+    )]
+    #[case::equivalent_single_and_combined_states(
+        LeSingleState::ActiveScanning,
+        LeCombinedState(LeSingleState::ActiveScanning, LeSingleState::ActiveScanning)
+    )]
+    fn test_le_states_eq(#[case] a: impl Into<LeState>, #[case] b: impl Into<LeState>) {
+        assert_eq!(a.into(), b.into());
     }
 
-    #[test]
-    fn test_different_combined_states_ne() {
-        assert_ne!(
-            LeState::Combined(LeCombinedState(
-                LeSingleState::NonConnectableAdvertising,
-                LeSingleState::PassiveScanning
-            )),
-            LeState::Combined(LeCombinedState(
-                LeSingleState::ConnectableAdvertising,
-                LeSingleState::ActiveScanning
-            ))
-        )
-    }
-
-    #[test]
-    fn test_inverted_combined_states_eq() {
-        assert_eq!(
-            LeState::Combined(LeCombinedState(
-                LeSingleState::NonConnectableAdvertising,
-                LeSingleState::PassiveScanning
-            )),
-            LeState::Combined(LeCombinedState(
-                LeSingleState::PassiveScanning,
-                LeSingleState::NonConnectableAdvertising
-            ))
-        )
-    }
-
-    #[test]
-    fn test_equivalent_single_and_combined_states_eq() {
-        assert_eq!(
-            LeState::Single(LeSingleState::ActiveScanning),
-            LeState::Combined(LeCombinedState(
-                LeSingleState::ActiveScanning,
-                LeSingleState::ActiveScanning
-            ))
-        )
-    }
-
-    #[test]
-    fn test_single_and_combined_states_ne() {
-        assert_ne!(
-            LeState::Single(LeSingleState::ActiveScanning),
-            LeState::Combined(LeCombinedState(
-                LeSingleState::ConnectableAdvertising,
-                LeSingleState::PassiveScanning
-            ))
-        )
+    #[rstest]
+    #[case::different_combined_states(
+        LeCombinedState(
+            LeSingleState::NonConnectableAdvertising,
+            LeSingleState::PassiveScanning
+        ),
+        LeCombinedState(LeSingleState::ConnectableAdvertising, LeSingleState::ActiveScanning)
+    )]
+    #[case::different_single_and_combined_states(
+        LeSingleState::ActiveScanning,
+        LeCombinedState(LeSingleState::ConnectableAdvertising, LeSingleState::PassiveScanning)
+    )]
+    fn test_le_states_ne(#[case] a: impl Into<LeState>, #[case] b: impl Into<LeState>) {
+        assert_ne!(a.into(), b.into());
     }
 }

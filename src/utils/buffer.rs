@@ -1,6 +1,6 @@
 use crate::utils::{encode_le_u128, encode_le_u16, encode_le_u32, encode_le_u64, UtilsError};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Buffer<const CAP: usize> {
     pub(crate) data: [u8; CAP],
     pub(crate) offset: usize,
