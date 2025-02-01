@@ -1,6 +1,6 @@
 //! Assigned numbers for company identifiers.
 //!
-//! FILE GENERATED FROM REVISION 454634ac5f0fae70cc2ccd56bfa785a3eb4a818e OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
+//! FILE GENERATED FROM REVISION efc887857333456bda4ac2762443a7a86c99a27b OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u16)]
@@ -11,6 +11,32 @@
 /// It is to be used when creating a Manufacturer Specific Data Advertising Structure.
 /// See [ManufacturerSpecificDataAdStruct::try_new](crate::advertising::ad_struct::ManufacturerSpecificDataAdStruct::try_new).
 pub enum CompanyIdentifier {
+    /// Tactrix (0x0E94)
+    Tactrix = 0x0E94,
+    /// MIV ELECTRONICS, LTD (0x0E93)
+    MivElectronicsLtd = 0x0E93,
+    /// Glutz AG (0x0E92)
+    GlutzAg = 0x0E92,
+    /// Identita Inc. (0x0E91)
+    IdentitaInc = 0x0E91,
+    /// RainMaker Solutions, Inc. (0x0E90)
+    RainMakerSolutionsInc = 0x0E90,
+    /// Avetos Design LLC (0x0E8F)
+    AvetosDesignLlc = 0x0E8F,
+    /// Nobest Inc (0x0E8E)
+    NobestInc = 0x0E8E,
+    /// Celebrities Management Private Limited (0x0E8D)
+    CelebritiesManagementPrivateLimited = 0x0E8D,
+    /// Gopod Group Holding Limited (0x0E8C)
+    GopodGroupHoldingLimited = 0x0E8C,
+    /// Allgon AB (0x0E8B)
+    AllgonAb = 0x0E8B,
+    /// Tele-Radio i Lysekil AB (0x0E8A)
+    TeleRadioILysekilAb = 0x0E8A,
+    /// Brudden (0x0E89)
+    Brudden = 0x0E89,
+    /// Skewered Fencing, LLC (0x0E88)
+    SkeweredFencingLlc = 0x0E88,
     /// OpenTech Alliance, Inc. (0x0E87)
     OpenTechAllianceInc = 0x0E87,
     /// Mercury Marine, a division of Brunswick Corporation (0x0E86)

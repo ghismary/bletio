@@ -1,6 +1,6 @@
 //! Assigned numbers for Bluetooth Common Data Types.
 //!
-//! FILE GENERATED FROM REVISION 454634ac5f0fae70cc2ccd56bfa785a3eb4a818e OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
+//! FILE GENERATED FROM REVISION efc887857333456bda4ac2762443a7a86c99a27b OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
