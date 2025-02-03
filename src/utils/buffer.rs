@@ -1,13 +1,30 @@
 use crate::utils::{encode_le_u128, encode_le_u16, encode_le_u32, encode_le_u64, UtilsError};
 
+pub(crate) trait BufferOps {
+    fn data(&self) -> &[u8];
+    fn is_full(&self) -> bool;
+    fn len(&self) -> usize;
+    fn remaining_len(&self) -> usize;
+    fn copy_from_slice(&mut self, data: &[u8]) -> Result<usize, UtilsError>;
+    fn encode_le_u16(&mut self, data: u16) -> Result<usize, UtilsError>;
+    fn encode_le_u32(&mut self, data: u32) -> Result<usize, UtilsError>;
+    fn encode_le_u64(&mut self, data: u64) -> Result<usize, UtilsError>;
+    fn encode_le_u128(&mut self, data: u128) -> Result<usize, UtilsError>;
+    fn try_push(&mut self, data: u8) -> Result<usize, UtilsError>;
+}
+
+pub(crate) trait EncodeToBuffer {
+    fn encode<B: BufferOps>(&self, buffer: &mut B) -> Result<usize, UtilsError>;
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Buffer<const CAP: usize> {
     pub(crate) data: [u8; CAP],
     pub(crate) offset: usize,
 }
 
-impl<const CAP: usize> Buffer<CAP> {
-    pub(crate) fn data(&self) -> &[u8] {
+impl<const CAP: usize> BufferOps for Buffer<CAP> {
+    fn data(&self) -> &[u8] {
         &self.data[..self.offset]
     }
 
@@ -15,72 +32,72 @@ impl<const CAP: usize> Buffer<CAP> {
         self.offset == CAP
     }
 
-    pub(crate) fn len(&self) -> usize {
+    fn len(&self) -> usize {
         self.offset
     }
 
-    pub(crate) fn remaining_len(&self) -> usize {
+    fn remaining_len(&self) -> usize {
         CAP - self.len()
     }
 
-    pub(crate) fn copy_from_slice(&mut self, data: &[u8]) -> Result<(), UtilsError> {
+    fn copy_from_slice(&mut self, data: &[u8]) -> Result<usize, UtilsError> {
         let data_size = data.len();
         if self.remaining_len() < data_size {
             Err(UtilsError::BufferTooSmall)
         } else {
             self.offset += data_size;
             self.data[self.offset - data_size..self.offset].copy_from_slice(data);
-            Ok(())
+            Ok(data_size)
         }
     }
 
-    pub(crate) fn encode_le_u16(&mut self, data: u16) -> Result<(), UtilsError> {
+    fn encode_le_u16(&mut self, data: u16) -> Result<usize, UtilsError> {
         if self.remaining_len() < 2 {
             Err(UtilsError::BufferTooSmall)
         } else {
             self.offset += 2;
             encode_le_u16(&mut self.data[self.offset - 2..self.offset], data)?;
-            Ok(())
+            Ok(2)
         }
     }
 
-    pub(crate) fn encode_le_u32(&mut self, data: u32) -> Result<(), UtilsError> {
+    fn encode_le_u32(&mut self, data: u32) -> Result<usize, UtilsError> {
         if self.remaining_len() < 4 {
             Err(UtilsError::BufferTooSmall)
         } else {
             self.offset += 4;
             encode_le_u32(&mut self.data[self.offset - 4..self.offset], data)?;
-            Ok(())
+            Ok(4)
         }
     }
 
-    pub(crate) fn encode_le_u64(&mut self, data: u64) -> Result<(), UtilsError> {
+    fn encode_le_u64(&mut self, data: u64) -> Result<usize, UtilsError> {
         if self.remaining_len() < 8 {
             Err(UtilsError::BufferTooSmall)
         } else {
             self.offset += 8;
             encode_le_u64(&mut self.data[self.offset - 8..self.offset], data)?;
-            Ok(())
+            Ok(8)
         }
     }
 
-    pub(crate) fn encode_le_u128(&mut self, data: u128) -> Result<(), UtilsError> {
+    fn encode_le_u128(&mut self, data: u128) -> Result<usize, UtilsError> {
         if self.remaining_len() < 16 {
             Err(UtilsError::BufferTooSmall)
         } else {
             self.offset += 16;
             encode_le_u128(&mut self.data[self.offset - 16..self.offset], data)?;
-            Ok(())
+            Ok(16)
         }
     }
 
-    pub(crate) fn try_push(&mut self, data: u8) -> Result<(), UtilsError> {
+    fn try_push(&mut self, data: u8) -> Result<usize, UtilsError> {
         if self.is_full() {
             Err(UtilsError::BufferTooSmall)
         } else {
             self.data[self.offset] = data;
             self.offset += 1;
-            Ok(())
+            Ok(1)
         }
     }
 }

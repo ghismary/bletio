@@ -3,7 +3,7 @@ use crate::advertising::{AdvertisingData, AdvertisingEnable, ScanResponseData};
 use crate::hci::event_mask::EventMask;
 use crate::hci::HciError;
 use crate::hci::HciPacketType;
-use crate::utils::Buffer;
+use crate::utils::{Buffer, BufferOps, EncodeToBuffer};
 use crate::Error;
 
 macro_rules! hci_command_opcodes {
@@ -96,7 +96,7 @@ pub(crate) enum HciCommand<'a> {
     // LeSetEventMask(LeEventMask),
     LeSetAdvertisingEnable(AdvertisingEnable),
     LeSetAdvertisingData(&'a AdvertisingData),
-    LeSetAdvertisingParameters(&'a AdvertisingParameters),
+    LeSetAdvertisingParameters(AdvertisingParameters),
     // LeSetRandomAddress(RandomAddress),
     LeSetScanResponseData(&'a ScanResponseData),
     Nop,
@@ -121,20 +121,19 @@ impl HciCommand<'_> {
             | HciCommand::ReadLocalSupportedFeatures
             | HciCommand::Reset => CommandPacket::new(self.opcode()),
             HciCommand::LeSetAdvertisingEnable(enable) => {
-                let buffer = [*enable as u8];
-                CommandPacket::new(self.opcode()).append(buffer.as_slice())?
+                CommandPacket::new(self.opcode()).encode(enable)?
             }
             HciCommand::LeSetAdvertisingData(data) => {
                 CommandPacket::new(self.opcode()).append(data.encoded_data())?
             }
             HciCommand::LeSetAdvertisingParameters(parameters) => {
-                CommandPacket::new(self.opcode()).append(parameters.encoded_data())?
+                CommandPacket::new(self.opcode()).encode(parameters)?
             }
             HciCommand::LeSetScanResponseData(data) => {
                 CommandPacket::new(self.opcode()).append(data.encoded_data())?
             }
             HciCommand::SetEventMask(event_mask) => {
-                CommandPacket::new(self.opcode()).append(&event_mask.encode())?
+                CommandPacket::new(self.opcode()).encode(event_mask)?
             }
             HciCommand::Unsupported(opcode) => {
                 return Err(Error::Hci(HciError::InvalidCommand(*opcode)))
@@ -194,7 +193,15 @@ impl CommandPacket {
         Self { buffer }
     }
 
-    pub(crate) fn append(self, data: &[u8]) -> Result<Self, HciError> {
+    fn encode<E: EncodeToBuffer>(mut self, data: &E) -> Result<Self, HciError> {
+        self.buffer.data[HCI_COMMAND_PACKET_LENGTH_OFFSET] +=
+            data.encode(&mut self.buffer)
+                .map_err(|_| HciError::DataWillNotFitCommandPacket)? as u8;
+        Ok(self)
+    }
+
+    // TODO: TO REMOVE!!
+    fn append(self, data: &[u8]) -> Result<Self, HciError> {
         let mut packet = self;
         let data_len = data.len();
         packet.buffer.data[HCI_COMMAND_PACKET_LENGTH_OFFSET] += data_len as u8;
@@ -213,6 +220,7 @@ impl CommandPacket {
 pub(crate) mod parser {
     use nom::{bytes::take, combinator::map, number::le_u16, sequence::pair, IResult, Parser};
 
+    use crate::advertising::advertising_parameters::parser::advertising_parameters;
     use crate::advertising::parser::advertising_enable;
     use crate::hci::event_mask::parser::event_mask;
     use crate::hci::packet::parser::parameter_total_length;
@@ -229,39 +237,42 @@ pub(crate) mod parser {
         Ok((
             input,
             HciPacket::Command(match command_opcode {
-                HciCommandOpCode::Nop => HciCommand::Nop,
-                HciCommandOpCode::SetEventMask => {
-                    let (_, event_mask) = event_mask(parameters)?;
-                    HciCommand::SetEventMask(event_mask)
+                // HciCommandOpCode::LeClearFilterAcceptList => HciCommand::LeClearFilterAcceptList,
+                // HciCommandOpCode::LeRand => HciCommand::LeRand,
+                HciCommandOpCode::LeReadBufferSize => HciCommand::LeReadBufferSize,
+                // HciCommandOpCode::LeReadFilterAcceptListSize => {
+                //     HciCommand::LeReadFilterAcceptListSize
+                // }
+                HciCommandOpCode::LeReadLocalSupportedFeaturesPage0 => {
+                    HciCommand::LeReadLocalSupportedFeaturesPage0
                 }
-                HciCommandOpCode::Reset => HciCommand::Reset,
+                HciCommandOpCode::LeReadSupportedStates => HciCommand::LeReadSupportedStates,
+                HciCommandOpCode::LeSetAdvertisingEnable => {
+                    let (_, advertising_enable) = advertising_enable(parameters)?;
+                    HciCommand::LeSetAdvertisingEnable(advertising_enable)
+                }
+                HciCommandOpCode::LeSetAdvertisingParameters => {
+                    let (_, advertising_parameters) = advertising_parameters(parameters)?;
+                    HciCommand::LeSetAdvertisingParameters(advertising_parameters)
+                }
+                HciCommandOpCode::Nop => HciCommand::Nop,
+                // HciCommandOpCode::ReadBdAddr => HciCommand::ReadBdAddr,
+                HciCommandOpCode::ReadBufferSize => HciCommand::ReadBufferSize,
                 HciCommandOpCode::ReadLocalSupportedCommands => {
                     HciCommand::ReadLocalSupportedCommands
                 }
                 HciCommandOpCode::ReadLocalSupportedFeatures => {
                     HciCommand::ReadLocalSupportedFeatures
                 }
-                HciCommandOpCode::ReadBufferSize => HciCommand::ReadBufferSize,
-                // HciCommandOpCode::ReadBdAddr => HciCommand::ReadBdAddr,
-                HciCommandOpCode::LeReadBufferSize => HciCommand::LeReadBufferSize,
-                HciCommandOpCode::LeReadLocalSupportedFeaturesPage0 => {
-                    HciCommand::LeReadLocalSupportedFeaturesPage0
-                }
-                HciCommandOpCode::LeSetAdvertisingEnable => {
-                    let (_, advertising_enable) = advertising_enable(parameters)?;
-                    HciCommand::LeSetAdvertisingEnable(advertising_enable)
+                HciCommandOpCode::Reset => HciCommand::Reset,
+                HciCommandOpCode::SetEventMask => {
+                    let (_, event_mask) = event_mask(parameters)?;
+                    HciCommand::SetEventMask(event_mask)
                 }
                 HciCommandOpCode::LeSetAdvertisingData
-                | HciCommandOpCode::LeSetAdvertisingParameters
                 | HciCommandOpCode::LeSetScanResponseData => {
                     todo!()
                 }
-                // HciCommandOpCode::LeReadFilterAcceptListSize => {
-                //     HciCommand::LeReadFilterAcceptListSize
-                // }
-                // HciCommandOpCode::LeClearFilterAcceptList => HciCommand::LeClearFilterAcceptList,
-                // HciCommandOpCode::LeRand => HciCommand::LeRand,
-                HciCommandOpCode::LeReadSupportedStates => HciCommand::LeReadSupportedStates,
                 HciCommandOpCode::Unsupported(opcode) => HciCommand::Unsupported(opcode),
             }),
         ))
@@ -421,8 +432,7 @@ mod test {
 
     #[test]
     fn test_encode_le_set_advertising_parameters_command() -> Result<(), Error> {
-        let adv_params = AdvertisingParameters::default();
-        let command = HciCommand::LeSetAdvertisingParameters(&adv_params);
+        let command = HciCommand::LeSetAdvertisingParameters(AdvertisingParameters::default());
         let packet = command.encode()?;
         assert_eq!(
             packet.data(),
@@ -473,5 +483,24 @@ mod test {
             Err(Error::Hci(HciError::InvalidCommand(0x0C08)))
         ));
         assert_eq!(command.opcode(), HciCommandOpCode::Unsupported(0x0C08));
+    }
+
+    #[test]
+    fn test_encode_failure() {
+        struct Object;
+        impl EncodeToBuffer for Object {
+            fn encode<B: BufferOps>(
+                &self,
+                buffer: &mut B,
+            ) -> Result<usize, crate::utils::UtilsError> {
+                let data = [0u8; 1024];
+                buffer.copy_from_slice(&data)
+            }
+        }
+        let object = Object;
+        assert!(matches!(
+            CommandPacket::new(HciCommandOpCode::Nop).encode(&object),
+            Err(HciError::DataWillNotFitCommandPacket)
+        ));
     }
 }

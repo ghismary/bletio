@@ -23,7 +23,7 @@ pub mod uri;
 
 use crate::advertising::AdvertisingError;
 use crate::assigned_numbers::AdType;
-use crate::utils::Buffer;
+use crate::utils::{Buffer, BufferOps};
 pub use advertising_interval::AdvertisingIntervalAdStruct;
 pub use appearance::AppearanceAdStruct;
 pub use flags::FlagsAdStruct;

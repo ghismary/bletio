@@ -2,7 +2,7 @@ mod bit_flags_array;
 mod buffer;
 
 pub(crate) use bit_flags_array::{bitflags_array, BitFlagsArray};
-pub(crate) use buffer::Buffer;
+pub(crate) use buffer::{Buffer, BufferOps, EncodeToBuffer};
 
 #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum UtilsError {
