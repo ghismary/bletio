@@ -26,7 +26,7 @@ use bitflags::bitflags;
 use core::ops::RangeInclusive;
 
 use crate::advertising::AdvertisingError;
-use crate::utils::Buffer;
+use crate::utils::{BufferOps, EncodeToBuffer, UtilsError};
 use crate::Error;
 
 /// Advertising interval value.
@@ -40,7 +40,7 @@ use crate::Error;
 ///  - Time Range: 20 ms to 10.24 s
 ///
 /// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct AdvertisingIntervalValue {
     value: u16,
 }
@@ -79,13 +79,42 @@ impl TryFrom<u16> for AdvertisingIntervalValue {
     }
 }
 
-/// Advertising type.
-///
-/// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
-#[derive(Debug, Copy, Clone, Default)]
-#[repr(u8)]
-#[non_exhaustive]
-pub enum AdvertisingType {
+macro_rules! advertising_type {
+    (
+        $(
+            $(#[$docs:meta])*
+            $name:ident = $value:expr,
+        )+
+    ) => {
+        /// Advertising type.
+        ///
+        /// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
+        #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+        #[repr(u8)]
+        #[non_exhaustive]
+        pub enum AdvertisingType {
+            $(
+                $(#[$docs])*
+                $name = $value,
+            )+
+        }
+
+        impl TryFrom<u8> for AdvertisingType {
+            type Error = AdvertisingError;
+
+            fn try_from(value: u8) -> Result<Self, Self::Error> {
+                match value {
+                    $(
+                        $value => Ok(AdvertisingType::$name),
+                    )+
+                    _ => Err(AdvertisingError::InvalidAdvertisingType(value)),
+                }
+            }
+        }
+    };
+}
+
+advertising_type! {
     /// Connectable and scannable undirected advertising (`ADV_IND`) (default).
     #[default]
     ConnectableUndirected = 0x00,
@@ -99,13 +128,42 @@ pub enum AdvertisingType {
     ConnectableLowDutyCycleDirected = 0x04,
 }
 
-/// Own address type.
-///
-/// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
-#[derive(Debug, Copy, Clone, Default)]
-#[repr(u8)]
-#[non_exhaustive]
-pub enum OwnAddressType {
+macro_rules! own_address_type {
+    (
+        $(
+            $(#[$docs:meta])*
+            $name:ident = $value:expr,
+        )+
+    ) => {
+        /// Own address type.
+        ///
+        /// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
+        #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+        #[repr(u8)]
+        #[non_exhaustive]
+        pub enum OwnAddressType {
+            $(
+                $(#[$docs])*
+                $name = $value,
+            )+
+        }
+
+        impl TryFrom<u8> for OwnAddressType {
+            type Error = AdvertisingError;
+
+            fn try_from(value: u8) -> Result<Self, Self::Error> {
+                match value {
+                    $(
+                        $value => Ok(OwnAddressType::$name),
+                    )+
+                    _ => Err(AdvertisingError::InvalidOwnAddressType(value)),
+                }
+            }
+        }
+    };
+}
+
+own_address_type! {
     /// Public Device Address (default).
     #[default]
     PublicDeviceAddress = 0x00,
@@ -119,13 +177,42 @@ pub enum OwnAddressType {
     GeneratedResolvablePrivateAddressFallbackRandom = 0x03,
 }
 
-/// Peer address type.
-///
-/// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
-#[derive(Debug, Copy, Clone, Default)]
-#[repr(u8)]
-#[non_exhaustive]
-pub enum PeerAddressType {
+macro_rules! peer_address_type {
+    (
+        $(
+            $(#[$docs:meta])*
+            $name:ident = $value:expr,
+        )+
+    ) => {
+        /// Peer address type.
+        ///
+        /// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
+        #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+        #[repr(u8)]
+        #[non_exhaustive]
+        pub enum PeerAddressType {
+            $(
+                $(#[$docs])*
+                $name = $value,
+            )+
+        }
+
+        impl TryFrom<u8> for PeerAddressType {
+            type Error = AdvertisingError;
+
+            fn try_from(value: u8) -> Result<Self, Self::Error> {
+                match value {
+                    $(
+                        $value => Ok(PeerAddressType::$name),
+                    )+
+                    _ => Err(AdvertisingError::InvalidPeerAddressType(value)),
+                }
+            }
+        }
+    };
+}
+
+peer_address_type! {
     /// Public Device Address (default) or Public Identity Address.
     #[default]
     Public = 0x00,
@@ -144,7 +231,7 @@ pub enum PeerAddressType {
 ///  - Random (static) Identity Address
 ///
 /// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct PeerAddress {
     value: [u8; 6],
 }
@@ -167,7 +254,7 @@ impl From<[u8; 6]> for PeerAddress {
 /// Defaults to all the 3 channels (37, 38 & 39).
 ///
 /// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct AdvertisingChannelMap(u8);
 
 bitflags! {
@@ -193,13 +280,42 @@ impl Default for AdvertisingChannelMap {
     }
 }
 
-/// Advertising Filter Policy.
-///
-/// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
-#[derive(Debug, Copy, Clone, Default)]
-#[repr(u8)]
-#[non_exhaustive]
-pub enum AdvertisingFilterPolicy {
+macro_rules! filter_policy {
+    (
+        $(
+            $(#[$docs:meta])*
+            $name:ident = $value:expr,
+        )+
+    ) => {
+        /// Advertising Filter Policy.
+        ///
+        /// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
+        #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+        #[repr(u8)]
+        #[non_exhaustive]
+        pub enum AdvertisingFilterPolicy {
+            $(
+                $(#[$docs])*
+                $name = $value,
+            )+
+        }
+
+        impl TryFrom<u8> for AdvertisingFilterPolicy {
+            type Error = AdvertisingError;
+
+            fn try_from(value: u8) -> Result<Self, Self::Error> {
+                match value {
+                    $(
+                        $value => Ok(AdvertisingFilterPolicy::$name),
+                    )+
+                    _ => Err(AdvertisingError::InvalidAdvertisingFilterPolicy(value)),
+                }
+            }
+        }
+    };
+}
+
+filter_policy! {
     /// Process scan and connection requests from all devices (i.e., the Filter Accept List is not in use) (default).
     #[default]
     ScanAllAndConnectionAll = 0x00,
@@ -232,31 +348,15 @@ impl AdvertisingParametersBuilder {
     /// Try building the [`AdvertisingParameters`], checking that every set parameters are valid.
     pub fn try_build(self) -> Result<AdvertisingParameters, Error> {
         if self.is_valid() {
-            let mut params = AdvertisingParameters {
-                buffer: Buffer::default(),
-            };
-            // INVARIANT: The buffer is known to be able to fit all these data.
-            params
-                .buffer
-                .encode_le_u16(self.interval.start().value)
-                .unwrap();
-            params
-                .buffer
-                .encode_le_u16(self.interval.end().value)
-                .unwrap();
-            params.buffer.try_push(self.r#type as u8).unwrap();
-            params.buffer.try_push(self.own_address_type as u8).unwrap();
-            params
-                .buffer
-                .try_push(self.peer_address_type as u8)
-                .unwrap();
-            params
-                .buffer
-                .copy_from_slice(self.peer_address.value.as_slice())
-                .unwrap();
-            params.buffer.try_push(self.channel_map.bits()).unwrap();
-            params.buffer.try_push(self.filter_policy as u8).unwrap();
-            Ok(params)
+            Ok(AdvertisingParameters {
+                interval: self.interval,
+                r#type: self.r#type,
+                own_address_type: self.own_address_type,
+                peer_address_type: self.peer_address_type,
+                peer_address: self.peer_address,
+                channel_map: self.channel_map,
+                filter_policy: self.filter_policy,
+            })
         } else {
             Err(AdvertisingError::InvalidAdvertisingParameters)?
         }
@@ -337,8 +437,6 @@ impl Default for AdvertisingParametersBuilder {
     }
 }
 
-const ADVERTISING_PARAMETERS_SIZE: usize = 15;
-
 /// Advertising parameters to be set before starting advertising.
 ///
 /// It contains this information:
@@ -355,7 +453,13 @@ const ADVERTISING_PARAMETERS_SIZE: usize = 15;
 /// Use the [`AdvertisingParametersBuilder`] to instantiate it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AdvertisingParameters {
-    buffer: Buffer<ADVERTISING_PARAMETERS_SIZE>,
+    interval: RangeInclusive<AdvertisingIntervalValue>,
+    r#type: AdvertisingType,
+    own_address_type: OwnAddressType,
+    peer_address_type: PeerAddressType,
+    peer_address: PeerAddress,
+    channel_map: AdvertisingChannelMap,
+    filter_policy: AdvertisingFilterPolicy,
 }
 
 impl AdvertisingParameters {
@@ -363,9 +467,20 @@ impl AdvertisingParameters {
     pub fn builder() -> AdvertisingParametersBuilder {
         AdvertisingParametersBuilder::new()
     }
+}
 
-    pub(crate) fn encoded_data(&self) -> &[u8] {
-        self.buffer.data()
+impl EncodeToBuffer for AdvertisingParameters {
+    fn encode<B: BufferOps>(&self, buffer: &mut B) -> Result<usize, UtilsError> {
+        let mut len = 0;
+        len += buffer.encode_le_u16(self.interval.start().value)?;
+        len += buffer.encode_le_u16(self.interval.end().value)?;
+        len += buffer.try_push(self.r#type as u8)?;
+        len += buffer.try_push(self.own_address_type as u8)?;
+        len += buffer.try_push(self.peer_address_type as u8)?;
+        len += buffer.copy_from_slice(self.peer_address.value.as_slice())?;
+        len += buffer.try_push(self.channel_map.bits())?;
+        len += buffer.try_push(self.filter_policy as u8)?;
+        Ok(len)
     }
 }
 
@@ -373,6 +488,92 @@ impl Default for AdvertisingParameters {
     fn default() -> Self {
         // INVARIANT: The default builder values are known to be valid.
         AdvertisingParametersBuilder::default().try_build().unwrap()
+    }
+}
+
+pub(crate) mod parser {
+    use core::ops::RangeInclusive;
+
+    use nom::{
+        bytes::take,
+        combinator::{all_consuming, map, map_res},
+        number::{le_u16, le_u8},
+        sequence::pair,
+        IResult, Parser,
+    };
+
+    use super::*;
+
+    fn advertising_interval_value(input: &[u8]) -> IResult<&[u8], AdvertisingIntervalValue> {
+        map_res(le_u16(), TryInto::try_into).parse(input)
+    }
+
+    fn advertising_interval(
+        input: &[u8],
+    ) -> IResult<&[u8], RangeInclusive<AdvertisingIntervalValue>> {
+        map(
+            pair(advertising_interval_value, advertising_interval_value),
+            |(start, end)| (start..=end),
+        )
+        .parse(input)
+    }
+
+    fn advertising_type(input: &[u8]) -> IResult<&[u8], AdvertisingType> {
+        map_res(le_u8(), TryInto::try_into).parse(input)
+    }
+
+    fn own_address_type(input: &[u8]) -> IResult<&[u8], OwnAddressType> {
+        map_res(le_u8(), TryInto::try_into).parse(input)
+    }
+
+    fn peer_address_type(input: &[u8]) -> IResult<&[u8], PeerAddressType> {
+        map_res(le_u8(), TryInto::try_into).parse(input)
+    }
+
+    fn peer_address(input: &[u8]) -> IResult<&[u8], PeerAddress> {
+        map(map_res(take(6u8), TryFrom::try_from), |v: [u8; 6]| v.into()).parse(input)
+    }
+
+    fn channel_map(input: &[u8]) -> IResult<&[u8], AdvertisingChannelMap> {
+        map(le_u8(), AdvertisingChannelMap::from_bits_retain).parse(input)
+    }
+
+    fn filter_policy(input: &[u8]) -> IResult<&[u8], AdvertisingFilterPolicy> {
+        map_res(le_u8(), TryInto::try_into).parse(input)
+    }
+
+    pub(crate) fn advertising_parameters(input: &[u8]) -> IResult<&[u8], AdvertisingParameters> {
+        all_consuming(map(
+            (
+                advertising_interval,
+                advertising_type,
+                own_address_type,
+                peer_address_type,
+                peer_address,
+                channel_map,
+                filter_policy,
+            ),
+            |(
+                interval,
+                r#type,
+                own_address_type,
+                peer_address_type,
+                peer_address,
+                channel_map,
+                filter_policy,
+            )| {
+                AdvertisingParameters {
+                    interval,
+                    r#type,
+                    own_address_type,
+                    peer_address_type,
+                    peer_address,
+                    channel_map,
+                    filter_policy,
+                }
+            },
+        ))
+        .parse(input)
     }
 }
 
@@ -449,11 +650,17 @@ mod test {
     fn test_default_advertising_parameters() -> Result<(), Error> {
         let adv_params = AdvertisingParameters::default();
         assert_eq!(
-            adv_params.encoded_data(),
-            &[
-                0x00, 0x08, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07,
-                0x00
-            ],
+            adv_params,
+            AdvertisingParameters {
+                interval: (AdvertisingIntervalValue::default()
+                    ..=AdvertisingIntervalValue::default()),
+                r#type: AdvertisingType::default(),
+                own_address_type: OwnAddressType::default(),
+                peer_address_type: PeerAddressType::default(),
+                peer_address: PeerAddress::default(),
+                channel_map: AdvertisingChannelMap::default(),
+                filter_policy: AdvertisingFilterPolicy::default(),
+            },
         );
 
         Ok(())
@@ -471,11 +678,16 @@ mod test {
             .with_filter_policy(AdvertisingFilterPolicy::ScanAllAndConnectionFilterAcceptList)
             .try_build()?;
         assert_eq!(
-            adv_params.encoded_data(),
-            &[
-                0x00, 0x01, 0x20, 0x01, 0x01, 0x01, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x05,
-                0x02
-            ],
+            adv_params,
+            AdvertisingParameters {
+                interval: (0x0100.try_into()?..=0x0120.try_into()?),
+                r#type: AdvertisingType::ConnectableHighDutyCycleDirected,
+                own_address_type: OwnAddressType::RandomDeviceAddress,
+                peer_address_type: PeerAddressType::Public,
+                peer_address: [0x01, 0x02, 0x03, 0x04, 0x05, 0x06].into(),
+                channel_map: AdvertisingChannelMap::CHANNEL37 | AdvertisingChannelMap::CHANNEL39,
+                filter_policy: AdvertisingFilterPolicy::ScanAllAndConnectionFilterAcceptList,
+            },
         );
 
         Ok(())

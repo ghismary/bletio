@@ -179,13 +179,13 @@ where
 {
     pub async fn start_advertising(
         self,
-        adv_params: &AdvertisingParameters,
+        adv_params: AdvertisingParameters,
         adv_data: &AdvertisingData,
         scanresp_data: Option<&ScanResponseData>,
     ) -> Result<BleHost<'a, H, Advertising>, (Error, Self)> {
         async fn inner<H>(
             hci: &mut Hci<H>,
-            adv_params: &AdvertisingParameters,
+            adv_params: AdvertisingParameters,
             adv_data: &AdvertisingData,
             scanresp_data: Option<&ScanResponseData>,
         ) -> Result<(), Error>

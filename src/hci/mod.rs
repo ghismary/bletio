@@ -32,7 +32,7 @@ use supported_le_states::SupportedLeStates;
 
 use crate::advertising::advertising_parameters::AdvertisingParameters;
 use crate::advertising::{AdvertisingData, ScanResponseData};
-use crate::utils::{Buffer, UtilsError};
+use crate::utils::{Buffer, BufferOps, UtilsError};
 use crate::{AdvertisingEnable, Error, SupportedLeFeatures};
 
 const HCI_COMMAND_TIMEOUT: u16 = 1000; // ms
@@ -279,7 +279,7 @@ where
 
     pub(crate) async fn cmd_le_set_advertising_parameters(
         &mut self,
-        parameters: &AdvertisingParameters,
+        parameters: AdvertisingParameters,
     ) -> Result<(), Error> {
         self.cmd_with_status_response(HciCommand::LeSetAdvertisingParameters(parameters))
             .await

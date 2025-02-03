@@ -90,7 +90,7 @@ mod test {
             StatusAndSupportedLeFeaturesEventParameter, StatusAndSupportedLeStatesEventParameter,
             StatusEventParameter, SupportedCommands, SupportedFeatures,
         },
-        AdvertisingEnable, SupportedLeFeatures,
+        AdvertisingEnable, AdvertisingParameters, SupportedLeFeatures,
     };
 
     #[test]
@@ -124,6 +124,9 @@ mod test {
     #[case::le_set_advertising_enable(HciCommand::LeSetAdvertisingEnable(
         AdvertisingEnable::Enabled
     ), &[1, 10, 32, 1, 1])]
+    #[case::le_set_advertising_parameters(HciCommand::LeSetAdvertisingParameters(
+        AdvertisingParameters::default()
+    ), &[1, 06, 32, 15, 0, 8, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0])]
     #[case::nop(HciCommand::Nop, &[1, 0, 0, 0])]
     #[case::read_buffer_size(HciCommand::ReadBufferSize, &[1, 5, 16, 0])]
     #[case::read_local_supported_commands(HciCommand::ReadLocalSupportedCommands, &[1, 2, 16, 0])]

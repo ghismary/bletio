@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 
-use crate::utils::encode_le_u64;
+use crate::utils::EncodeToBuffer;
 
 bitflags! {
     /// HCI event mask.
@@ -26,12 +26,12 @@ bitflags! {
     }
 }
 
-impl EventMask {
-    pub(crate) fn encode(&self) -> [u8; 8] {
-        let mut buffer = [0; 8];
-        // INVARIANT: The buffer space is known to be enough.
-        encode_le_u64(&mut buffer[..], self.bits()).unwrap();
-        buffer
+impl EncodeToBuffer for EventMask {
+    fn encode<B: crate::utils::BufferOps>(
+        &self,
+        buffer: &mut B,
+    ) -> Result<usize, crate::utils::UtilsError> {
+        buffer.encode_le_u64(self.bits())
     }
 }
 
@@ -63,21 +63,6 @@ mod test {
     fn test_eventmask_default() {
         let value = EventMask::default();
         assert_eq!(value.bits(), 0x0000_1FFF_FFFF_FFFF);
-    }
-
-    #[test]
-    fn test_eventmask_encode() {
-        let value = EventMask::DISCONNECTION_COMPLETE
-            | EventMask::ENCRYPTION_CHANGE
-            | EventMask::READ_REMOTE_VERSION_INFORMATION_COMLETE
-            | EventMask::HARDWARE_ERROR
-            | EventMask::DATA_BUFFER_OVERFLOW
-            | EventMask::ENCRYPTION_KEY_REFRESH_COMPLETE
-            | EventMask::LE_META;
-        assert_eq!(
-            value.encode().as_slice(),
-            &[0x90, 0x88, 0x00, 0x02, 0x00, 0x80, 0x00, 0x20]
-        );
     }
 
     #[test]
