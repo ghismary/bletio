@@ -1,0 +1,29 @@
+[package]
+name = "bletio-hci"
+version = "0.1.0"
+description = "HCI handling for the bletio BLE stack"
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[features]
+default = ["tokio"]
+embassy = ["dep:embassy-time"]
+tokio = ["dep:tokio"]
+
+[dependencies]
+bitflags = { workspace = true }
+bletio-utils = { path = "../bletio-utils" }
+embassy-time = { workspace = true, optional = true }
+nom = { workspace = true }
+num_enum = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, optional = true }
+
+[dev-dependencies]
+approx = { workspace = true }
+claims = { workspace = true }
+rstest = { workspace = true }
+tokio-macros = { workspace = true }

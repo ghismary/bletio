@@ -1,0 +1,23 @@
+[package]
+name = "bletio-host"
+version = "0.1.0"
+description = "Host part of the bletio BLE stack"
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[features]
+default = ["tokio"]
+embassy = ["bletio-hci/embassy"]
+tokio = ["bletio-hci/tokio"]
+
+[dependencies]
+bitflags = { workspace = true }
+bletio-hci = { path = "../bletio-hci", default-features = false }
+bletio-utils = { path = "../bletio-utils" }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }

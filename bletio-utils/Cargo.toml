@@ -1,0 +1,13 @@
+[package]
+name = "bletio-utils"
+version = "0.1.0"
+description = "Utilities for the bletio BLE stack"
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+bitflags = { workspace = true }
+thiserror = { workspace = true }
