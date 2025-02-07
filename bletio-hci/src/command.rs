@@ -30,6 +30,7 @@ pub(crate) enum CommandOpCode {
     LeReadLocalSupportedFeaturesPage0 = opcode(LE_CONTROLLER_OGF, 0x0003),
     // LeSetRandomAddress = opcode(LE_CONTROLLER_OGF, 0x0005),
     LeSetAdvertisingParameters = opcode(LE_CONTROLLER_OGF, 0x0006),
+    LeReadAdvertisingChannelTxPower = opcode(LE_CONTROLLER_OGF, 0x0007),
     LeSetAdvertisingData = opcode(LE_CONTROLLER_OGF, 0x0008),
     LeSetScanResponseData = opcode(LE_CONTROLLER_OGF, 0x0009),
     LeSetAdvertisingEnable = opcode(LE_CONTROLLER_OGF, 0x000A),
@@ -50,6 +51,7 @@ pub(crate) enum Command {
     // LeClearFilterAcceptList,
     // LeEncrypt(Key, Data),
     // LeRand,
+    LeReadAdvertisingChannelTxPower,
     LeReadBufferSize,
     LeReadLocalSupportedFeaturesPage0,
     LeReadSupportedStates,
@@ -74,7 +76,8 @@ pub(crate) enum Command {
 impl Command {
     pub(crate) fn encode(&self) -> Result<CommandPacket, Error> {
         Ok(match self {
-            Command::LeReadBufferSize
+            Command::LeReadAdvertisingChannelTxPower
+            | Command::LeReadBufferSize
             | Command::LeReadLocalSupportedFeaturesPage0
             | Command::LeReadSupportedStates
             | Command::Nop
@@ -105,6 +108,7 @@ impl Command {
         match self {
             // Self::LeClearFilterAcceptList => CommandOpCode::LeClearFilterAcceptList,
             // Self::LeRand => CommandOpCode::LeRand,
+            Self::LeReadAdvertisingChannelTxPower => CommandOpCode::LeReadAdvertisingChannelTxPower,
             Self::LeReadBufferSize => CommandOpCode::LeReadBufferSize,
             // Self::LeReadFilterAcceptListSize => CommandOpCode::LeReadFilterAcceptListSize,
             Self::LeReadLocalSupportedFeaturesPage0 => {
@@ -188,6 +192,9 @@ pub(crate) mod parser {
             Packet::Command(match command_opcode {
                 // CommandOpCode::LeClearFilterAcceptList => Command::LeClearFilterAcceptList,
                 // CommandOpCode::LeRand => Command::LeRand,
+                CommandOpCode::LeReadAdvertisingChannelTxPower => {
+                    Command::LeReadAdvertisingChannelTxPower
+                }
                 CommandOpCode::LeReadBufferSize => Command::LeReadBufferSize,
                 // CommandOpCode::LeReadFilterAcceptListSize => {
                 //     Command::LeReadFilterAcceptListSize

@@ -1,6 +1,8 @@
 use core::num::NonZeroU16;
 
-use bletio_hci::{SupportedCommands, SupportedFeatures, SupportedLeFeatures, SupportedLeStates};
+use bletio_hci::{
+    SupportedCommands, SupportedFeatures, SupportedLeFeatures, SupportedLeStates, TxPowerLevel,
+};
 
 #[derive(Debug)]
 pub(crate) struct ControllerCapabilities {
@@ -10,6 +12,7 @@ pub(crate) struct ControllerCapabilities {
     pub(crate) supported_le_states: SupportedLeStates,
     pub(crate) le_data_packet_length: NonZeroU16,
     pub(crate) num_le_data_packets: NonZeroU16,
+    pub(crate) tx_power_level: TxPowerLevel,
 }
 
 impl Default for ControllerCapabilities {
@@ -21,6 +24,7 @@ impl Default for ControllerCapabilities {
             supported_le_states: SupportedLeStates::default(),
             le_data_packet_length: NonZeroU16::MIN,
             num_le_data_packets: NonZeroU16::MIN,
+            tx_power_level: TxPowerLevel::default(),
         }
     }
 }

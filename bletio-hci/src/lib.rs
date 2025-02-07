@@ -14,6 +14,7 @@ mod supported_commands;
 mod supported_features;
 mod supported_le_features;
 mod supported_le_states;
+mod tx_power_level;
 
 #[cfg(all(feature = "embassy", feature = "tokio"))]
 compile_error!("feature \"embassy\" and feature \"tokio\" cannot be enabled at the same time");
@@ -33,7 +34,8 @@ pub(crate) use event::{
     CommandCompleteEvent, Event, EventCode, EventParameter, StatusAndBufferSizeEventParameter,
     StatusAndLeBufferSizeEventParameter, StatusAndSupportedCommandsEventParameter,
     StatusAndSupportedFeaturesEventParameter, StatusAndSupportedLeFeaturesEventParameter,
-    StatusAndSupportedLeStatesEventParameter, StatusEventParameter,
+    StatusAndSupportedLeStatesEventParameter, StatusAndTxPowerLevelEventParameter,
+    StatusEventParameter,
 };
 pub(crate) use packet::{Packet, PacketType};
 
@@ -51,6 +53,7 @@ pub use supported_commands::SupportedCommands;
 pub use supported_features::SupportedFeatures;
 pub use supported_le_features::SupportedLeFeatures;
 pub use supported_le_states::SupportedLeStates;
+pub use tx_power_level::TxPowerLevel;
 
 const HCI_COMMAND_TIMEOUT: u16 = 1000; // ms
 const HCI_MAX_READ_BUFFER_SIZE: usize = 259;
@@ -106,6 +109,9 @@ pub enum Error {
     /// The provided peer address type is invalid.
     #[error("The peer address type {0} is invalid")]
     InvalidPeerAddressType(u8),
+    /// The provided TX power level value is invalid.
+    #[error("The TX power level value {0} is invalid")]
+    InvalidTxPowerLevelValue(i8),
 }
 
 #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
@@ -236,6 +242,21 @@ where
                 param.total_num_synchronous_packets,
             )),
             EventParameter::StatusAndBufferSize(param) => Err(Error::ErrorCode(param.status)),
+            _ => Err(Error::InvalidEventPacket),
+        }
+    }
+
+    pub async fn cmd_le_read_advertising_channel_tx_power(
+        &mut self,
+    ) -> Result<TxPowerLevel, Error> {
+        let event = self
+            .execute_command(Command::LeReadAdvertisingChannelTxPower)
+            .await?;
+        match event.parameter {
+            EventParameter::StatusAndTxPowerLevel(param) if param.status.is_success() => {
+                Ok(param.tx_power_level)
+            }
+            EventParameter::StatusAndTxPowerLevel(param) => Err(Error::ErrorCode(param.status)),
             _ => Err(Error::InvalidEventPacket),
         }
     }

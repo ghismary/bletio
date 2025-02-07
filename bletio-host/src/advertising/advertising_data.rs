@@ -1,6 +1,6 @@
 use core::ops::RangeInclusive;
 
-use bletio_hci::{AdvertisingIntervalValue, ConnectionInterval, SupportedLeFeatures};
+use bletio_hci::{AdvertisingIntervalValue, ConnectionInterval, SupportedLeFeatures, TxPowerLevel};
 use bletio_utils::{BufferOps, EncodeToBuffer};
 
 use crate::advertising::ad_struct::{
@@ -10,7 +10,7 @@ use crate::advertising::ad_struct::{
     ServiceSolicitationUuid32AdStruct, ServiceUuid128AdStruct, ServiceUuid16AdStruct,
     ServiceUuid32AdStruct, TxPowerLevelAdStruct, UriAdStruct,
 };
-use crate::advertising::{AdvertisingError, Flags, ServiceListComplete, TxPowerLevel, Uri};
+use crate::advertising::{AdvertisingError, Flags, ServiceListComplete, Uri};
 use crate::assigned_numbers::{AppearanceValue, CompanyIdentifier, ServiceUuid};
 use crate::ble_device_information::BleDeviceInformation;
 use crate::controller_capabilities::ControllerCapabilities;
@@ -224,7 +224,7 @@ impl<'a> AdvertisingDataBuilder<'a> {
 
     /// Add a TX Power Level Advertising Structure to the `AdvertisingData`.
     pub fn with_tx_power_level(mut self) -> Self {
-        self.data.base.tx_power_level = Some(TxPowerLevelAdStruct::new(TxPowerLevel(0)));
+        self.data.base.tx_power_level = Some(TxPowerLevelAdStruct::new(TxPowerLevel::default()));
         self
     }
 
@@ -268,6 +268,11 @@ impl AdvertisingDataBase<'_> {
         if self.le_supported_features.is_some() {
             self.le_supported_features = Some(LeSupportedFeaturesAdStruct::new(
                 controller_capabilities.supported_le_features,
+            ));
+        }
+        if self.tx_power_level.is_some() {
+            self.tx_power_level = Some(TxPowerLevelAdStruct::new(
+                controller_capabilities.tx_power_level,
             ));
         }
     }
@@ -573,7 +578,7 @@ impl<'a> ScanResponseDataBuilder<'a> {
 
     /// Add a TX Power Level Advertising Structure to the `ScanResponseData`.
     pub fn with_tx_power_level(mut self) -> Self {
-        self.data.base.tx_power_level = Some(TxPowerLevelAdStruct::new(TxPowerLevel(0)));
+        self.data.base.tx_power_level = Some(TxPowerLevelAdStruct::new(TxPowerLevel::default()));
         self
     }
 

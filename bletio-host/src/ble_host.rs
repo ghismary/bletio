@@ -120,14 +120,14 @@ where
     H: HciDriver,
 {
     pub async fn start_advertising(
-        self,
+        mut self,
         adv_params: &AdvertisingParameters,
         full_adv_data: &FullAdvertisingData<'_>,
     ) -> Result<BleHost<'a, H, BleHostStateAdvertising>, (Error, Self)> {
         async fn inner<H>(
             hci: &mut Hci<H>,
             device_info: &BleDeviceInformation,
-            controller_capabilities: &ControllerCapabilities,
+            controller_capabilities: &mut ControllerCapabilities,
             adv_params: &AdvertisingParameters,
             full_adv_data: &FullAdvertisingData<'_>,
         ) -> Result<(), Error>
@@ -136,8 +136,9 @@ where
         {
             hci.cmd_le_set_advertising_parameters(adv_params.deref().clone())
                 .await?;
+            controller_capabilities.tx_power_level =
+                hci.cmd_le_read_advertising_channel_tx_power().await?;
 
-            // TODO: Read Advertising Channel Tx Power and pass it to fill_automatic_data
             let full_adv_data =
                 full_adv_data.fill_automatic_data(device_info, controller_capabilities);
             let mut scanresp_data = bletio_hci::ScanResponseData::default();
@@ -155,7 +156,7 @@ where
         match inner(
             self.hci,
             self.device_info,
-            &self.controller_capabilities,
+            &mut self.controller_capabilities,
             adv_params,
             full_adv_data,
         )
