@@ -268,6 +268,9 @@ mod test {
 
     #[rstest]
     #[case::nop(Command::Nop, CommandOpCode::Nop, &[1, 0, 0, 0])]
+    #[case::le_read_advertising_channel_tx_power(
+        Command::LeReadAdvertisingChannelTxPower, CommandOpCode::LeReadAdvertisingChannelTxPower, &[1, 7, 32, 0]
+    )]
     #[case::le_read_buffer_size(Command::LeReadBufferSize, CommandOpCode::LeReadBufferSize, &[1, 2, 32, 0])]
     #[case::le_read_local_supported_features_page_0(
         Command::LeReadLocalSupportedFeaturesPage0, CommandOpCode::LeReadLocalSupportedFeaturesPage0, &[1, 3, 32, 0]

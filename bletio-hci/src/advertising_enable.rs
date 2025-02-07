@@ -1,3 +1,4 @@
+use bletio_utils::{BufferOps, EncodeToBuffer};
 use num_enum::TryFromPrimitive;
 
 use crate::Error;
@@ -17,11 +18,8 @@ pub enum AdvertisingEnable {
     Enabled = 0x01,
 }
 
-impl bletio_utils::EncodeToBuffer for AdvertisingEnable {
-    fn encode<B: bletio_utils::BufferOps>(
-        &self,
-        buffer: &mut B,
-    ) -> Result<usize, bletio_utils::Error> {
+impl EncodeToBuffer for AdvertisingEnable {
+    fn encode<B: BufferOps>(&self, buffer: &mut B) -> Result<usize, bletio_utils::Error> {
         buffer.try_push(*self as u8)
     }
 
@@ -46,8 +44,10 @@ pub(crate) mod parser {
 
 #[cfg(test)]
 mod test {
-    use super::*;
+    use bletio_utils::{Buffer, BufferOps};
     use rstest::rstest;
+
+    use super::*;
 
     #[rstest]
     #[case(0, Ok(AdvertisingEnable::Disabled))]
@@ -60,5 +60,19 @@ mod test {
     ) {
         let result = input.try_into();
         assert_eq!(result, expected);
+    }
+
+    #[rstest]
+    #[case(AdvertisingEnable::Enabled, &[0x01])]
+    #[case(AdvertisingEnable::Disabled, &[0x00])]
+    fn test_advertising_enable_encoding(
+        #[case] enable: AdvertisingEnable,
+        #[case] encoded_data: &[u8],
+    ) -> Result<(), bletio_utils::Error> {
+        let mut buffer = Buffer::<1>::default();
+        assert_eq!(enable.encoded_size(), encoded_data.len());
+        enable.encode(&mut buffer)?;
+        assert_eq!(buffer.data(), encoded_data);
+        Ok(())
     }
 }
