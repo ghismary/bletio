@@ -60,6 +60,9 @@ pub(crate) mod parser {
 
 #[cfg(test)]
 mod test {
+    use bletio_utils::{Buffer, BufferOps};
+    use rstest::rstest;
+
     use super::*;
 
     #[test]
@@ -68,11 +71,28 @@ mod test {
         assert_eq!(value.bits(), 0x0000_1FFF_FFFF_FFFF);
     }
 
-    #[test]
-    fn test_eventmask_parsing() {
-        let (rest, event_mask) =
-            parser::event_mask(&[0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]).unwrap();
+    #[rstest]
+    #[case(EventMask::HARDWARE_ERROR, &[0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])]
+    #[case(EventMask::DATA_BUFFER_OVERFLOW, &[0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00])]
+    #[case(EventMask::HARDWARE_ERROR | EventMask::DATA_BUFFER_OVERFLOW, &[0x00, 0x80, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00])]
+    fn test_eventmask_encoding(
+        #[case] event_mask: EventMask,
+        #[case] encoded_data: &[u8],
+    ) -> Result<(), bletio_utils::Error> {
+        let mut buffer = Buffer::<8>::default();
+        assert_eq!(event_mask.encoded_size(), encoded_data.len());
+        event_mask.encode(&mut buffer)?;
+        assert_eq!(buffer.data(), encoded_data);
+        Ok(())
+    }
+
+    #[rstest]
+    #[case(&[0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], EventMask::HARDWARE_ERROR)]
+    #[case(&[0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00], EventMask::DATA_BUFFER_OVERFLOW)]
+    #[case(&[0x00, 0x80, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00], EventMask::HARDWARE_ERROR | EventMask::DATA_BUFFER_OVERFLOW)]
+    fn test_eventmask_parsing(#[case] input: &[u8], #[case] expected_event_mask: EventMask) {
+        let (rest, event_mask) = parser::event_mask(input).unwrap();
         assert!(rest.is_empty());
-        assert_eq!(event_mask, EventMask::HARDWARE_ERROR);
+        assert_eq!(event_mask, expected_event_mask);
     }
 }
