@@ -2,7 +2,7 @@ use core::num::{NonZeroU16, NonZeroU8};
 
 use crate::{
     CommandOpCode, ErrorCode, SupportedCommands, SupportedFeatures, SupportedLeFeatures,
-    SupportedLeStates,
+    SupportedLeStates, TxPowerLevel,
 };
 
 #[derive(Debug, PartialEq, Eq)]
@@ -58,6 +58,7 @@ pub(crate) enum EventParameter {
     StatusAndLeBufferSize(StatusAndLeBufferSizeEventParameter),
     StatusAndSupportedLeFeatures(StatusAndSupportedLeFeaturesEventParameter),
     StatusAndSupportedLeStates(StatusAndSupportedLeStatesEventParameter),
+    StatusAndTxPowerLevel(StatusAndTxPowerLevelEventParameter),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -147,13 +148,25 @@ impl From<StatusAndSupportedLeStatesEventParameter> for EventParameter {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct StatusAndTxPowerLevelEventParameter {
+    pub(crate) status: ErrorCode,
+    pub(crate) tx_power_level: TxPowerLevel,
+}
+
+impl From<StatusAndTxPowerLevelEventParameter> for EventParameter {
+    fn from(value: StatusAndTxPowerLevelEventParameter) -> Self {
+        Self::StatusAndTxPowerLevel(value)
+    }
+}
+
 pub(crate) mod parser {
     use core::num::{NonZeroU16, NonZeroU8};
 
     use nom::{
         bytes::take,
         combinator::{eof, fail, map, map_res},
-        number::{le_u16, le_u64, le_u8},
+        number::{le_i8, le_u16, le_u64, le_u8},
         sequence::pair,
         IResult, Parser,
     };
@@ -164,8 +177,8 @@ pub(crate) mod parser {
         StatusAndBufferSizeEventParameter, StatusAndLeBufferSizeEventParameter,
         StatusAndSupportedCommandsEventParameter, StatusAndSupportedFeaturesEventParameter,
         StatusAndSupportedLeFeaturesEventParameter, StatusAndSupportedLeStatesEventParameter,
-        StatusEventParameter, SupportedCommands, SupportedFeatures, SupportedLeFeatures,
-        SupportedLeStates,
+        StatusAndTxPowerLevelEventParameter, StatusEventParameter, SupportedCommands,
+        SupportedFeatures, SupportedLeFeatures, SupportedLeStates, TxPowerLevel,
     };
 
     fn event_code(input: &[u8]) -> IResult<&[u8], EventCode> {
@@ -211,6 +224,10 @@ pub(crate) mod parser {
 
     fn le_supported_states(input: &[u8]) -> IResult<&[u8], SupportedLeStates> {
         map(le_u64(), Into::into).parse(input)
+    }
+
+    fn tx_power_level(input: &[u8]) -> IResult<&[u8], TxPowerLevel> {
+        map_res(le_i8(), TryInto::try_into).parse(input)
     }
 
     fn command_complete_event(input: &[u8]) -> IResult<&[u8], CommandCompleteEvent> {
@@ -269,6 +286,16 @@ pub(crate) mod parser {
                     synchronous_data_packet_length,
                     total_num_acl_data_packets,
                     total_num_synchronous_packets,
+                }
+                .into()
+            }
+            CommandOpCode::LeReadAdvertisingChannelTxPower => {
+                let (rest, status) = hci_error_code(return_parameters)?;
+                let (rest, tx_power_level) = tx_power_level(rest)?;
+                eof(rest)?;
+                StatusAndTxPowerLevelEventParameter {
+                    status,
+                    tx_power_level,
                 }
                 .into()
             }

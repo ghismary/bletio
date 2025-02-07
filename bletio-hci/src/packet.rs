@@ -62,7 +62,8 @@ mod test {
         StatusAndBufferSizeEventParameter, StatusAndLeBufferSizeEventParameter,
         StatusAndSupportedCommandsEventParameter, StatusAndSupportedFeaturesEventParameter,
         StatusAndSupportedLeFeaturesEventParameter, StatusAndSupportedLeStatesEventParameter,
-        StatusEventParameter, SupportedCommands, SupportedFeatures, SupportedLeFeatures,
+        StatusAndTxPowerLevelEventParameter, StatusEventParameter, SupportedCommands,
+        SupportedFeatures, SupportedLeFeatures, TxPowerLevel,
     };
 
     #[test]
@@ -90,6 +91,7 @@ mod test {
     }
 
     #[rstest]
+    #[case::le_read_advertising_channel_tx_power(Command::LeReadAdvertisingChannelTxPower, &[1, 7, 32, 0])]
     #[case::le_read_buffer_size(Command::LeReadBufferSize, &[1, 2, 32, 0])]
     #[case::le_read_local_supported_features_page_0(Command::LeReadLocalSupportedFeaturesPage0, &[1, 3, 32, 0])]
     #[case::le_read_supported_states(Command::LeReadSupportedStates, &[1, 28, 32, 0])]
@@ -124,6 +126,12 @@ mod test {
     }
 
     #[rstest]
+    #[case::le_read_advertising_channel_tx_power(CommandCompleteEvent::new(
+            1, CommandOpCode::LeReadAdvertisingChannelTxPower,
+            StatusAndTxPowerLevelEventParameter {
+                status: ErrorCode::Success, tx_power_level: TxPowerLevel::try_new(9).unwrap()
+            }
+        ), &[4, 14, 5, 1, 7, 32, 0, 9])]
     #[case::le_read_buffer_size(CommandCompleteEvent::new(
             1, CommandOpCode::LeReadBufferSize,
             StatusAndLeBufferSizeEventParameter {

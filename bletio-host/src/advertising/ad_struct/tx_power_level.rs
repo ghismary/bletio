@@ -1,3 +1,4 @@
+use bletio_hci::TxPowerLevel;
 use bletio_utils::EncodeToBuffer;
 
 use crate::assigned_numbers::AdType;
@@ -28,24 +29,12 @@ impl EncodeToBuffer for TxPowerLevelAdStruct {
     ) -> Result<usize, bletio_utils::Error> {
         buffer.try_push(TX_POWER_LEVEL_AD_STRUCT_SIZE as u8)?;
         buffer.try_push(AdType::TxPowerLevel as u8)?;
-        buffer.try_push(self.tx_power_level.0 as u8)?;
+        buffer.try_push(self.tx_power_level.value() as u8)?;
         Ok(self.encoded_size())
     }
 
     fn encoded_size(&self) -> usize {
         TX_POWER_LEVEL_AD_STRUCT_SIZE + 1
-    }
-}
-
-/// The TX Power Level, that is to say the radiated power level, in dBm.
-///
-/// The value ranges from -127 to 127 dBm.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct TxPowerLevel(pub i8);
-
-impl From<i8> for TxPowerLevel {
-    fn from(value: i8) -> Self {
-        Self(value)
     }
 }
 
@@ -58,14 +47,14 @@ mod test {
 
     #[rstest]
     #[case(-127, &[0x02, 0x0A, 0x81])]
-    #[case(127, &[0x02, 0x0A, 0x7F])]
+    #[case(20, &[0x02, 0x0A, 0x14])]
     #[case(0, &[0x02, 0x0A, 0x00])]
     fn test_tx_power_level_ad_struct(
         #[case] tx_power_level: i8,
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<3>::default();
-        let value = TxPowerLevelAdStruct::new(TxPowerLevel(tx_power_level));
+        let value = TxPowerLevelAdStruct::new(TxPowerLevel::try_new(tx_power_level).unwrap());
         value.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
         Ok(())

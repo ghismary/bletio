@@ -15,8 +15,6 @@ pub mod advertising_data;
 pub mod advertising_parameters;
 pub mod uri;
 
-pub(crate) use ad_struct::tx_power_level::TxPowerLevel;
-
 pub use ad_struct::flags::Flags;
 pub use ad_struct::service_uuid::ServiceListComplete;
 pub use advertising_data::{
