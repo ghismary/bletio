@@ -186,7 +186,7 @@ where
     pub fn new(hci_driver: H) -> Self {
         Self {
             driver: hci_driver,
-            num_hci_command_packets: 1,
+            num_hci_command_packets: 0,
             read_buffer: Default::default(),
         }
     }
