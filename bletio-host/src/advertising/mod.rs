@@ -30,6 +30,9 @@ pub enum AdvertisingError {
     /// The provided advertising data is too big to fit in an advertising data or scan response data packet.
     #[error("The provided advertising data is too big to fit in an advertising data or scan response data packet")]
     AdvertisingDataWillNotFitAdvertisingPacket,
+    /// The Appearance Advertising Structure is not allowed to be present in both the Advertising Data and the Scan Response Data.
+    #[error("The Appearance Advertising Structure is not allowed to be present in both the Advertising Data and the Scan Response Data")]
+    AppearanceNotAllowedInBothAdvertisingDataAndScanResponseData,
     /// An empty service UUID list Advertising Structure needs to be complete.
     #[error("An empty service UUID list Advertising Structure needs to be complete")]
     EmptyServiceUuidListShallBeComplete,
