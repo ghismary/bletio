@@ -219,7 +219,7 @@ pub(crate) mod parser {
     }
 
     fn le_supported_features_page_0(input: &[u8]) -> IResult<&[u8], SupportedLeFeatures> {
-        map(le_u64(), SupportedLeFeatures::from_bits_retain).parse(input)
+        map(take(8u8), Into::into).parse(input)
     }
 
     fn le_supported_states(input: &[u8]) -> IResult<&[u8], SupportedLeStates> {
