@@ -1,11 +1,8 @@
+use bitflags::Flags;
 use bletio_hci::SupportedLeFeatures;
 use bletio_utils::EncodeToBuffer;
 
 use crate::assigned_numbers::AdType;
-
-// TODO: Handle multiple pages of LE features.
-//
-const LE_SUPPORTED_FEATURES_AD_STRUCT_SIZE: usize = 9;
 
 /// The LE features supported by the device.
 ///
@@ -22,6 +19,17 @@ impl LeSupportedFeaturesAdStruct {
     pub(crate) fn new(features: SupportedLeFeatures) -> Self {
         Self { features }
     }
+
+    fn last_non_zero_index(&self) -> Option<usize> {
+        self.features.bits().0.iter().rposition(|v| *v != 0)
+    }
+
+    fn minimum_size(&self) -> usize {
+        match self.last_non_zero_index() {
+            Some(index) => index + 1,
+            None => 0,
+        }
+    }
 }
 
 impl EncodeToBuffer for LeSupportedFeaturesAdStruct {
@@ -29,34 +37,42 @@ impl EncodeToBuffer for LeSupportedFeaturesAdStruct {
         &self,
         buffer: &mut B,
     ) -> Result<usize, bletio_utils::Error> {
-        buffer.try_push(LE_SUPPORTED_FEATURES_AD_STRUCT_SIZE as u8)?;
+        buffer.try_push((self.encoded_size() - 1) as u8)?;
         buffer.try_push(AdType::LeSupportedFeatures as u8)?;
-        buffer.encode_le_u64(self.features.bits())?;
+        for byte in &self.features.bits().0[..self.minimum_size()] {
+            buffer.try_push(*byte)?;
+        }
         Ok(self.encoded_size())
     }
 
     fn encoded_size(&self) -> usize {
-        LE_SUPPORTED_FEATURES_AD_STRUCT_SIZE + 1
+        self.minimum_size() + 2
     }
 }
 
 #[cfg(test)]
 mod test {
     use bletio_utils::{Buffer, BufferOps};
+    use rstest::rstest;
 
     use super::*;
 
-    #[test]
-    fn test_le_supported_features_ad_struct() -> Result<(), bletio_utils::Error> {
-        let mut buffer = Buffer::<10>::default();
-        let value = LeSupportedFeaturesAdStruct::new(
-            SupportedLeFeatures::LE_2M_PHY | SupportedLeFeatures::LE_CODED_PHY,
-        );
+    #[rstest]
+    #[case(SupportedLeFeatures::default(), &[0x01, 0x27])]
+    #[case(SupportedLeFeatures::LL_PRIVACY, &[0x02, 0x27, 0x40])]
+    #[case(SupportedLeFeatures::LE_2M_PHY | SupportedLeFeatures::LE_CODED_PHY, &[0x03, 0x27, 0x00, 0x09])]
+    #[case(
+        SupportedLeFeatures::LL_EXTENDED_FEATURE_SET | SupportedLeFeatures::MONITORING_ADVERTISERS,
+        &[0x0A, 0x27, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x01]
+    )]
+    fn test_le_supported_features_ad_struct(
+        #[case] features: SupportedLeFeatures,
+        #[case] encoded_data: &[u8],
+    ) -> Result<(), bletio_utils::Error> {
+        let mut buffer = Buffer::<11>::default();
+        let value = LeSupportedFeaturesAdStruct::new(features);
         value.encode(&mut buffer)?;
-        assert_eq!(
-            buffer.data(),
-            &[0x09, 0x27, 0x00, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-        );
+        assert_eq!(buffer.data(), encoded_data);
         Ok(())
     }
 }
