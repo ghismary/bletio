@@ -28,10 +28,20 @@ impl<'a> FullAdvertisingData<'a> {
         adv_data: AdvertisingData<'a>,
         scanresp_data: impl Into<Option<ScanResponseData<'a>>>,
     ) -> Result<Self, Error> {
-        // TODO: check validity
+        let scanresp_data = scanresp_data.into();
+        if let Some(scanresp_data) = &scanresp_data {
+            if let (Some(_), Some(_)) = (
+                adv_data.base.appearance.as_ref(),
+                scanresp_data.base.appearance.as_ref(),
+            ) {
+                return Err(
+                    AdvertisingError::AppearanceNotAllowedInBothAdvertisingDataAndScanResponseData,
+                )?;
+            }
+        }
         Ok(Self {
             adv_data,
-            scanresp_data: scanresp_data.into(),
+            scanresp_data,
         })
     }
 
