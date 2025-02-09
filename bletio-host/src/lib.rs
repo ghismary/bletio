@@ -15,8 +15,9 @@ pub use ble_host::{
     BleHostStateStandby, BleHostStates,
 };
 
-mod ble_device_information;
-mod controller_information;
+mod device_information;
+
+pub(crate) use device_information::DeviceInformation;
 
 use advertising::AdvertisingError;
 

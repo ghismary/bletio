@@ -1,7 +1,6 @@
 use bletio_hci::{Hci, HciDriver};
 
 use crate::assigned_numbers::AppearanceValue;
-use crate::ble_device_information::BleDeviceInformation;
 use crate::{BleHost, BleHostObserver, Error};
 
 #[derive(Debug)]
@@ -24,9 +23,7 @@ where
         BleDevice {
             hci: self.hci,
             observer: self.observer,
-            device_info: BleDeviceInformation {
-                appearance: self.appearance.unwrap_or(AppearanceValue::GenericUnknown),
-            },
+            appearance: self.appearance.unwrap_or(AppearanceValue::GenericUnknown),
         }
     }
 
@@ -43,7 +40,7 @@ where
 {
     hci: Hci<H>,
     observer: O,
-    device_info: BleDeviceInformation,
+    appearance: AppearanceValue,
 }
 
 impl<H, O> BleDevice<H, O>
@@ -60,7 +57,7 @@ where
     }
 
     pub async fn run(&mut self) -> Result<(), Error> {
-        let host = BleHost::setup(&mut self.hci, &self.device_info).await?;
+        let host = BleHost::setup(&mut self.hci, self.appearance).await?;
         let _host = self.observer.ready(host).await;
 
         // todo!();

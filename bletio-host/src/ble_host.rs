@@ -8,8 +8,8 @@ use bletio_hci::{
 };
 
 use crate::advertising::{AdvertisingEnable, AdvertisingParameters, FullAdvertisingData};
-use crate::ble_device_information::BleDeviceInformation;
-use crate::controller_information::ControllerInformation;
+use crate::assigned_numbers::AppearanceValue;
+use crate::device_information::DeviceInformation;
 use crate::Error;
 
 pub trait BleHostState {}
@@ -18,9 +18,8 @@ pub struct BleHost<'a, H, State: BleHostState = BleHostStateInitial>
 where
     H: HciDriver,
 {
-    controller_information: ControllerInformation,
     hci: &'a mut Hci<H>,
-    device_info: &'a BleDeviceInformation,
+    device_information: DeviceInformation,
     phantom: PhantomData<State>,
 }
 
@@ -42,19 +41,21 @@ where
     // Perform setup has described in Core specification 4.2, Vol. 6, Part D, 2.1
     pub(crate) async fn setup(
         hci: &'a mut Hci<H>,
-        device_info: &'a BleDeviceInformation,
+        appearance: AppearanceValue,
     ) -> Result<BleHost<'a, H, BleHostStateStandby>, Error>
     where
         H: HciDriver,
     {
-        let mut controller_information = ControllerInformation::default();
+        let mut device_information = DeviceInformation {
+            appearance,
+            ..Default::default()
+        };
 
         hci.cmd_reset().await?;
 
-        controller_information.supported_commands = hci.cmd_read_local_supported_commands().await?;
-        controller_information.supported_features = hci.cmd_read_local_supported_features().await?;
-        if !controller_information.is_feature_supported(SupportedFeatures::LE_SUPPORTED_CONTROLLER)
-        {
+        device_information.supported_commands = hci.cmd_read_local_supported_commands().await?;
+        device_information.supported_features = hci.cmd_read_local_supported_features().await?;
+        if !device_information.is_feature_supported(SupportedFeatures::LE_SUPPORTED_CONTROLLER) {
             return Err(Error::NonLeCapableController);
         }
 
@@ -73,12 +74,11 @@ where
         let num_le_data_packets: Result<NonZeroU16, _> = num_le_data_packets.try_into();
         match (le_data_packet_length, num_le_data_packets) {
             (Err(_), Ok(_)) | (Ok(_), Err(_)) | (Err(_), Err(_)) => {
-                if controller_information.is_command_supported(SupportedCommands::READ_BUFFER_SIZE)
-                {
+                if device_information.is_command_supported(SupportedCommands::READ_BUFFER_SIZE) {
                     (
-                        controller_information.le_data_packet_length,
+                        device_information.le_data_packet_length,
                         _,
-                        controller_information.num_le_data_packets,
+                        device_information.num_le_data_packets,
                         _,
                     ) = hci.cmd_read_buffer_size().await?;
                 } else {
@@ -86,24 +86,23 @@ where
                 }
             }
             (Ok(le_data_packet_length), Ok(num_le_data_packets)) => {
-                controller_information.le_data_packet_length = le_data_packet_length;
-                controller_information.num_le_data_packets = num_le_data_packets;
+                device_information.le_data_packet_length = le_data_packet_length;
+                device_information.num_le_data_packets = num_le_data_packets;
             }
         }
-        if controller_information
+        if device_information
             .is_command_supported(SupportedCommands::LE_READ_LOCAL_SUPPORTED_FEATURES_PAGE_0)
         {
-            controller_information.supported_le_features =
+            device_information.supported_le_features =
                 hci.cmd_le_read_local_supported_features_page_0().await?;
         }
 
-        controller_information.supported_le_states = hci.cmd_le_read_supported_states().await?;
-        controller_information.public_device_address = hci.cmd_read_bd_addr().await?;
+        device_information.supported_le_states = hci.cmd_le_read_supported_states().await?;
+        device_information.public_device_address = hci.cmd_read_bd_addr().await?;
 
         Ok(BleHost::<H, BleHostStateStandby> {
-            controller_information,
             hci,
-            device_info,
+            device_information,
             phantom: PhantomData,
         })
     }
@@ -120,8 +119,7 @@ where
     ) -> Result<BleHost<'a, H, BleHostStateAdvertising>, (Error, Self)> {
         async fn inner<H>(
             hci: &mut Hci<H>,
-            device_info: &BleDeviceInformation,
-            controller_capabilities: &mut ControllerInformation,
+            device_information: &mut DeviceInformation,
             adv_params: &AdvertisingParameters,
             full_adv_data: &FullAdvertisingData<'_>,
         ) -> Result<(), Error>
@@ -130,11 +128,10 @@ where
         {
             hci.cmd_le_set_advertising_parameters(adv_params.deref().clone())
                 .await?;
-            controller_capabilities.tx_power_level =
+            device_information.tx_power_level =
                 hci.cmd_le_read_advertising_channel_tx_power().await?;
 
-            let full_adv_data =
-                full_adv_data.fill_automatic_data(device_info, controller_capabilities);
+            let full_adv_data = full_adv_data.fill_automatic_data(device_information);
             let mut scanresp_data = bletio_hci::ScanResponseData::default();
             let adv_data = (&full_adv_data.adv_data).try_into()?;
             if let Some(data) = &full_adv_data.scanresp_data {
@@ -149,17 +146,15 @@ where
         }
         match inner(
             self.hci,
-            self.device_info,
-            &mut self.controller_information,
+            &mut self.device_information,
             adv_params,
             full_adv_data,
         )
         .await
         {
             Ok(()) => Ok(BleHost::<H, BleHostStateAdvertising> {
-                controller_information: self.controller_information,
                 hci: self.hci,
-                device_info: self.device_info,
+                device_information: self.device_information,
                 phantom: PhantomData,
             }),
             Err(e) => Err((e, self)),
@@ -176,9 +171,8 @@ where
             .cmd_le_set_advertising_enable(AdvertisingEnable::Disabled)
             .await?;
         Ok(BleHost::<H, BleHostStateStandby> {
-            controller_information: self.controller_information,
             hci: self.hci,
-            device_info: self.device_info,
+            device_information: self.device_information,
             phantom: PhantomData,
         })
     }
@@ -189,23 +183,23 @@ where
     H: HciDriver,
 {
     pub fn public_device_address(&self) -> &PublicDeviceAddress {
-        &self.controller_information.public_device_address
+        &self.device_information.public_device_address
     }
 
     pub fn supported_commands(&self) -> &SupportedCommands {
-        &self.controller_information.supported_commands
+        &self.device_information.supported_commands
     }
 
     pub fn supported_features(&self) -> &SupportedFeatures {
-        &self.controller_information.supported_features
+        &self.device_information.supported_features
     }
 
     pub fn supported_le_features(&self) -> &SupportedLeFeatures {
-        &self.controller_information.supported_le_features
+        &self.device_information.supported_le_features
     }
 
     pub fn supported_le_states(&self) -> &SupportedLeStates {
-        &self.controller_information.supported_le_states
+        &self.device_information.supported_le_states
     }
 }
 
