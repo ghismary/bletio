@@ -12,10 +12,8 @@ use crate::advertising::ad_struct::{
 };
 use crate::advertising::{AdvertisingError, Flags, ServiceListComplete, Uri};
 use crate::assigned_numbers::{AppearanceValue, CompanyIdentifier, ServiceUuid};
-use crate::ble_device_information::BleDeviceInformation;
-use crate::controller_information::ControllerInformation;
 use crate::uuid::{Uuid128, Uuid32};
-use crate::Error;
+use crate::{DeviceInformation, Error};
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct FullAdvertisingData<'a> {
@@ -45,20 +43,11 @@ impl<'a> FullAdvertisingData<'a> {
         })
     }
 
-    pub(crate) fn fill_automatic_data(
-        &self,
-        device_info: &BleDeviceInformation,
-        controller_capabilities: &ControllerInformation,
-    ) -> Self {
+    pub(crate) fn fill_automatic_data(&self, device_information: &DeviceInformation) -> Self {
         let mut filled = self.clone();
-        filled
-            .adv_data
-            .base
-            .fill_automatic_data(device_info, controller_capabilities);
+        filled.adv_data.base.fill_automatic_data(device_information);
         if let Some(scanresp_data) = filled.scanresp_data.as_mut() {
-            scanresp_data
-                .base
-                .fill_automatic_data(device_info, controller_capabilities);
+            scanresp_data.base.fill_automatic_data(device_information);
         }
         filled
     }
@@ -267,23 +256,18 @@ pub struct AdvertisingDataBase<'a> {
 }
 
 impl AdvertisingDataBase<'_> {
-    fn fill_automatic_data(
-        &mut self,
-        device_info: &BleDeviceInformation,
-        controller_capabilities: &ControllerInformation,
-    ) {
+    fn fill_automatic_data(&mut self, device_information: &DeviceInformation) {
         if self.appearance.is_some() {
-            self.appearance = Some(AppearanceAdStruct::new(device_info.appearance));
+            self.appearance = Some(AppearanceAdStruct::new(device_information.appearance));
         }
         if self.le_supported_features.is_some() {
             self.le_supported_features = Some(LeSupportedFeaturesAdStruct::new(
-                controller_capabilities.supported_le_features,
+                device_information.supported_le_features,
             ));
         }
         if self.tx_power_level.is_some() {
-            self.tx_power_level = Some(TxPowerLevelAdStruct::new(
-                controller_capabilities.tx_power_level,
-            ));
+            self.tx_power_level =
+                Some(TxPowerLevelAdStruct::new(device_information.tx_power_level));
         }
     }
 }
