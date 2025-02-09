@@ -5,6 +5,7 @@ mod advertising_enable;
 mod advertising_parameters;
 mod command;
 mod connection_interval;
+mod device_address;
 mod error_code;
 mod event;
 mod event_mask;
@@ -31,11 +32,11 @@ use bletio_utils::{Buffer, BufferOps, Error as UtilsError};
 
 pub(crate) use command::{Command, CommandOpCode};
 pub(crate) use event::{
-    CommandCompleteEvent, Event, EventCode, EventParameter, StatusAndBufferSizeEventParameter,
-    StatusAndLeBufferSizeEventParameter, StatusAndSupportedCommandsEventParameter,
-    StatusAndSupportedFeaturesEventParameter, StatusAndSupportedLeFeaturesEventParameter,
-    StatusAndSupportedLeStatesEventParameter, StatusAndTxPowerLevelEventParameter,
-    StatusEventParameter,
+    CommandCompleteEvent, Event, EventCode, EventParameter, StatusAndBdAddrEventParameter,
+    StatusAndBufferSizeEventParameter, StatusAndLeBufferSizeEventParameter,
+    StatusAndSupportedCommandsEventParameter, StatusAndSupportedFeaturesEventParameter,
+    StatusAndSupportedLeFeaturesEventParameter, StatusAndSupportedLeStatesEventParameter,
+    StatusAndTxPowerLevelEventParameter, StatusEventParameter,
 };
 pub(crate) use packet::{Packet, PacketType};
 
@@ -46,6 +47,10 @@ pub use advertising_parameters::{
     AdvertisingParameters, AdvertisingType, OwnAddressType, PeerAddress, PeerAddressType,
 };
 pub use connection_interval::ConnectionInterval;
+pub use device_address::{
+    DeviceAddress, PublicDeviceAddress, RandomNonResolvablePrivateAddress,
+    RandomResolvablePrivateAddress, RandomStaticDeviceAddress,
+};
 pub use error_code::ErrorCode;
 pub use event_mask::EventMask;
 pub use le_states::{LeCombinedState, LeSingleState, LeState};
@@ -109,6 +114,21 @@ pub enum Error {
     /// The provided peer address type is invalid.
     #[error("The peer address type {0} is invalid")]
     InvalidPeerAddressType(u8),
+    /// The provided public device address is invalid.
+    #[error("The public device address is invalid.")]
+    InvalidPublicDeviceAddress,
+    /// The provided random address is invalid.
+    #[error("The random address is invalid.")]
+    InvalidRandomAddress,
+    /// The provided random non-resolvable private address is invalid.
+    #[error("The random non-resolvable private address is invalid.")]
+    InvalidRandomNonResolvablePrivateAddress,
+    /// The provided random resolvable private address is invalid.
+    #[error("The random resolvable private address is invalid.")]
+    InvalidRandomResolvablePrivateAddress,
+    /// The provided random static device address is invalid.
+    #[error("The random static device address is invalid")]
+    InvalidRandomStaticDeviceAddress,
     /// The provided TX power level value is invalid.
     #[error("The TX power level value {0} is invalid")]
     InvalidTxPowerLevelValue(i8),
@@ -226,6 +246,17 @@ where
             EventParameter::StatusAndSupportedFeatures(param) => {
                 Err(Error::ErrorCode(param.status))
             }
+            _ => Err(Error::InvalidEventPacket),
+        }
+    }
+
+    pub async fn cmd_read_bd_addr(&mut self) -> Result<PublicDeviceAddress, Error> {
+        let event = self.execute_command(Command::ReadBdAddr).await?;
+        match event.parameter {
+            EventParameter::StatusAndBdAddr(param) if param.status.is_success() => {
+                Ok(param.bd_addr)
+            }
+            EventParameter::StatusAndBdAddr(param) => Err(Error::ErrorCode(param.status)),
             _ => Err(Error::InvalidEventPacket),
         }
     }

@@ -16,7 +16,7 @@ pub use ble_host::{
 };
 
 mod ble_device_information;
-mod controller_capabilities;
+mod controller_information;
 
 use advertising::AdvertisingError;
 

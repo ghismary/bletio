@@ -13,7 +13,7 @@ use crate::advertising::ad_struct::{
 use crate::advertising::{AdvertisingError, Flags, ServiceListComplete, Uri};
 use crate::assigned_numbers::{AppearanceValue, CompanyIdentifier, ServiceUuid};
 use crate::ble_device_information::BleDeviceInformation;
-use crate::controller_capabilities::ControllerCapabilities;
+use crate::controller_information::ControllerInformation;
 use crate::uuid::{Uuid128, Uuid32};
 use crate::Error;
 
@@ -48,7 +48,7 @@ impl<'a> FullAdvertisingData<'a> {
     pub(crate) fn fill_automatic_data(
         &self,
         device_info: &BleDeviceInformation,
-        controller_capabilities: &ControllerCapabilities,
+        controller_capabilities: &ControllerInformation,
     ) -> Self {
         let mut filled = self.clone();
         filled
@@ -270,7 +270,7 @@ impl AdvertisingDataBase<'_> {
     fn fill_automatic_data(
         &mut self,
         device_info: &BleDeviceInformation,
-        controller_capabilities: &ControllerCapabilities,
+        controller_capabilities: &ControllerInformation,
     ) {
         if self.appearance.is_some() {
             self.appearance = Some(AppearanceAdStruct::new(device_info.appearance));

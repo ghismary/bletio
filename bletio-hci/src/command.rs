@@ -24,7 +24,7 @@ pub(crate) enum CommandOpCode {
     ReadLocalSupportedCommands = opcode(INFORMATIONAL_PARAMETERS_OGF, 0x0002),
     ReadLocalSupportedFeatures = opcode(INFORMATIONAL_PARAMETERS_OGF, 0x0003),
     ReadBufferSize = opcode(INFORMATIONAL_PARAMETERS_OGF, 0x0005),
-    // ReadBdAddr = opcode(INFORMATIONAL_PARAMETERS_OGF, 0x0009),
+    ReadBdAddr = opcode(INFORMATIONAL_PARAMETERS_OGF, 0x0009),
     // LeSetEventMask = opcode(LE_CONTROLLER_OGF, 0x0001),
     LeReadBufferSize = opcode(LE_CONTROLLER_OGF, 0x0002),
     LeReadLocalSupportedFeaturesPage0 = opcode(LE_CONTROLLER_OGF, 0x0003),
@@ -64,7 +64,7 @@ pub(crate) enum Command {
     // LeSetRandomAddress(RandomAddress),
     LeSetScanResponseData(ScanResponseData),
     Nop,
-    // ReadBdAddr,
+    ReadBdAddr,
     ReadBufferSize,
     ReadLocalSupportedCommands,
     ReadLocalSupportedFeatures,
@@ -81,6 +81,7 @@ impl Command {
             | Command::LeReadLocalSupportedFeaturesPage0
             | Command::LeReadSupportedStates
             | Command::Nop
+            | Command::ReadBdAddr
             | Command::ReadBufferSize
             | Command::ReadLocalSupportedCommands
             | Command::ReadLocalSupportedFeatures
@@ -120,7 +121,7 @@ impl Command {
             Self::LeSetAdvertisingParameters(_) => CommandOpCode::LeSetAdvertisingParameters,
             Self::LeSetScanResponseData(_) => CommandOpCode::LeSetScanResponseData,
             Self::Nop => CommandOpCode::Nop,
-            // Self::ReadBdAddr => CommandOpCode::ReadBdAddr,
+            Self::ReadBdAddr => CommandOpCode::ReadBdAddr,
             Self::ReadBufferSize => CommandOpCode::ReadBufferSize,
             Self::ReadLocalSupportedCommands => CommandOpCode::ReadLocalSupportedCommands,
             Self::ReadLocalSupportedFeatures => CommandOpCode::ReadLocalSupportedFeatures,
@@ -220,7 +221,7 @@ pub(crate) mod parser {
                     Command::LeSetScanResponseData(scan_response_data)
                 }
                 CommandOpCode::Nop => Command::Nop,
-                // CommandOpCode::ReadBdAddr => Command::ReadBdAddr,
+                CommandOpCode::ReadBdAddr => Command::ReadBdAddr,
                 CommandOpCode::ReadBufferSize => Command::ReadBufferSize,
                 CommandOpCode::ReadLocalSupportedCommands => Command::ReadLocalSupportedCommands,
                 CommandOpCode::ReadLocalSupportedFeatures => Command::ReadLocalSupportedFeatures,
@@ -294,6 +295,7 @@ mod test {
         CommandOpCode::LeSetScanResponseData,
         &[1, 9, 32, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     )]
+    #[case::read_bd_addr(Command::ReadBdAddr, CommandOpCode::ReadBdAddr, &[1, 9, 16, 0])]
     #[case::read_buffer_size(Command::ReadBufferSize, CommandOpCode::ReadBufferSize, &[1, 5, 16, 0])]
     #[case::read_local_supported_commands(
         Command::ReadLocalSupportedCommands, CommandOpCode::ReadLocalSupportedCommands, &[1, 2, 16, 0]

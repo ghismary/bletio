@@ -2,15 +2,14 @@ use core::marker::PhantomData;
 use core::num::NonZeroU16;
 use core::ops::Deref;
 
-use bitflags::Flags;
 use bletio_hci::{
-    EventMask, Hci, HciDriver, SupportedCommands, SupportedFeatures, SupportedLeFeatures,
-    SupportedLeStates,
+    EventMask, Hci, HciDriver, PublicDeviceAddress, SupportedCommands, SupportedFeatures,
+    SupportedLeFeatures, SupportedLeStates,
 };
 
 use crate::advertising::{AdvertisingEnable, AdvertisingParameters, FullAdvertisingData};
 use crate::ble_device_information::BleDeviceInformation;
-use crate::controller_capabilities::ControllerCapabilities;
+use crate::controller_information::ControllerInformation;
 use crate::Error;
 
 pub trait BleHostState {}
@@ -19,7 +18,7 @@ pub struct BleHost<'a, H, State: BleHostState = BleHostStateInitial>
 where
     H: HciDriver,
 {
-    controller_capabilities: ControllerCapabilities,
+    controller_information: ControllerInformation,
     hci: &'a mut Hci<H>,
     device_info: &'a BleDeviceInformation,
     phantom: PhantomData<State>,
@@ -48,17 +47,13 @@ where
     where
         H: HciDriver,
     {
-        let mut controller_capabilities = ControllerCapabilities::default();
+        let mut controller_information = ControllerInformation::default();
 
         hci.cmd_reset().await?;
 
-        controller_capabilities.supported_commands =
-            hci.cmd_read_local_supported_commands().await?;
-        controller_capabilities.supported_features =
-            hci.cmd_read_local_supported_features().await?;
-        if !controller_capabilities
-            .supported_features
-            .contains(SupportedFeatures::LE_SUPPORTED_CONTROLLER)
+        controller_information.supported_commands = hci.cmd_read_local_supported_commands().await?;
+        controller_information.supported_features = hci.cmd_read_local_supported_features().await?;
+        if !controller_information.is_feature_supported(SupportedFeatures::LE_SUPPORTED_CONTROLLER)
         {
             return Err(Error::NonLeCapableController);
         }
@@ -78,14 +73,12 @@ where
         let num_le_data_packets: Result<NonZeroU16, _> = num_le_data_packets.try_into();
         match (le_data_packet_length, num_le_data_packets) {
             (Err(_), Ok(_)) | (Ok(_), Err(_)) | (Err(_), Err(_)) => {
-                if controller_capabilities
-                    .supported_commands
-                    .contains(SupportedCommands::READ_BUFFER_SIZE)
+                if controller_information.is_command_supported(SupportedCommands::READ_BUFFER_SIZE)
                 {
                     (
-                        controller_capabilities.le_data_packet_length,
+                        controller_information.le_data_packet_length,
                         _,
-                        controller_capabilities.num_le_data_packets,
+                        controller_information.num_le_data_packets,
                         _,
                     ) = hci.cmd_read_buffer_size().await?;
                 } else {
@@ -93,21 +86,22 @@ where
                 }
             }
             (Ok(le_data_packet_length), Ok(num_le_data_packets)) => {
-                controller_capabilities.le_data_packet_length = le_data_packet_length;
-                controller_capabilities.num_le_data_packets = num_le_data_packets;
+                controller_information.le_data_packet_length = le_data_packet_length;
+                controller_information.num_le_data_packets = num_le_data_packets;
             }
         }
-        if controller_capabilities
-            .supported_commands
-            .contains(SupportedCommands::LE_READ_LOCAL_SUPPORTED_FEATURES_PAGE_0)
+        if controller_information
+            .is_command_supported(SupportedCommands::LE_READ_LOCAL_SUPPORTED_FEATURES_PAGE_0)
         {
-            controller_capabilities.supported_le_features =
+            controller_information.supported_le_features =
                 hci.cmd_le_read_local_supported_features_page_0().await?;
         }
-        controller_capabilities.supported_le_states = hci.cmd_le_read_supported_states().await?;
+
+        controller_information.supported_le_states = hci.cmd_le_read_supported_states().await?;
+        controller_information.public_device_address = hci.cmd_read_bd_addr().await?;
 
         Ok(BleHost::<H, BleHostStateStandby> {
-            controller_capabilities,
+            controller_information,
             hci,
             device_info,
             phantom: PhantomData,
@@ -127,7 +121,7 @@ where
         async fn inner<H>(
             hci: &mut Hci<H>,
             device_info: &BleDeviceInformation,
-            controller_capabilities: &mut ControllerCapabilities,
+            controller_capabilities: &mut ControllerInformation,
             adv_params: &AdvertisingParameters,
             full_adv_data: &FullAdvertisingData<'_>,
         ) -> Result<(), Error>
@@ -156,14 +150,14 @@ where
         match inner(
             self.hci,
             self.device_info,
-            &mut self.controller_capabilities,
+            &mut self.controller_information,
             adv_params,
             full_adv_data,
         )
         .await
         {
             Ok(()) => Ok(BleHost::<H, BleHostStateAdvertising> {
-                controller_capabilities: self.controller_capabilities,
+                controller_information: self.controller_information,
                 hci: self.hci,
                 device_info: self.device_info,
                 phantom: PhantomData,
@@ -182,7 +176,7 @@ where
             .cmd_le_set_advertising_enable(AdvertisingEnable::Disabled)
             .await?;
         Ok(BleHost::<H, BleHostStateStandby> {
-            controller_capabilities: self.controller_capabilities,
+            controller_information: self.controller_information,
             hci: self.hci,
             device_info: self.device_info,
             phantom: PhantomData,
@@ -194,20 +188,24 @@ impl<H> BleHost<'_, H>
 where
     H: HciDriver,
 {
+    pub fn public_device_address(&self) -> &PublicDeviceAddress {
+        &self.controller_information.public_device_address
+    }
+
     pub fn supported_commands(&self) -> &SupportedCommands {
-        &self.controller_capabilities.supported_commands
+        &self.controller_information.supported_commands
     }
 
     pub fn supported_features(&self) -> &SupportedFeatures {
-        &self.controller_capabilities.supported_features
+        &self.controller_information.supported_features
     }
 
     pub fn supported_le_features(&self) -> &SupportedLeFeatures {
-        &self.controller_capabilities.supported_le_features
+        &self.controller_information.supported_le_features
     }
 
     pub fn supported_le_states(&self) -> &SupportedLeStates {
-        &self.controller_capabilities.supported_le_states
+        &self.controller_information.supported_le_states
     }
 }
 
