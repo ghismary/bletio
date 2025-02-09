@@ -57,14 +57,15 @@ mod test {
 
     use super::*;
     use crate::{
-        AdvertisingData, AdvertisingEnable, AdvertisingParameters, CommandCompleteEvent,
-        CommandOpCode, ErrorCode, EventMask, EventParameter, PublicDeviceAddress, ScanResponseData,
-        StatusAndBdAddrEventParameter, StatusAndBufferSizeEventParameter,
-        StatusAndLeBufferSizeEventParameter, StatusAndSupportedCommandsEventParameter,
-        StatusAndSupportedFeaturesEventParameter, StatusAndSupportedLeFeaturesEventParameter,
-        StatusAndSupportedLeStatesEventParameter, StatusAndTxPowerLevelEventParameter,
-        StatusEventParameter, SupportedCommands, SupportedFeatures, SupportedLeFeatures,
-        TxPowerLevel,
+        AdvertisingChannelMap, AdvertisingData, AdvertisingEnable, AdvertisingFilterPolicy,
+        AdvertisingParameters, AdvertisingType, CommandCompleteEvent, CommandOpCode, DeviceAddress,
+        ErrorCode, EventMask, EventParameter, OwnAddressType, PublicDeviceAddress, RandomAddress,
+        RandomStaticDeviceAddress, ScanResponseData, StatusAndBdAddrEventParameter,
+        StatusAndBufferSizeEventParameter, StatusAndLeBufferSizeEventParameter,
+        StatusAndSupportedCommandsEventParameter, StatusAndSupportedFeaturesEventParameter,
+        StatusAndSupportedLeFeaturesEventParameter, StatusAndSupportedLeStatesEventParameter,
+        StatusAndTxPowerLevelEventParameter, StatusEventParameter, SupportedCommands,
+        SupportedFeatures, SupportedLeFeatures, TxPowerLevel,
     };
 
     #[test]
@@ -103,9 +104,20 @@ mod test {
         Command::LeSetAdvertisingData(AdvertisingData::default()),
         &[1, 8, 32, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     )]
-    #[case::le_set_advertising_parameters(
+    #[case::le_set_advertising_parameters::default(
         Command::LeSetAdvertisingParameters(AdvertisingParameters::default()),
         &[1, 06, 32, 15, 0, 8, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0]
+    )]
+    #[case::le_set_advertising_parameters::random_peer_address(
+        Command::LeSetAdvertisingParameters(AdvertisingParameters {
+            interval: 0x0020.try_into().unwrap()..=0x0030.try_into().unwrap(),
+            r#type: AdvertisingType::ScannableUndirected,
+            own_address_type: OwnAddressType::RandomDeviceAddress,
+            peer_address: DeviceAddress::Random(RandomAddress::Static(RandomStaticDeviceAddress::try_new([0xFE, 0x92, 0x2F, 0x0F, 0x4B, 0xD2]).unwrap())),
+            channel_map: AdvertisingChannelMap::CHANNEL37 | AdvertisingChannelMap::CHANNEL38,
+            filter_policy: AdvertisingFilterPolicy::ConnectionAllAndScanFilterAcceptList,
+        }),
+        &[1, 06, 32, 15, 32, 0, 48, 0, 2, 1, 1, 0xFE, 0x92, 0x2F, 0x0F, 0x4B, 0xD2, 3, 1]
     )]
     #[case::le_set_scan_response_data(
         Command::LeSetScanResponseData(ScanResponseData::default()),
