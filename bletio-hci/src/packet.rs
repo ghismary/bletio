@@ -58,12 +58,13 @@ mod test {
     use super::*;
     use crate::{
         AdvertisingData, AdvertisingEnable, AdvertisingParameters, CommandCompleteEvent,
-        CommandOpCode, ErrorCode, EventMask, EventParameter, ScanResponseData,
-        StatusAndBufferSizeEventParameter, StatusAndLeBufferSizeEventParameter,
-        StatusAndSupportedCommandsEventParameter, StatusAndSupportedFeaturesEventParameter,
-        StatusAndSupportedLeFeaturesEventParameter, StatusAndSupportedLeStatesEventParameter,
-        StatusAndTxPowerLevelEventParameter, StatusEventParameter, SupportedCommands,
-        SupportedFeatures, SupportedLeFeatures, TxPowerLevel,
+        CommandOpCode, ErrorCode, EventMask, EventParameter, PublicDeviceAddress, ScanResponseData,
+        StatusAndBdAddrEventParameter, StatusAndBufferSizeEventParameter,
+        StatusAndLeBufferSizeEventParameter, StatusAndSupportedCommandsEventParameter,
+        StatusAndSupportedFeaturesEventParameter, StatusAndSupportedLeFeaturesEventParameter,
+        StatusAndSupportedLeStatesEventParameter, StatusAndTxPowerLevelEventParameter,
+        StatusEventParameter, SupportedCommands, SupportedFeatures, SupportedLeFeatures,
+        TxPowerLevel,
     };
 
     #[test]
@@ -111,6 +112,7 @@ mod test {
         &[1, 9, 32, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     )]
     #[case::nop(Command::Nop, &[1, 0, 0, 0])]
+    #[case::read_bd_addr(Command::ReadBdAddr, &[1, 9, 16, 0])]
     #[case::read_buffer_size(Command::ReadBufferSize, &[1, 5, 16, 0])]
     #[case::read_local_supported_commands(Command::ReadLocalSupportedCommands, &[1, 2, 16, 0])]
     #[case::read_local_supported_features(Command::ReadLocalSupportedFeatures, &[1, 3, 16, 0])]
@@ -171,6 +173,13 @@ mod test {
             1, CommandOpCode::Nop,
             EventParameter::Empty
         ), &[4, 14, 3, 1, 0, 0])]
+    #[case::read_bd_addr(CommandCompleteEvent::new(
+            1, CommandOpCode::ReadBdAddr,
+            StatusAndBdAddrEventParameter {
+                status: ErrorCode::Success,
+                bd_addr: PublicDeviceAddress::new([0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56])
+            }
+        ), &[4, 14, 10, 1, 9, 16, 0, 0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56])]
     #[case::read_buffer_size(CommandCompleteEvent::new(
             1, CommandOpCode::ReadBufferSize,
             StatusAndBufferSizeEventParameter {

@@ -1,8 +1,8 @@
 use core::num::{NonZeroU16, NonZeroU8};
 
 use crate::{
-    CommandOpCode, ErrorCode, SupportedCommands, SupportedFeatures, SupportedLeFeatures,
-    SupportedLeStates, TxPowerLevel,
+    CommandOpCode, ErrorCode, PublicDeviceAddress, SupportedCommands, SupportedFeatures,
+    SupportedLeFeatures, SupportedLeStates, TxPowerLevel,
 };
 
 #[derive(Debug, PartialEq, Eq)]
@@ -52,10 +52,11 @@ impl CommandCompleteEvent {
 pub(crate) enum EventParameter {
     Empty,
     Status(StatusEventParameter),
-    StatusAndSupportedCommands(StatusAndSupportedCommandsEventParameter),
-    StatusAndSupportedFeatures(StatusAndSupportedFeaturesEventParameter),
+    StatusAndBdAddr(StatusAndBdAddrEventParameter),
     StatusAndBufferSize(StatusAndBufferSizeEventParameter),
     StatusAndLeBufferSize(StatusAndLeBufferSizeEventParameter),
+    StatusAndSupportedCommands(StatusAndSupportedCommandsEventParameter),
+    StatusAndSupportedFeatures(StatusAndSupportedFeaturesEventParameter),
     StatusAndSupportedLeFeatures(StatusAndSupportedLeFeaturesEventParameter),
     StatusAndSupportedLeStates(StatusAndSupportedLeStatesEventParameter),
     StatusAndTxPowerLevel(StatusAndTxPowerLevelEventParameter),
@@ -73,26 +74,14 @@ impl From<StatusEventParameter> for EventParameter {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) struct StatusAndSupportedCommandsEventParameter {
+pub(crate) struct StatusAndBdAddrEventParameter {
     pub(crate) status: ErrorCode,
-    pub(crate) supported_commands: SupportedCommands,
+    pub(crate) bd_addr: PublicDeviceAddress,
 }
 
-impl From<StatusAndSupportedCommandsEventParameter> for EventParameter {
-    fn from(value: StatusAndSupportedCommandsEventParameter) -> Self {
-        Self::StatusAndSupportedCommands(value)
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub(crate) struct StatusAndSupportedFeaturesEventParameter {
-    pub(crate) status: ErrorCode,
-    pub(crate) supported_features: SupportedFeatures,
-}
-
-impl From<StatusAndSupportedFeaturesEventParameter> for EventParameter {
-    fn from(value: StatusAndSupportedFeaturesEventParameter) -> Self {
-        Self::StatusAndSupportedFeatures(value)
+impl From<StatusAndBdAddrEventParameter> for EventParameter {
+    fn from(value: StatusAndBdAddrEventParameter) -> Self {
+        Self::StatusAndBdAddr(value)
     }
 }
 
@@ -121,6 +110,30 @@ pub(crate) struct StatusAndLeBufferSizeEventParameter {
 impl From<StatusAndLeBufferSizeEventParameter> for EventParameter {
     fn from(value: StatusAndLeBufferSizeEventParameter) -> Self {
         Self::StatusAndLeBufferSize(value)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct StatusAndSupportedCommandsEventParameter {
+    pub(crate) status: ErrorCode,
+    pub(crate) supported_commands: SupportedCommands,
+}
+
+impl From<StatusAndSupportedCommandsEventParameter> for EventParameter {
+    fn from(value: StatusAndSupportedCommandsEventParameter) -> Self {
+        Self::StatusAndSupportedCommands(value)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct StatusAndSupportedFeaturesEventParameter {
+    pub(crate) status: ErrorCode,
+    pub(crate) supported_features: SupportedFeatures,
+}
+
+impl From<StatusAndSupportedFeaturesEventParameter> for EventParameter {
+    fn from(value: StatusAndSupportedFeaturesEventParameter) -> Self {
+        Self::StatusAndSupportedFeatures(value)
     }
 }
 
@@ -174,11 +187,12 @@ pub(crate) mod parser {
     use crate::{
         command::parser::command_opcode, packet::parser::parameter_total_length,
         CommandCompleteEvent, CommandOpCode, ErrorCode, Event, EventCode, EventParameter, Packet,
-        StatusAndBufferSizeEventParameter, StatusAndLeBufferSizeEventParameter,
-        StatusAndSupportedCommandsEventParameter, StatusAndSupportedFeaturesEventParameter,
-        StatusAndSupportedLeFeaturesEventParameter, StatusAndSupportedLeStatesEventParameter,
-        StatusAndTxPowerLevelEventParameter, StatusEventParameter, SupportedCommands,
-        SupportedFeatures, SupportedLeFeatures, SupportedLeStates, TxPowerLevel,
+        PublicDeviceAddress, StatusAndBdAddrEventParameter, StatusAndBufferSizeEventParameter,
+        StatusAndLeBufferSizeEventParameter, StatusAndSupportedCommandsEventParameter,
+        StatusAndSupportedFeaturesEventParameter, StatusAndSupportedLeFeaturesEventParameter,
+        StatusAndSupportedLeStatesEventParameter, StatusAndTxPowerLevelEventParameter,
+        StatusEventParameter, SupportedCommands, SupportedFeatures, SupportedLeFeatures,
+        SupportedLeStates, TxPowerLevel,
     };
 
     fn event_code(input: &[u8]) -> IResult<&[u8], EventCode> {
@@ -202,6 +216,14 @@ pub(crate) mod parser {
 
     fn supported_features(input: &[u8]) -> IResult<&[u8], SupportedFeatures> {
         map(le_u64(), SupportedFeatures::from_bits_retain).parse(input)
+    }
+
+    fn bd_addr(input: &[u8]) -> IResult<&[u8], PublicDeviceAddress> {
+        map(
+            map_res(take(6u8), TryInto::try_into),
+            PublicDeviceAddress::new,
+        )
+        .parse(input)
     }
 
     fn buffer_size(input: &[u8]) -> IResult<&[u8], (NonZeroU16, NonZeroU8, NonZeroU16, u16)> {
@@ -267,6 +289,12 @@ pub(crate) mod parser {
                     supported_features,
                 }
                 .into()
+            }
+            CommandOpCode::ReadBdAddr => {
+                let (rest, status) = hci_error_code(return_parameters)?;
+                let (rest, bd_addr) = bd_addr(rest)?;
+                eof(rest)?;
+                StatusAndBdAddrEventParameter { status, bd_addr }.into()
             }
             CommandOpCode::ReadBufferSize => {
                 let (rest, status) = hci_error_code(return_parameters)?;
