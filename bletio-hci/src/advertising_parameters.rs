@@ -7,7 +7,7 @@ use bletio_utils::{BufferOps, EncodeToBuffer, Error as UtilsError};
 use core::ops::RangeInclusive;
 use num_enum::TryFromPrimitive;
 
-use crate::Error;
+use crate::{DeviceAddress, Error};
 
 /// Advertising interval value.
 ///
@@ -108,7 +108,7 @@ pub enum OwnAddressType {
 #[num_enum(error_type(name = Error, constructor = Error::InvalidPeerAddressType))]
 #[repr(u8)]
 #[non_exhaustive]
-pub enum PeerAddressType {
+enum PeerAddressType {
     /// Public Device Address (default) or Public Identity Address.
     #[default]
     Public = 0x00,
@@ -116,32 +116,12 @@ pub enum PeerAddressType {
     Random = 0x01,
 }
 
-/// Peer address.
-///
-/// This is the address of the device to be connected.
-///
-/// Can be:
-///  - Public Device Address
-///  - Random Device Address
-///  - Public Identity Address
-///  - Random (static) Identity Address
-///
-/// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct PeerAddress {
-    value: [u8; 6],
-}
-
-impl PeerAddress {
-    /// Create a peer address.
-    pub fn new(address: [u8; 6]) -> Self {
-        address.into()
-    }
-}
-
-impl From<[u8; 6]> for PeerAddress {
-    fn from(value: [u8; 6]) -> Self {
-        Self { value }
+impl From<&DeviceAddress> for PeerAddressType {
+    fn from(value: &DeviceAddress) -> Self {
+        match value {
+            DeviceAddress::Public(_) => Self::Public,
+            DeviceAddress::Random(_) => Self::Random,
+        }
     }
 }
 
@@ -214,8 +194,7 @@ pub struct AdvertisingParameters {
     pub interval: RangeInclusive<AdvertisingIntervalValue>,
     pub r#type: AdvertisingType,
     pub own_address_type: OwnAddressType,
-    pub peer_address_type: PeerAddressType,
-    pub peer_address: PeerAddress,
+    pub peer_address: DeviceAddress,
     pub channel_map: AdvertisingChannelMap,
     pub filter_policy: AdvertisingFilterPolicy,
 }
@@ -226,8 +205,9 @@ impl EncodeToBuffer for AdvertisingParameters {
         buffer.encode_le_u16(self.interval.end().value)?;
         buffer.try_push(self.r#type as u8)?;
         buffer.try_push(self.own_address_type as u8)?;
-        buffer.try_push(self.peer_address_type as u8)?;
-        buffer.copy_from_slice(self.peer_address.value.as_slice())?;
+        let peer_address_type: PeerAddressType = (&self.peer_address).into();
+        buffer.try_push(peer_address_type as u8)?;
+        buffer.copy_from_slice(self.peer_address.value())?;
         buffer.try_push(self.channel_map.bits())?;
         buffer.try_push(self.filter_policy as u8)?;
         Ok(self.encoded_size())
@@ -244,8 +224,7 @@ impl Default for AdvertisingParameters {
             interval: (AdvertisingIntervalValue::default()..=AdvertisingIntervalValue::default()),
             r#type: AdvertisingType::default(),
             own_address_type: OwnAddressType::default(),
-            peer_address_type: PeerAddressType::default(),
-            peer_address: PeerAddress::default(),
+            peer_address: DeviceAddress::default(),
             channel_map: AdvertisingChannelMap::default(),
             filter_policy: AdvertisingFilterPolicy::default(),
         }
@@ -262,6 +241,8 @@ pub(crate) mod parser {
         sequence::pair,
         IResult, Parser,
     };
+
+    use crate::{device_address::RandomAddress, PublicDeviceAddress};
 
     use super::*;
 
@@ -291,8 +272,26 @@ pub(crate) mod parser {
         map_res(le_u8(), TryInto::try_into).parse(input)
     }
 
-    fn peer_address(input: &[u8]) -> IResult<&[u8], PeerAddress> {
-        map(map_res(take(6u8), TryInto::try_into), |v: [u8; 6]| v.into()).parse(input)
+    fn peer_address(input: &[u8]) -> IResult<&[u8], DeviceAddress> {
+        map_res(
+            (
+                peer_address_type,
+                map_res(take(6u8), TryInto::<[u8; 6]>::try_into),
+            ),
+            |(peer_address_type, peer_address)| {
+                Ok::<DeviceAddress, Error>(match peer_address_type {
+                    PeerAddressType::Public => {
+                        let address: PublicDeviceAddress = peer_address.into();
+                        address.into()
+                    }
+                    PeerAddressType::Random => {
+                        let address: RandomAddress = peer_address.try_into()?;
+                        address.into()
+                    }
+                })
+            },
+        )
+        .parse(input)
     }
 
     fn channel_map(input: &[u8]) -> IResult<&[u8], AdvertisingChannelMap> {
@@ -309,25 +308,15 @@ pub(crate) mod parser {
                 advertising_interval,
                 advertising_type,
                 own_address_type,
-                peer_address_type,
                 peer_address,
                 channel_map,
                 filter_policy,
             ),
-            |(
-                interval,
-                r#type,
-                own_address_type,
-                peer_address_type,
-                peer_address,
-                channel_map,
-                filter_policy,
-            )| {
+            |(interval, r#type, own_address_type, peer_address, channel_map, filter_policy)| {
                 AdvertisingParameters {
                     interval,
                     r#type,
                     own_address_type,
-                    peer_address_type,
                     peer_address,
                     channel_map,
                     filter_policy,
@@ -340,8 +329,12 @@ pub(crate) mod parser {
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use approx::assert_relative_eq;
+    use rstest::rstest;
+
+    use crate::{RandomAddress, RandomStaticDeviceAddress};
+
+    use super::*;
 
     #[test]
     fn test_advertising_interval_value_default() {
@@ -350,61 +343,50 @@ mod test {
         assert_relative_eq!(value.milliseconds(), 1280f32, epsilon = 1.0e-6);
     }
 
-    #[test]
-    fn test_advertising_interval_value_creation_success() -> Result<(), Error> {
-        let value = AdvertisingIntervalValue::try_new(0x0020)?;
-        assert_eq!(value.value(), 0x0020);
-        assert_relative_eq!(value.milliseconds(), 20f32, epsilon = 1.0e-6);
-
-        let value = AdvertisingIntervalValue::try_from(0x4000)?;
-        assert_eq!(value.value(), 0x4000);
-        assert_relative_eq!(value.milliseconds(), 10240f32, epsilon = 1.0e-6);
-
+    #[rstest]
+    #[case(0x0020, 20f32)]
+    #[case(0x4000, 10240f32)]
+    fn test_advertising_interval_value_success(
+        #[case] input: u16,
+        #[case] expected_milliseconds: f32,
+    ) -> Result<(), Error> {
+        let value = AdvertisingIntervalValue::try_new(input)?;
+        assert_eq!(value.value(), input);
+        assert_relative_eq!(
+            value.milliseconds(),
+            expected_milliseconds,
+            epsilon = 1.0e-6
+        );
         Ok(())
     }
 
-    #[test]
-    fn test_advertising_interval_value_creation_failure() {
-        let err = AdvertisingIntervalValue::try_new(0x0010)
-            .expect_err("Invalid advertising interval value");
-        assert!(matches!(
-            err,
-            Error::InvalidAdvertisingIntervalValue(0x0010)
-        ));
-
-        let err = AdvertisingIntervalValue::try_from(0x8000)
-            .expect_err("Invalid advertising interval value");
-        assert!(matches!(
-            err,
-            Error::InvalidAdvertisingIntervalValue(0x8000)
-        ));
+    #[rstest]
+    #[case(0x0010)]
+    #[case(0x8000)]
+    fn test_advertising_interval_value_failure(#[case] input: u16) {
+        let err = AdvertisingIntervalValue::try_new(input);
+        assert_eq!(err, Err(Error::InvalidAdvertisingIntervalValue(input)));
     }
 
-    #[test]
-    fn test_advertising_channel_map() {
-        let value = AdvertisingChannelMap::default();
-        assert_eq!(
-            value.bits(),
-            (AdvertisingChannelMap::CHANNEL37
-                | AdvertisingChannelMap::CHANNEL38
-                | AdvertisingChannelMap::CHANNEL39)
-                .bits()
-        );
-
-        let value = AdvertisingChannelMap::new();
-        assert_eq!(
-            value.bits(),
-            (AdvertisingChannelMap::CHANNEL37
-                | AdvertisingChannelMap::CHANNEL38
-                | AdvertisingChannelMap::CHANNEL39)
-                .bits()
-        );
+    #[rstest]
+    #[case(DeviceAddress::default(), PeerAddressType::Public)]
+    #[case(
+        DeviceAddress::Random(RandomAddress::Static(RandomStaticDeviceAddress::try_new([0xFE, 0x92, 0x2F, 0x0F, 0x4B, 0xD2]).unwrap())),
+        PeerAddressType::Random
+    )]
+    fn test_peer_address_type(#[case] input: DeviceAddress, #[case] expected: PeerAddressType) {
+        let peer_address_type: PeerAddressType = (&input).into();
+        assert_eq!(peer_address_type, expected);
     }
 
-    #[test]
-    fn test_peer_address() {
-        let address = PeerAddress::new([0x01, 0x02, 0x03, 0x04, 0x05, 0x06]);
-        assert_eq!(address.value, [0x01, 0x02, 0x03, 0x04, 0x05, 0x06]);
+    #[rstest]
+    #[case(AdvertisingChannelMap::default(), AdvertisingChannelMap::CHANNEL37 | AdvertisingChannelMap::CHANNEL38 | AdvertisingChannelMap::CHANNEL39)]
+    #[case(AdvertisingChannelMap::new(), AdvertisingChannelMap::CHANNEL37 | AdvertisingChannelMap::CHANNEL38 | AdvertisingChannelMap::CHANNEL39)]
+    fn test_advertising_channel_map(
+        #[case] input: AdvertisingChannelMap,
+        #[case] expected: AdvertisingChannelMap,
+    ) {
+        assert_eq!(input, expected);
     }
 
     #[test]
@@ -417,8 +399,7 @@ mod test {
                     ..=AdvertisingIntervalValue::default()),
                 r#type: AdvertisingType::default(),
                 own_address_type: OwnAddressType::default(),
-                peer_address_type: PeerAddressType::default(),
-                peer_address: PeerAddress::default(),
+                peer_address: DeviceAddress::default(),
                 channel_map: AdvertisingChannelMap::default(),
                 filter_policy: AdvertisingFilterPolicy::default(),
             },

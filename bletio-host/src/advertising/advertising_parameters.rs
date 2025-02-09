@@ -2,7 +2,7 @@ use core::ops::{Deref, RangeInclusive};
 
 use bletio_hci::{
     AdvertisingChannelMap, AdvertisingFilterPolicy, AdvertisingIntervalValue, AdvertisingType,
-    OwnAddressType, PeerAddress, PeerAddressType,
+    DeviceAddress, OwnAddressType,
 };
 
 use crate::advertising::AdvertisingError;
@@ -46,14 +46,8 @@ impl AdvertisingParametersBuilder {
         self
     }
 
-    /// Define the peer address type.
-    pub fn with_peer_address_type(mut self, peer_address_type: PeerAddressType) -> Self {
-        self.data.inner.peer_address_type = peer_address_type;
-        self
-    }
-
     /// Define the peer address.
-    pub fn with_peer_address(mut self, peer_address: PeerAddress) -> Self {
+    pub fn with_peer_address(mut self, peer_address: DeviceAddress) -> Self {
         self.data.inner.peer_address = peer_address;
         self
     }

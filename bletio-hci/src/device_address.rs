@@ -27,6 +27,12 @@ impl DeviceAddress {
     }
 }
 
+impl Default for DeviceAddress {
+    fn default() -> Self {
+        Self::Public(PublicDeviceAddress::default())
+    }
+}
+
 impl From<PublicDeviceAddress> for DeviceAddress {
     fn from(value: PublicDeviceAddress) -> Self {
         Self::Public(value)
@@ -58,7 +64,7 @@ impl From<RandomNonResolvablePrivateAddress> for DeviceAddress {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-struct AddressBase {
+pub(crate) struct AddressBase {
     value: [u8; 6],
 }
 

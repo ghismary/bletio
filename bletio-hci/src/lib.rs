@@ -44,11 +44,11 @@ pub use advertising_data::{AdvertisingData, ScanResponseData};
 pub use advertising_enable::AdvertisingEnable;
 pub use advertising_parameters::{
     AdvertisingChannelMap, AdvertisingFilterPolicy, AdvertisingIntervalValue,
-    AdvertisingParameters, AdvertisingType, OwnAddressType, PeerAddress, PeerAddressType,
+    AdvertisingParameters, AdvertisingType, OwnAddressType,
 };
 pub use connection_interval::ConnectionInterval;
 pub use device_address::{
-    DeviceAddress, PublicDeviceAddress, RandomNonResolvablePrivateAddress,
+    DeviceAddress, PublicDeviceAddress, RandomAddress, RandomNonResolvablePrivateAddress,
     RandomResolvablePrivateAddress, RandomStaticDeviceAddress,
 };
 pub use error_code::ErrorCode;
