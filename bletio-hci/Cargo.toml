@@ -26,4 +26,6 @@ tokio = { workspace = true, optional = true }
 approx = { workspace = true }
 claims = { workspace = true }
 rstest = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
 tokio-macros = { workspace = true }
+tokio-test = { workspace = true }
