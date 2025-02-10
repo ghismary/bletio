@@ -97,12 +97,12 @@ mod test {
     #[case::le_read_buffer_size(Command::LeReadBufferSize, &[1, 2, 32, 0])]
     #[case::le_read_local_supported_features_page_0(Command::LeReadLocalSupportedFeaturesPage0, &[1, 3, 32, 0])]
     #[case::le_read_supported_states(Command::LeReadSupportedStates, &[1, 28, 32, 0])]
-    #[case::le_set_advertising_enable(
-        Command::LeSetAdvertisingEnable(AdvertisingEnable::Enabled), &[1, 10, 32, 1, 1]
-    )]
     #[case::le_set_advertising_data(
         Command::LeSetAdvertisingData(AdvertisingData::default()),
         &[1, 8, 32, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    )]
+    #[case::le_set_advertising_enable(
+        Command::LeSetAdvertisingEnable(AdvertisingEnable::Enabled), &[1, 10, 32, 1, 1]
     )]
     #[case::le_set_advertising_parameters::default(
         Command::LeSetAdvertisingParameters(AdvertisingParameters::default()),

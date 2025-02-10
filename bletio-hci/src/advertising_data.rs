@@ -23,9 +23,10 @@ impl AdvertisingData {
         func: impl FnOnce(
             &mut Buffer<ADVERTISING_DATA_TOTAL_SIZE>,
         ) -> Result<usize, bletio_utils::Error>,
-    ) -> Result<(), bletio_utils::Error> {
-        self.buffer.data[ADVERTISING_DATA_SIZE_OFFSET] += func(&mut self.buffer)? as u8;
-        Ok(())
+    ) -> Result<usize, bletio_utils::Error> {
+        let len = func(&mut self.buffer)?;
+        self.buffer.data[ADVERTISING_DATA_SIZE_OFFSET] += len as u8;
+        Ok(len)
     }
 }
 
@@ -86,9 +87,10 @@ impl ScanResponseData {
         func: impl FnOnce(
             &mut Buffer<ADVERTISING_DATA_TOTAL_SIZE>,
         ) -> Result<usize, bletio_utils::Error>,
-    ) -> Result<(), bletio_utils::Error> {
-        self.buffer.data[ADVERTISING_DATA_SIZE_OFFSET] += func(&mut self.buffer)? as u8;
-        Ok(())
+    ) -> Result<usize, bletio_utils::Error> {
+        let len = func(&mut self.buffer)?;
+        self.buffer.data[ADVERTISING_DATA_SIZE_OFFSET] += len as u8;
+        Ok(len)
     }
 }
 
@@ -170,6 +172,8 @@ pub(crate) mod parser {
 
 #[cfg(test)]
 mod test {
+    use bletio_utils::EncodeToBuffer;
+
     use super::*;
 
     #[test]
@@ -186,5 +190,47 @@ mod test {
         let data = [0u8; ADVERTISING_DATA_TOTAL_SIZE - 1];
         let err: Result<ScanResponseData, Error> = (len as u8, data).try_into();
         assert_eq!(err, Err(Error::BufferTooSmall));
+    }
+
+    #[test]
+    fn test_advertising_data() -> Result<(), bletio_utils::Error> {
+        let data = [25; 16];
+        let mut adv_data = AdvertisingData::default();
+        assert_eq!(adv_data.encoded_size(), ADVERTISING_DATA_TOTAL_SIZE);
+        assert_eq!(&adv_data.buffer.data, &[0; 32]);
+        assert_eq!(
+            adv_data.fill(|buffer| buffer.copy_from_slice(&data[..]))?,
+            16
+        );
+        assert_eq!(adv_data.encoded_size(), ADVERTISING_DATA_TOTAL_SIZE);
+        assert_eq!(
+            &adv_data.buffer.data,
+            &[
+                16, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            ]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_scan_response_data() -> Result<(), bletio_utils::Error> {
+        let data = [25; 14];
+        let mut adv_data = ScanResponseData::default();
+        assert_eq!(adv_data.encoded_size(), ADVERTISING_DATA_TOTAL_SIZE);
+        assert_eq!(&adv_data.buffer.data, &[0; 32]);
+        assert_eq!(
+            adv_data.fill(|buffer| buffer.copy_from_slice(&data[..]))?,
+            14
+        );
+        assert_eq!(adv_data.encoded_size(), ADVERTISING_DATA_TOTAL_SIZE);
+        assert_eq!(
+            &adv_data.buffer.data,
+            &[
+                14, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0
+            ]
+        );
+        Ok(())
     }
 }
