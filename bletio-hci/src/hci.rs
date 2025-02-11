@@ -1,4 +1,7 @@
-use core::num::{NonZeroU16, NonZeroU8};
+use core::{
+    num::{NonZeroU16, NonZeroU8},
+    time::Duration,
+};
 
 use crate::{
     AdvertisingData, AdvertisingEnable, AdvertisingParameters, Command, CommandCompleteEvent,
@@ -7,7 +10,7 @@ use crate::{
     SupportedLeFeatures, SupportedLeStates, TxPowerLevel, WithTimeout,
 };
 
-const HCI_COMMAND_TIMEOUT: u16 = 1000; // ms
+const HCI_COMMAND_TIMEOUT: Duration = Duration::from_millis(1000);
 
 #[derive(Debug)]
 pub struct Hci<H>
