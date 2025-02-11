@@ -125,6 +125,10 @@ mod test {
         Command::LeSetEventMask(LeEventMask::default()),
         &[1, 1, 32, 8, 31, 0, 0, 0, 0, 0, 0, 0]
     )]
+    #[case::le_set_random_address(
+        Command::LeSetRandomAddress([68, 223, 27, 9, 83, 250].try_into().unwrap()),
+        &[1, 5, 32, 6, 68, 223, 27, 9, 83, 250]
+    )]
     #[case::le_set_scan_response_data(
         Command::LeSetScanResponseData(ScanResponseData::default()),
         &[1, 9, 32, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -193,6 +197,10 @@ mod test {
             1, CommandOpCode::LeSetEventMask,
             StatusEventParameter { status: ErrorCode::Success }
         ), &[4, 14, 4, 1, 1, 32, 0])]
+    #[case::le_set_random_address(CommandCompleteEvent::new(
+            1, CommandOpCode::LeSetRandomAddress,
+            StatusEventParameter { status: ErrorCode::Success }
+        ), &[4, 14, 4, 1, 5, 32, 0])]
     #[case::le_set_scan_response_data(CommandCompleteEvent::new(
             1, CommandOpCode::LeSetScanResponseData,
             StatusEventParameter { status: ErrorCode::Success }

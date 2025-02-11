@@ -3,8 +3,8 @@ use core::num::NonZeroU16;
 use core::ops::Deref;
 
 use bletio_hci::{
-    EventMask, Hci, HciDriver, LeEventMask, PublicDeviceAddress, SupportedCommands,
-    SupportedFeatures, SupportedLeFeatures, SupportedLeStates,
+    EventMask, Hci, HciDriver, LeEventMask, PublicDeviceAddress, RandomStaticDeviceAddress,
+    SupportedCommands, SupportedFeatures, SupportedLeFeatures, SupportedLeStates,
 };
 
 use crate::advertising::{AdvertisingEnable, AdvertisingParameters, FullAdvertisingData};
@@ -114,6 +114,28 @@ impl<'a, H> BleHost<'a, H, BleHostStateStandby>
 where
     H: HciDriver,
 {
+    pub async fn create_random_address(&mut self) -> Result<(), Error> {
+        if self
+            .device_information
+            .random_static_device_address
+            .is_some()
+        {
+            return Err(Error::RandomAddressAlreadyCreated);
+        }
+        loop {
+            let random_bytes = self.hci.cmd_le_rand().await?;
+            if let Ok(random_address) = RandomStaticDeviceAddress::try_new_from_random_bytes(
+                (&random_bytes[..6]).try_into().unwrap(),
+            ) {
+                self.hci
+                    .cmd_le_set_random_address(random_address.clone())
+                    .await?;
+                self.device_information.random_static_device_address = Some(random_address);
+                return Ok(());
+            }
+        }
+    }
+
     pub async fn start_advertising(
         mut self,
         adv_params: &AdvertisingParameters,
@@ -180,12 +202,19 @@ where
     }
 }
 
-impl<H> BleHost<'_, H>
+impl<H, S> BleHost<'_, H, S>
 where
     H: HciDriver,
+    S: BleHostState,
 {
     pub fn public_device_address(&self) -> &PublicDeviceAddress {
         &self.device_information.public_device_address
+    }
+
+    pub fn random_static_device_address(&self) -> Option<&RandomStaticDeviceAddress> {
+        self.device_information
+            .random_static_device_address
+            .as_ref()
     }
 
     pub fn supported_commands(&self) -> &SupportedCommands {

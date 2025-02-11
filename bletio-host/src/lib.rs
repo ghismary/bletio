@@ -33,6 +33,9 @@ pub enum Error {
     /// The Bluetooth controller is not LE capable.
     #[error("The Bluetooth controller is not LE capable")]
     NonLeCapableController,
+    /// The Random Static Device Address has already been created.
+    #[error("The Random Static Device Address has already been created")]
+    RandomAddressAlreadyCreated,
 }
 
 impl From<HciDriverError> for Error {

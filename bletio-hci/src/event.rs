@@ -284,6 +284,7 @@ pub(crate) mod parser {
             | CommandOpCode::LeSetAdvertisingData
             | CommandOpCode::LeSetAdvertisingParameters
             | CommandOpCode::LeSetEventMask
+            | CommandOpCode::LeSetRandomAddress
             | CommandOpCode::LeSetScanResponseData => {
                 let (rest, status) = hci_error_code(return_parameters)?;
                 eof(rest)?;

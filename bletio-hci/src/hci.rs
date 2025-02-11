@@ -6,8 +6,8 @@ use core::{
 use crate::{
     AdvertisingData, AdvertisingEnable, AdvertisingParameters, Command, CommandCompleteEvent,
     CommandOpCode, Error, Event, EventMask, EventParameter, HciBuffer, HciDriver, LeEventMask,
-    Packet, PublicDeviceAddress, ScanResponseData, SupportedCommands, SupportedFeatures,
-    SupportedLeFeatures, SupportedLeStates, TxPowerLevel, WithTimeout,
+    Packet, PublicDeviceAddress, RandomStaticDeviceAddress, ScanResponseData, SupportedCommands,
+    SupportedFeatures, SupportedLeFeatures, SupportedLeStates, TxPowerLevel, WithTimeout,
 };
 
 const HCI_COMMAND_TIMEOUT: Duration = Duration::from_millis(1000);
@@ -123,6 +123,14 @@ where
         parameters: AdvertisingParameters,
     ) -> Result<(), Error> {
         self.cmd_with_status_response(Command::LeSetAdvertisingParameters(parameters))
+            .await
+    }
+
+    pub async fn cmd_le_set_random_address(
+        &mut self,
+        address: RandomStaticDeviceAddress,
+    ) -> Result<(), Error> {
+        self.cmd_with_status_response(Command::LeSetRandomAddress(address))
             .await
     }
 
@@ -730,6 +738,63 @@ mod test {
         };
         assert_eq!(
             hci.cmd_le_set_event_mask(LeEventMask::default()).await,
+            expected
+        );
+    }
+
+    #[fixture]
+    fn mock_cmd_le_set_random_address_success() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 5, 32, 6, 68, 223, 27, 9, 83, 250])
+            .read(&[4, 14, 4, 1, 5, 32, 0])
+            .build()
+    }
+
+    #[fixture]
+    fn mock_cmd_le_set_random_address_command_disallowed() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 5, 32, 6, 68, 223, 27, 9, 83, 250])
+            .read(&[4, 14, 4, 1, 5, 32, 12])
+            .build()
+    }
+
+    #[fixture]
+    fn mock_cmd_le_set_random_address_invalid_event_packet() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 5, 32, 6, 68, 223, 27, 9, 83, 250])
+            .read(&[4, 14, 7, 1, 5, 32, 0])
+            .build()
+    }
+
+    #[rstest]
+    #[case::success(
+        mock_cmd_le_set_random_address_success(),
+        Ok(())
+    )]
+    #[case::command_disallowed(
+        mock_cmd_le_set_random_address_command_disallowed(),
+        Err(Error::ErrorCode(ErrorCode::CommandDisallowed))
+    )]
+    #[case::invalid_event_packet(
+        mock_cmd_le_set_random_address_invalid_event_packet(),
+        Err(Error::InvalidPacket)
+    )]
+    #[tokio::test(flavor = "current_thread", start_paused = true)]
+    async fn test_cmd_le_set_random_address(
+        #[case] mock: Mock,
+        #[case] expected: Result<(), Error>,
+    ) {
+        let hci_driver = TokioHciDriver { hci: mock };
+        let mut hci = Hci {
+            driver: hci_driver,
+            num_hci_command_packets: 1,
+            read_buffer: Default::default(),
+        };
+        assert_eq!(
+            hci.cmd_le_set_random_address(
+                RandomStaticDeviceAddress::try_new([68, 223, 27, 9, 83, 250]).unwrap()
+            )
+            .await,
             expected
         );
     }
