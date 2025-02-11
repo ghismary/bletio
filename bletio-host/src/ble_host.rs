@@ -3,8 +3,8 @@ use core::num::NonZeroU16;
 use core::ops::Deref;
 
 use bletio_hci::{
-    EventMask, Hci, HciDriver, PublicDeviceAddress, SupportedCommands, SupportedFeatures,
-    SupportedLeFeatures, SupportedLeStates,
+    EventMask, Hci, HciDriver, LeEventMask, PublicDeviceAddress, SupportedCommands,
+    SupportedFeatures, SupportedLeFeatures, SupportedLeStates,
 };
 
 use crate::advertising::{AdvertisingEnable, AdvertisingParameters, FullAdvertisingData};
@@ -67,7 +67,9 @@ where
             | EventMask::ENCRYPTION_CHANGE
             | EventMask::ENCRYPTION_KEY_REFRESH_COMPLETE;
         hci.cmd_set_event_mask(event_mask).await?;
-        // TODO: set LE event mask
+        if device_information.is_command_supported(SupportedCommands::LE_SET_EVENT_MASK) {
+            hci.cmd_le_set_event_mask(LeEventMask::default()).await?;
+        }
 
         let (le_data_packet_length, num_le_data_packets) = hci.cmd_le_read_buffer_size().await?;
         let le_data_packet_length: Result<NonZeroU16, _> = le_data_packet_length.try_into();

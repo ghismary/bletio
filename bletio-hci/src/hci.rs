@@ -5,8 +5,8 @@ use core::{
 
 use crate::{
     AdvertisingData, AdvertisingEnable, AdvertisingParameters, Command, CommandCompleteEvent,
-    CommandOpCode, Error, Event, EventMask, EventParameter, HciBuffer, HciDriver, Packet,
-    PublicDeviceAddress, ScanResponseData, SupportedCommands, SupportedFeatures,
+    CommandOpCode, Error, Event, EventMask, EventParameter, HciBuffer, HciDriver, LeEventMask,
+    Packet, PublicDeviceAddress, ScanResponseData, SupportedCommands, SupportedFeatures,
     SupportedLeFeatures, SupportedLeStates, TxPowerLevel, WithTimeout,
 };
 
@@ -120,6 +120,11 @@ where
         data: ScanResponseData,
     ) -> Result<(), Error> {
         self.cmd_with_status_response(Command::LeSetScanResponseData(data))
+            .await
+    }
+
+    pub async fn cmd_le_set_event_mask(&mut self, data: LeEventMask) -> Result<(), Error> {
+        self.cmd_with_status_response(Command::LeSetEventMask(data))
             .await
     }
 
@@ -630,6 +635,42 @@ mod test {
         assert_eq!(
             hci.cmd_le_set_advertising_parameters(AdvertisingParameters::default())
                 .await,
+            expected
+        );
+    }
+
+    #[fixture]
+    fn mock_cmd_le_set_event_mask_success() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 1, 32, 8, 31, 0, 0, 0, 0, 0, 0, 0])
+            .read(&[4, 14, 4, 1, 1, 32, 0])
+            .build()
+    }
+
+    #[fixture]
+    fn mock_cmd_le_set_event_mask_command_disallowed() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 1, 32, 8, 31, 0, 0, 0, 0, 0, 0, 0])
+            .read(&[4, 14, 4, 1, 1, 32, 12])
+            .build()
+    }
+
+    #[rstest]
+    #[case::success(mock_cmd_le_set_event_mask_success(), Ok(()))]
+    #[case::command_disallowed(
+        mock_cmd_le_set_event_mask_command_disallowed(),
+        Err(Error::ErrorCode(ErrorCode::CommandDisallowed))
+    )]
+    #[tokio::test(flavor = "current_thread", start_paused = true)]
+    async fn test_cmd_le_set_event_mask(#[case] mock: Mock, #[case] expected: Result<(), Error>) {
+        let hci_driver = TokioHciDriver { hci: mock };
+        let mut hci = Hci {
+            driver: hci_driver,
+            num_hci_command_packets: 1,
+            read_buffer: Default::default(),
+        };
+        assert_eq!(
+            hci.cmd_le_set_event_mask(LeEventMask::default()).await,
             expected
         );
     }
