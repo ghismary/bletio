@@ -34,6 +34,17 @@ where
         }
     }
 
+    pub async fn cmd_le_rand(&mut self) -> Result<[u8; 8], Error> {
+        let event = self.execute_command(Command::LeRand).await?;
+        match event.parameter {
+            EventParameter::StatusAndRandomNumber(param) if param.status.is_success() => {
+                Ok(param.random_number)
+            }
+            EventParameter::StatusAndRandomNumber(param) => Err(Error::ErrorCode(param.status)),
+            _ => unreachable!("parsing would have failed"),
+        }
+    }
+
     pub async fn cmd_le_read_advertising_channel_tx_power(
         &mut self,
     ) -> Result<TxPowerLevel, Error> {
@@ -302,6 +313,54 @@ mod test {
     use super::*;
     use crate::test::*;
     use crate::{ErrorCode, HciDriverError};
+
+    #[fixture]
+    fn mock_cmd_le_rand_success() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 24, 32, 0])
+            .read(&[4, 14, 12, 1, 24, 32, 0, 68, 223, 27, 9, 83, 58, 224, 240])
+            .build()
+    }
+
+    #[fixture]
+    fn mock_cmd_le_rand_hardware_failure() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 24, 32, 0])
+            .read(&[4, 14, 4, 1, 24, 32, 3])
+            .build()
+    }
+
+    #[fixture]
+    fn mock_cmd_le_rand_invalid_event_packet() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 24, 32, 0])
+            .read(&[4, 14, 60, 1, 24, 32, 0, 1, 9, 2])
+            .build()
+    }
+
+    #[rstest]
+    #[case::success(
+        mock_cmd_le_rand_success(),
+        Ok([68, 223, 27, 9, 83, 58, 224, 240])
+    )]
+    #[case::hardware_failure(
+        mock_cmd_le_rand_hardware_failure(),
+        Err(Error::ErrorCode(ErrorCode::HardwareFailure))
+    )]
+    #[case::invalid_event_packet(
+        mock_cmd_le_rand_invalid_event_packet(),
+        Err(Error::InvalidPacket)
+    )]
+    #[tokio::test(flavor = "current_thread", start_paused = true)]
+    async fn test_cmd_le_rand(#[case] mock: Mock, #[case] expected: Result<[u8; 8], Error>) {
+        let hci_driver = TokioHciDriver { hci: mock };
+        let mut hci = Hci {
+            driver: hci_driver,
+            num_hci_command_packets: 1,
+            read_buffer: Default::default(),
+        };
+        assert_eq!(hci.cmd_le_rand().await, expected);
+    }
 
     #[fixture]
     fn mock_cmd_le_read_advertising_channel_tx_power_success() -> Mock {

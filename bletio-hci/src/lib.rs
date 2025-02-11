@@ -35,9 +35,10 @@ pub(crate) use command::{Command, CommandOpCode};
 pub(crate) use event::{
     CommandCompleteEvent, Event, EventCode, EventParameter, StatusAndBdAddrEventParameter,
     StatusAndBufferSizeEventParameter, StatusAndLeBufferSizeEventParameter,
-    StatusAndSupportedCommandsEventParameter, StatusAndSupportedFeaturesEventParameter,
-    StatusAndSupportedLeFeaturesEventParameter, StatusAndSupportedLeStatesEventParameter,
-    StatusAndTxPowerLevelEventParameter, StatusEventParameter,
+    StatusAndRandomNumberEventParameter, StatusAndSupportedCommandsEventParameter,
+    StatusAndSupportedFeaturesEventParameter, StatusAndSupportedLeFeaturesEventParameter,
+    StatusAndSupportedLeStatesEventParameter, StatusAndTxPowerLevelEventParameter,
+    StatusEventParameter,
 };
 pub(crate) use packet::{Packet, PacketType};
 

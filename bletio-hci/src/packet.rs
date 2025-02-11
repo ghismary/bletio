@@ -62,10 +62,11 @@ mod test {
         ErrorCode, EventMask, EventParameter, LeEventMask, OwnAddressType, PublicDeviceAddress,
         RandomAddress, RandomStaticDeviceAddress, ScanResponseData, StatusAndBdAddrEventParameter,
         StatusAndBufferSizeEventParameter, StatusAndLeBufferSizeEventParameter,
-        StatusAndSupportedCommandsEventParameter, StatusAndSupportedFeaturesEventParameter,
-        StatusAndSupportedLeFeaturesEventParameter, StatusAndSupportedLeStatesEventParameter,
-        StatusAndTxPowerLevelEventParameter, StatusEventParameter, SupportedCommands,
-        SupportedFeatures, SupportedLeFeatures, TxPowerLevel,
+        StatusAndRandomNumberEventParameter, StatusAndSupportedCommandsEventParameter,
+        StatusAndSupportedFeaturesEventParameter, StatusAndSupportedLeFeaturesEventParameter,
+        StatusAndSupportedLeStatesEventParameter, StatusAndTxPowerLevelEventParameter,
+        StatusEventParameter, SupportedCommands, SupportedFeatures, SupportedLeFeatures,
+        TxPowerLevel,
     };
 
     #[test]
@@ -93,6 +94,7 @@ mod test {
     }
 
     #[rstest]
+    #[case::le_rand(Command::LeRand, &[1, 24, 32, 0])]
     #[case::le_read_advertising_channel_tx_power(Command::LeReadAdvertisingChannelTxPower, &[1, 7, 32, 0])]
     #[case::le_read_buffer_size(Command::LeReadBufferSize, &[1, 2, 32, 0])]
     #[case::le_read_local_supported_features_page_0(Command::LeReadLocalSupportedFeaturesPage0, &[1, 3, 32, 0])]
@@ -144,6 +146,12 @@ mod test {
     }
 
     #[rstest]
+    #[case::le_rand(CommandCompleteEvent::new(
+            1, CommandOpCode::LeRand,
+            StatusAndRandomNumberEventParameter {
+                status: ErrorCode::Success, random_number: [68, 223, 27, 9, 83, 58, 224, 240]
+            }
+        ), &[4, 14, 12, 1, 24, 32, 0, 68, 223, 27, 9, 83, 58, 224, 240])]
     #[case::le_read_advertising_channel_tx_power(CommandCompleteEvent::new(
             1, CommandOpCode::LeReadAdvertisingChannelTxPower,
             StatusAndTxPowerLevelEventParameter {
