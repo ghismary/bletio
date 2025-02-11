@@ -1,4 +1,5 @@
 use core::future::Future;
+use core::time::Duration;
 
 #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HciDriverError {
@@ -20,6 +21,6 @@ pub trait WithTimeout {
 
     fn with_timeout(
         self,
-        timeout: u16,
+        timeout_duration: Duration,
     ) -> impl Future<Output = Result<Self::Output, HciDriverError>>;
 }
