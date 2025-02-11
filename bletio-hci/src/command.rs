@@ -2,8 +2,8 @@ use bletio_utils::{Buffer, BufferOps, EncodeToBuffer};
 use num_enum::{FromPrimitive, IntoPrimitive};
 
 use crate::{
-    AdvertisingData, AdvertisingEnable, AdvertisingParameters, Error, EventMask, PacketType,
-    ScanResponseData,
+    AdvertisingData, AdvertisingEnable, AdvertisingParameters, Error, EventMask, LeEventMask,
+    PacketType, ScanResponseData,
 };
 
 const NOP_OGF: u16 = 0x00;
@@ -25,7 +25,7 @@ pub(crate) enum CommandOpCode {
     ReadLocalSupportedFeatures = opcode(INFORMATIONAL_PARAMETERS_OGF, 0x0003),
     ReadBufferSize = opcode(INFORMATIONAL_PARAMETERS_OGF, 0x0005),
     ReadBdAddr = opcode(INFORMATIONAL_PARAMETERS_OGF, 0x0009),
-    // LeSetEventMask = opcode(LE_CONTROLLER_OGF, 0x0001),
+    LeSetEventMask = opcode(LE_CONTROLLER_OGF, 0x0001),
     LeReadBufferSize = opcode(LE_CONTROLLER_OGF, 0x0002),
     LeReadLocalSupportedFeaturesPage0 = opcode(LE_CONTROLLER_OGF, 0x0003),
     // LeSetRandomAddress = opcode(LE_CONTROLLER_OGF, 0x0005),
@@ -57,7 +57,7 @@ pub(crate) enum Command {
     LeReadSupportedStates,
     // LeReadFilterAcceptListSize,
     // LeRemoveDeviceFromFilterAcceptList(AddressType, Address),
-    // LeSetEventMask(LeEventMask),
+    LeSetEventMask(LeEventMask),
     LeSetAdvertisingEnable(AdvertisingEnable),
     LeSetAdvertisingData(AdvertisingData),
     LeSetAdvertisingParameters(AdvertisingParameters),
@@ -95,6 +95,9 @@ impl Command {
             Command::LeSetAdvertisingParameters(parameters) => {
                 CommandPacket::new(self.opcode()).encode(parameters)?
             }
+            Command::LeSetEventMask(le_event_mask) => {
+                CommandPacket::new(self.opcode()).encode(le_event_mask)?
+            }
             Command::LeSetScanResponseData(data) => {
                 CommandPacket::new(self.opcode()).encode(data)?
             }
@@ -119,6 +122,7 @@ impl Command {
             Self::LeSetAdvertisingEnable(_) => CommandOpCode::LeSetAdvertisingEnable,
             Self::LeSetAdvertisingData(_) => CommandOpCode::LeSetAdvertisingData,
             Self::LeSetAdvertisingParameters(_) => CommandOpCode::LeSetAdvertisingParameters,
+            Self::LeSetEventMask(_) => CommandOpCode::LeSetEventMask,
             Self::LeSetScanResponseData(_) => CommandOpCode::LeSetScanResponseData,
             Self::Nop => CommandOpCode::Nop,
             Self::ReadBdAddr => CommandOpCode::ReadBdAddr,
@@ -177,6 +181,7 @@ pub(crate) mod parser {
     use crate::advertising_enable::parser::advertising_enable;
     use crate::advertising_parameters::parser::advertising_parameters;
     use crate::event_mask::parser::event_mask;
+    use crate::le_event_mask::parser::le_event_mask;
     use crate::packet::parser::parameter_total_length;
     use crate::{Command, CommandOpCode, Packet};
 
@@ -215,6 +220,10 @@ pub(crate) mod parser {
                 CommandOpCode::LeSetAdvertisingParameters => {
                     let (_, advertising_parameters) = advertising_parameters(parameters)?;
                     Command::LeSetAdvertisingParameters(advertising_parameters)
+                }
+                CommandOpCode::LeSetEventMask => {
+                    let (_, le_event_mask) = le_event_mask(parameters)?;
+                    Command::LeSetEventMask(le_event_mask)
                 }
                 CommandOpCode::LeSetScanResponseData => {
                     let (_, scan_response_data) = scan_response_data(parameters)?;
@@ -289,6 +298,9 @@ mod test {
         Command::LeSetAdvertisingParameters(AdvertisingParameters::default()),
         CommandOpCode::LeSetAdvertisingParameters,
         &[1, 6, 32, 15, 0, 8, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0]
+    )]
+    #[case::le_set_event_mask(
+        Command::LeSetEventMask(LeEventMask::default()), CommandOpCode::LeSetEventMask, &[1, 1, 32, 8, 31, 0, 0, 0, 0, 0, 0, 0]
     )]
     #[case::le_set_scan_response_data(
         Command::LeSetScanResponseData(ScanResponseData::default()),

@@ -59,8 +59,8 @@ mod test {
     use crate::{
         AdvertisingChannelMap, AdvertisingData, AdvertisingEnable, AdvertisingFilterPolicy,
         AdvertisingParameters, AdvertisingType, CommandCompleteEvent, CommandOpCode, DeviceAddress,
-        ErrorCode, EventMask, EventParameter, OwnAddressType, PublicDeviceAddress, RandomAddress,
-        RandomStaticDeviceAddress, ScanResponseData, StatusAndBdAddrEventParameter,
+        ErrorCode, EventMask, EventParameter, LeEventMask, OwnAddressType, PublicDeviceAddress,
+        RandomAddress, RandomStaticDeviceAddress, ScanResponseData, StatusAndBdAddrEventParameter,
         StatusAndBufferSizeEventParameter, StatusAndLeBufferSizeEventParameter,
         StatusAndSupportedCommandsEventParameter, StatusAndSupportedFeaturesEventParameter,
         StatusAndSupportedLeFeaturesEventParameter, StatusAndSupportedLeStatesEventParameter,
@@ -106,7 +106,7 @@ mod test {
     )]
     #[case::le_set_advertising_parameters::default(
         Command::LeSetAdvertisingParameters(AdvertisingParameters::default()),
-        &[1, 06, 32, 15, 0, 8, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0]
+        &[1, 6, 32, 15, 0, 8, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0]
     )]
     #[case::le_set_advertising_parameters::random_peer_address(
         Command::LeSetAdvertisingParameters(AdvertisingParameters {
@@ -117,7 +117,11 @@ mod test {
             channel_map: AdvertisingChannelMap::CHANNEL37 | AdvertisingChannelMap::CHANNEL38,
             filter_policy: AdvertisingFilterPolicy::ConnectionAllAndScanFilterAcceptList,
         }),
-        &[1, 06, 32, 15, 32, 0, 48, 0, 2, 1, 1, 0xFE, 0x92, 0x2F, 0x0F, 0x4B, 0xD2, 3, 1]
+        &[1, 6, 32, 15, 32, 0, 48, 0, 2, 1, 1, 0xFE, 0x92, 0x2F, 0x0F, 0x4B, 0xD2, 3, 1]
+    )]
+    #[case::le_set_event_mask(
+        Command::LeSetEventMask(LeEventMask::default()),
+        &[1, 1, 32, 8, 31, 0, 0, 0, 0, 0, 0, 0]
     )]
     #[case::le_set_scan_response_data(
         Command::LeSetScanResponseData(ScanResponseData::default()),
@@ -177,6 +181,10 @@ mod test {
             1, CommandOpCode::LeSetAdvertisingParameters,
             StatusEventParameter { status: ErrorCode::Success }
         ), &[4, 14, 4, 1, 6, 32, 0])]
+    #[case::le_set_event_mask(CommandCompleteEvent::new(
+            1, CommandOpCode::LeSetEventMask,
+            StatusEventParameter { status: ErrorCode::Success }
+        ), &[4, 14, 4, 1, 1, 32, 0])]
     #[case::le_set_scan_response_data(CommandCompleteEvent::new(
             1, CommandOpCode::LeSetScanResponseData,
             StatusEventParameter { status: ErrorCode::Success }
