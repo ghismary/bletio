@@ -1,3 +1,5 @@
+use bletio_utils::EncodeToBuffer;
+
 use crate::Error;
 
 /// Device Address.
@@ -101,7 +103,7 @@ impl TryFrom<&str> for PublicDeviceAddress {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let (_, address) =
-            parser::public_address(value).map_err(|_| Error::InvalidPublicDeviceAddress)?;
+            parser::public_address_str(value).map_err(|_| Error::InvalidPublicDeviceAddress)?;
         Ok(address)
     }
 }
@@ -145,7 +147,7 @@ impl TryFrom<&str> for RandomAddress {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let (_, address) =
-            parser::random_address(value).map_err(|_| Error::InvalidRandomAddress)?;
+            parser::random_address_str(value).map_err(|_| Error::InvalidRandomAddress)?;
         Ok(address)
     }
 }
@@ -178,8 +180,26 @@ impl RandomStaticDeviceAddress {
         address.try_into()
     }
 
+    pub fn try_new_from_random_bytes(mut bytes: [u8; 6]) -> Result<Self, Error> {
+        bytes[5] |= 0b1100_0000;
+        bytes.try_into()
+    }
+
     pub fn value(&self) -> &[u8; 6] {
         &self.base.value
+    }
+}
+
+impl EncodeToBuffer for RandomStaticDeviceAddress {
+    fn encode<B: bletio_utils::BufferOps>(
+        &self,
+        buffer: &mut B,
+    ) -> Result<usize, bletio_utils::Error> {
+        buffer.copy_from_slice(&self.base.value)
+    }
+
+    fn encoded_size(&self) -> usize {
+        6
     }
 }
 
@@ -258,9 +278,9 @@ impl TryFrom<[u8; 6]> for RandomNonResolvablePrivateAddress {
     }
 }
 
-mod parser {
+pub(crate) mod parser {
     use nom::{
-        bytes::tag,
+        bytes::{tag, take},
         character::complete::hex_digit1,
         combinator::{all_consuming, map, map_res, verify},
         IResult, Parser,
@@ -300,17 +320,26 @@ mod parser {
         .parse(input)
     }
 
-    pub(crate) fn public_address(input: &str) -> IResult<&str, PublicDeviceAddress> {
+    pub(crate) fn public_address_str(input: &str) -> IResult<&str, PublicDeviceAddress> {
         map(address, Into::into).parse(input)
     }
 
-    pub(crate) fn random_address(input: &str) -> IResult<&str, RandomAddress> {
+    pub(crate) fn random_address_str(input: &str) -> IResult<&str, RandomAddress> {
         map_res(address, TryInto::try_into).parse(input)
+    }
+
+    pub(crate) fn random_address(input: &[u8]) -> IResult<&[u8], RandomStaticDeviceAddress> {
+        all_consuming(map_res(
+            map_res(take(6u8), TryInto::try_into),
+            |v: [u8; 6]| v.try_into(),
+        ))
+        .parse(input)
     }
 }
 
 #[cfg(test)]
 mod test {
+    use bletio_utils::{Buffer, BufferOps};
     use rstest::rstest;
 
     use super::*;
@@ -334,6 +363,10 @@ mod test {
     fn test_valid_random_static_device_address(#[case] input: [u8; 6]) -> Result<(), Error> {
         let random_static_device_address = RandomStaticDeviceAddress::try_new(input)?;
         assert_eq!(random_static_device_address.value(), &input);
+        let mut buffer = Buffer::<6>::default();
+        assert_eq!(random_static_device_address.encoded_size(), input.len());
+        random_static_device_address.encode(&mut buffer).unwrap();
+        assert_eq!(buffer.data(), input);
         let random_address: RandomAddress = random_static_device_address.clone().into();
         assert!(matches!(random_address, RandomAddress::Static(_)));
         assert_eq!(random_address.value(), &input);
@@ -358,6 +391,17 @@ mod test {
     fn test_invalid_random_static_device_address(#[case] input: [u8; 6]) {
         let result = RandomStaticDeviceAddress::try_new(input);
         assert_eq!(result, Err(Error::InvalidRandomStaticDeviceAddress));
+    }
+
+    #[test]
+    fn test_random_static_device_address_try_new_from_random_bytes() -> Result<(), Error> {
+        let random_address =
+            RandomStaticDeviceAddress::try_new_from_random_bytes([68, 223, 27, 9, 83, 58])?;
+        assert_eq!(
+            random_address.value(),
+            &[0x44, 0xDF, 0x1B, 0x09, 0x53, 0xFA]
+        );
+        Ok(())
     }
 
     #[rstest]
