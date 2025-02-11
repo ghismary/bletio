@@ -39,7 +39,7 @@ pub(crate) enum CommandOpCode {
     // LeAddDeviceToFilterAcceptList = opcode(LE_CONTROLLER_OGF, 0x0011),
     // LeRemoveDeviceFromFilterAcceptList = opcode(LE_CONTROLLER_OGF, 0x0012),
     // LeEncrypt = opcode(LE_CONTROLLER_OGF, 0x0017),
-    // LeRand = opcode(LE_CONTROLLER_OGF, 0x0018),
+    LeRand = opcode(LE_CONTROLLER_OGF, 0x0018),
     LeReadSupportedStates = opcode(LE_CONTROLLER_OGF, 0x001C),
     #[num_enum(catch_all)]
     Unsupported(u16),
@@ -50,7 +50,7 @@ pub(crate) enum Command {
     // LeAddDeviceToFilterAcceptList(AddressType, Address),
     // LeClearFilterAcceptList,
     // LeEncrypt(Key, Data),
-    // LeRand,
+    LeRand,
     LeReadAdvertisingChannelTxPower,
     LeReadBufferSize,
     LeReadLocalSupportedFeaturesPage0,
@@ -81,6 +81,7 @@ impl Command {
             | Command::LeReadLocalSupportedFeaturesPage0
             | Command::LeReadSupportedStates
             | Command::Nop
+            | Command::LeRand
             | Command::ReadBdAddr
             | Command::ReadBufferSize
             | Command::ReadLocalSupportedCommands
@@ -111,7 +112,7 @@ impl Command {
     pub(crate) fn opcode(&self) -> CommandOpCode {
         match self {
             // Self::LeClearFilterAcceptList => CommandOpCode::LeClearFilterAcceptList,
-            // Self::LeRand => CommandOpCode::LeRand,
+            Self::LeRand => CommandOpCode::LeRand,
             Self::LeReadAdvertisingChannelTxPower => CommandOpCode::LeReadAdvertisingChannelTxPower,
             Self::LeReadBufferSize => CommandOpCode::LeReadBufferSize,
             // Self::LeReadFilterAcceptListSize => CommandOpCode::LeReadFilterAcceptListSize,
@@ -197,7 +198,7 @@ pub(crate) mod parser {
             input,
             Packet::Command(match command_opcode {
                 // CommandOpCode::LeClearFilterAcceptList => Command::LeClearFilterAcceptList,
-                // CommandOpCode::LeRand => Command::LeRand,
+                CommandOpCode::LeRand => Command::LeRand,
                 CommandOpCode::LeReadAdvertisingChannelTxPower => {
                     Command::LeReadAdvertisingChannelTxPower
                 }
@@ -278,6 +279,7 @@ mod test {
 
     #[rstest]
     #[case::nop(Command::Nop, CommandOpCode::Nop, &[1, 0, 0, 0])]
+    #[case::le_rand(Command::LeRand, CommandOpCode::LeRand, &[1, 24, 32, 0])]
     #[case::le_read_advertising_channel_tx_power(
         Command::LeReadAdvertisingChannelTxPower, CommandOpCode::LeReadAdvertisingChannelTxPower, &[1, 7, 32, 0]
     )]

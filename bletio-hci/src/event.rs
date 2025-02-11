@@ -55,6 +55,7 @@ pub(crate) enum EventParameter {
     StatusAndBdAddr(StatusAndBdAddrEventParameter),
     StatusAndBufferSize(StatusAndBufferSizeEventParameter),
     StatusAndLeBufferSize(StatusAndLeBufferSizeEventParameter),
+    StatusAndRandomNumber(StatusAndRandomNumberEventParameter),
     StatusAndSupportedCommands(StatusAndSupportedCommandsEventParameter),
     StatusAndSupportedFeatures(StatusAndSupportedFeaturesEventParameter),
     StatusAndSupportedLeFeatures(StatusAndSupportedLeFeaturesEventParameter),
@@ -110,6 +111,18 @@ pub(crate) struct StatusAndLeBufferSizeEventParameter {
 impl From<StatusAndLeBufferSizeEventParameter> for EventParameter {
     fn from(value: StatusAndLeBufferSizeEventParameter) -> Self {
         Self::StatusAndLeBufferSize(value)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct StatusAndRandomNumberEventParameter {
+    pub(crate) status: ErrorCode,
+    pub(crate) random_number: [u8; 8],
+}
+
+impl From<StatusAndRandomNumberEventParameter> for EventParameter {
+    fn from(value: StatusAndRandomNumberEventParameter) -> Self {
+        Self::StatusAndRandomNumber(value)
     }
 }
 
@@ -189,11 +202,11 @@ pub(crate) mod parser {
         command::parser::command_opcode, packet::parser::parameter_total_length,
         CommandCompleteEvent, CommandOpCode, ErrorCode, Event, EventCode, EventParameter, Packet,
         PublicDeviceAddress, StatusAndBdAddrEventParameter, StatusAndBufferSizeEventParameter,
-        StatusAndLeBufferSizeEventParameter, StatusAndSupportedCommandsEventParameter,
-        StatusAndSupportedFeaturesEventParameter, StatusAndSupportedLeFeaturesEventParameter,
-        StatusAndSupportedLeStatesEventParameter, StatusAndTxPowerLevelEventParameter,
-        StatusEventParameter, SupportedCommands, SupportedFeatures, SupportedLeFeatures,
-        SupportedLeStates, TxPowerLevel,
+        StatusAndLeBufferSizeEventParameter, StatusAndRandomNumberEventParameter,
+        StatusAndSupportedCommandsEventParameter, StatusAndSupportedFeaturesEventParameter,
+        StatusAndSupportedLeFeaturesEventParameter, StatusAndSupportedLeStatesEventParameter,
+        StatusAndTxPowerLevelEventParameter, StatusEventParameter, SupportedCommands,
+        SupportedFeatures, SupportedLeFeatures, SupportedLeStates, TxPowerLevel,
     };
 
     fn event_code(input: &[u8]) -> IResult<&[u8], EventCode> {
@@ -253,6 +266,10 @@ pub(crate) mod parser {
         map_res(le_i8(), TryInto::try_into).parse(input)
     }
 
+    fn random_number(input: &[u8]) -> IResult<&[u8], [u8; 8]> {
+        map_res(take(8u8), TryInto::try_into).parse(input)
+    }
+
     fn command_complete_event(input: &[u8]) -> IResult<&[u8], CommandCompleteEvent> {
         let (return_parameters, (num_hci_command_packets, command_opcode)) =
             pair(num_hci_command_packets, command_opcode).parse(input)?;
@@ -271,6 +288,78 @@ pub(crate) mod parser {
                 let (rest, status) = hci_error_code(return_parameters)?;
                 eof(rest)?;
                 StatusEventParameter { status }.into()
+            }
+            CommandOpCode::LeRand => {
+                let (rest, status) = hci_error_code(return_parameters)?;
+                let (rest, random_number) = if status.is_success() {
+                    random_number(rest)?
+                } else {
+                    (rest, [0u8; 8])
+                };
+                eof(rest)?;
+                StatusAndRandomNumberEventParameter {
+                    status,
+                    random_number,
+                }
+                .into()
+            }
+            CommandOpCode::LeReadAdvertisingChannelTxPower => {
+                let (rest, status) = hci_error_code(return_parameters)?;
+                let (rest, tx_power_level) = if status.is_success() {
+                    tx_power_level(rest)?
+                } else {
+                    (rest, TxPowerLevel::default())
+                };
+                eof(rest)?;
+                StatusAndTxPowerLevelEventParameter {
+                    status,
+                    tx_power_level,
+                }
+                .into()
+            }
+            CommandOpCode::LeReadBufferSize => {
+                let (rest, status) = hci_error_code(return_parameters)?;
+                let (rest, (le_acl_data_packet_length, total_num_le_acl_data_packets)) =
+                    if status.is_success() {
+                        le_buffer_size(rest)?
+                    } else {
+                        (rest, (0, 0))
+                    };
+                eof(rest)?;
+                StatusAndLeBufferSizeEventParameter {
+                    status,
+                    le_acl_data_packet_length,
+                    total_num_le_acl_data_packets,
+                }
+                .into()
+            }
+            CommandOpCode::LeReadLocalSupportedFeaturesPage0 => {
+                let (rest, status) = hci_error_code(return_parameters)?;
+                let (rest, supported_le_features) = if status.is_success() {
+                    le_supported_features_page_0(rest)?
+                } else {
+                    (rest, SupportedLeFeatures::empty())
+                };
+                eof(rest)?;
+                StatusAndSupportedLeFeaturesEventParameter {
+                    status,
+                    supported_le_features,
+                }
+                .into()
+            }
+            CommandOpCode::LeReadSupportedStates => {
+                let (rest, status) = hci_error_code(return_parameters)?;
+                let (rest, supported_le_states) = if status.is_success() {
+                    le_supported_states(rest)?
+                } else {
+                    (rest, SupportedLeStates::default())
+                };
+                eof(rest)?;
+                StatusAndSupportedLeStatesEventParameter {
+                    status,
+                    supported_le_states,
+                }
+                .into()
             }
             CommandOpCode::ReadLocalSupportedCommands => {
                 let (rest, status) = hci_error_code(return_parameters)?;
@@ -332,64 +421,6 @@ pub(crate) mod parser {
                     synchronous_data_packet_length,
                     total_num_acl_data_packets,
                     total_num_synchronous_packets,
-                }
-                .into()
-            }
-            CommandOpCode::LeReadAdvertisingChannelTxPower => {
-                let (rest, status) = hci_error_code(return_parameters)?;
-                let (rest, tx_power_level) = if status.is_success() {
-                    tx_power_level(rest)?
-                } else {
-                    (rest, TxPowerLevel::default())
-                };
-                eof(rest)?;
-                StatusAndTxPowerLevelEventParameter {
-                    status,
-                    tx_power_level,
-                }
-                .into()
-            }
-            CommandOpCode::LeReadBufferSize => {
-                let (rest, status) = hci_error_code(return_parameters)?;
-                let (rest, (le_acl_data_packet_length, total_num_le_acl_data_packets)) =
-                    if status.is_success() {
-                        le_buffer_size(rest)?
-                    } else {
-                        (rest, (0, 0))
-                    };
-                eof(rest)?;
-                StatusAndLeBufferSizeEventParameter {
-                    status,
-                    le_acl_data_packet_length,
-                    total_num_le_acl_data_packets,
-                }
-                .into()
-            }
-            CommandOpCode::LeReadLocalSupportedFeaturesPage0 => {
-                let (rest, status) = hci_error_code(return_parameters)?;
-                let (rest, supported_le_features) = if status.is_success() {
-                    le_supported_features_page_0(rest)?
-                } else {
-                    (rest, SupportedLeFeatures::empty())
-                };
-                eof(rest)?;
-                StatusAndSupportedLeFeaturesEventParameter {
-                    status,
-                    supported_le_features,
-                }
-                .into()
-            }
-            CommandOpCode::LeReadSupportedStates => {
-                let (rest, status) = hci_error_code(return_parameters)?;
-                let (rest, supported_le_states) = if status.is_success() {
-                    le_supported_states(rest)?
-                } else {
-                    (rest, SupportedLeStates::default())
-                };
-                eof(rest)?;
-                StatusAndSupportedLeStatesEventParameter {
-                    status,
-                    supported_le_states,
                 }
                 .into()
             }
