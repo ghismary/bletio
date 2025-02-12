@@ -286,6 +286,9 @@ impl EncodeToBuffer for AdvertisingDataBase<'_> {
         if let Some(features) = self.le_supported_features.as_ref() {
             features.encode(buffer)?;
         }
+        if let Some(data) = self.manufacturer_specific_data.as_ref() {
+            data.encode(buffer)?;
+        }
         if let Some(service_solicitation_uuid16) = self.service_solicitation_uuid16.as_ref() {
             service_solicitation_uuid16.encode(buffer)?;
         }
@@ -326,6 +329,9 @@ impl EncodeToBuffer for AdvertisingDataBase<'_> {
         }
         if let Some(features) = self.le_supported_features.as_ref() {
             len += features.encoded_size();
+        }
+        if let Some(data) = self.manufacturer_specific_data.as_ref() {
+            len += data.encoded_size();
         }
         if let Some(service_solicitation_uuid16) = self.service_solicitation_uuid16.as_ref() {
             len += service_solicitation_uuid16.encoded_size();
@@ -631,5 +637,466 @@ impl TryFrom<&ScanResponseData<'_>> for bletio_hci::ScanResponseData {
         }
 
         inner(value).map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use bletio_utils::{Buffer, BufferOps};
+    use rstest::{fixture, rstest};
+
+    use crate::assigned_numbers::ProvisionedUriScheme;
+
+    use super::*;
+
+    #[test]
+    fn test_advertising_data_base_default() -> Result<(), bletio_utils::Error> {
+        let adv_data_base = AdvertisingDataBase::default();
+        assert_eq!(adv_data_base.advertising_interval, None);
+        assert_eq!(adv_data_base.appearance, None);
+        assert_eq!(adv_data_base.le_supported_features, None);
+        assert_eq!(adv_data_base.manufacturer_specific_data, None);
+        assert_eq!(adv_data_base.peripheral_connection_interval, None);
+        assert_eq!(adv_data_base.service_uuid16, None);
+        assert_eq!(adv_data_base.service_uuid32, None);
+        assert_eq!(adv_data_base.service_uuid128, None);
+        assert_eq!(adv_data_base.service_solicitation_uuid16, None);
+        assert_eq!(adv_data_base.service_solicitation_uuid32, None);
+        assert_eq!(adv_data_base.service_solicitation_uuid128, None);
+        assert_eq!(adv_data_base.tx_power_level, None);
+        assert_eq!(adv_data_base.uri, None);
+
+        let mut buffer = Buffer::<16>::default();
+        assert_eq!(adv_data_base.encoded_size(), 0);
+        assert_eq!(adv_data_base.encode(&mut buffer)?, 0);
+        assert_eq!(buffer.data(), &[]);
+
+        Ok(())
+    }
+
+    #[fixture]
+    fn advertising_data_builder_empty<'a>() -> AdvertisingData<'a> {
+        let builder = AdvertisingData::builder();
+        assert_eq!(builder.data, AdvertisingData::default());
+        builder.build()
+    }
+
+    #[fixture]
+    fn advertising_data_builder_service_uuid16<'a>() -> AdvertisingData<'a> {
+        let uuids = &[ServiceUuid::Battery, ServiceUuid::BloodPressure];
+        let builder = AdvertisingData::builder()
+            .with_advertising_interval(AdvertisingIntervalValue::default())
+            .with_appearance()
+            .with_service_uuid16(uuids, ServiceListComplete::Complete)
+            .unwrap();
+        assert_eq!(
+            builder.data.base.advertising_interval,
+            Some(AdvertisingIntervalAdStruct::new(
+                AdvertisingIntervalValue::default()
+            ))
+        );
+        assert_eq!(
+            builder.data.base.appearance,
+            Some(AppearanceAdStruct::new(AppearanceValue::GenericUnknown))
+        );
+        assert_eq!(
+            builder.data.base.service_uuid16,
+            Some(ServiceUuid16AdStruct::try_new(uuids, ServiceListComplete::Complete).unwrap())
+        );
+        builder.build()
+    }
+
+    #[fixture]
+    fn advertising_data_builder_service_uuid32<'a>() -> AdvertisingData<'a> {
+        let flags = Flags::BREDR_NOT_SUPPORTED | Flags::LE_GENERAL_DISCOVERABLE_MODE;
+        let uuids = &[Uuid32(0x0000_1803), Uuid32(0x0000_180F)];
+        let builder = AdvertisingData::builder()
+            .with_flags(flags)
+            .with_le_supported_features()
+            .with_service_uuid32(uuids, ServiceListComplete::Incomplete)
+            .unwrap();
+        assert_eq!(builder.data.flags, Some(FlagsAdStruct::new(flags)));
+        assert_eq!(
+            builder.data.base.le_supported_features,
+            Some(LeSupportedFeaturesAdStruct::new(
+                SupportedLeFeatures::default()
+            ))
+        );
+        assert_eq!(
+            builder.data.base.service_uuid32,
+            Some(ServiceUuid32AdStruct::try_new(uuids, ServiceListComplete::Incomplete).unwrap())
+        );
+        builder.build()
+    }
+
+    #[fixture]
+    fn advertising_data_builder_service_uuid128<'a>() -> AdvertisingData<'a> {
+        let connection_interval = 0x0006.try_into().unwrap()..=0x0010.try_into().unwrap();
+        let uuids = &[Uuid128(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640)];
+        let builder = AdvertisingData::builder()
+            .with_peripheral_connection_interval_range(connection_interval.clone())
+            .with_tx_power_level()
+            .with_service_uuid128(uuids, ServiceListComplete::Complete)
+            .unwrap();
+        assert_eq!(
+            builder.data.base.peripheral_connection_interval,
+            Some(PeripheralConnectionIntervalRangeAdStruct::new(
+                connection_interval
+            ))
+        );
+        assert_eq!(
+            builder.data.base.tx_power_level,
+            Some(TxPowerLevelAdStruct::new(TxPowerLevel::default()))
+        );
+        assert_eq!(
+            builder.data.base.service_uuid128,
+            Some(ServiceUuid128AdStruct::try_new(uuids, ServiceListComplete::Complete).unwrap())
+        );
+        builder.build()
+    }
+
+    #[fixture]
+    fn advertising_data_builder_service_solicitation_uuid16<'a>() -> AdvertisingData<'a> {
+        let uri = Uri::new(ProvisionedUriScheme::Https, "//example.org/");
+        let uuids = &[ServiceUuid::Battery, ServiceUuid::BloodPressure];
+        let builder = AdvertisingData::builder()
+            .with_uri(uri.clone())
+            .with_service_solicitation_uuid16(uuids)
+            .unwrap();
+        assert_eq!(builder.data.base.uri, Some(UriAdStruct::new(uri)));
+        assert_eq!(
+            builder.data.base.service_solicitation_uuid16,
+            Some(ServiceSolicitationUuid16AdStruct::new(uuids))
+        );
+        builder.build()
+    }
+
+    #[fixture]
+    fn advertising_data_builder_service_solicitation_uuid32<'a>() -> AdvertisingData<'a> {
+        let data = &[0x9E, 0xF5, 0x40, 0x7C, 0x0F];
+        let uuids = &[Uuid32(0x0000_1803), Uuid32(0x0000_180F)];
+        let builder = AdvertisingData::builder()
+            .with_manufacturer_specific_data(CompanyIdentifier::StMicroelectronics, data)
+            .with_service_solicitation_uuid32(uuids)
+            .unwrap();
+        assert_eq!(
+            builder.data.base.manufacturer_specific_data,
+            Some(ManufacturerSpecificDataAdStruct::new(
+                CompanyIdentifier::StMicroelectronics,
+                data
+            ))
+        );
+        assert_eq!(
+            builder.data.base.service_solicitation_uuid32,
+            Some(ServiceSolicitationUuid32AdStruct::new(uuids))
+        );
+        builder.build()
+    }
+
+    #[fixture]
+    fn advertising_data_builder_service_solicitation_uuid128<'a>() -> AdvertisingData<'a> {
+        let uuids = &[Uuid128(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640)];
+        let builder = AdvertisingData::builder()
+            .with_service_solicitation_uuid128(uuids)
+            .unwrap();
+        assert_eq!(
+            builder.data.base.service_solicitation_uuid128,
+            Some(ServiceSolicitationUuid128AdStruct::new(uuids))
+        );
+        builder.build()
+    }
+
+    #[rstest]
+    #[case::empty(advertising_data_builder_empty(), 0, &[])]
+    #[case::service_uuid16(
+        advertising_data_builder_service_uuid16(),
+        14, &[0x03, 0x1A, 0x00, 0x08, 0x03, 0x19, 0x00, 0x00, 0x05, 0x03, 0x0F, 0x18, 0x10, 0x18]
+    )]
+    #[case::service_uuid32(
+        advertising_data_builder_service_uuid32(),
+        15, &[0x02, 0x01, 0x06, 0x01, 0x27, 0x09, 0x04, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00]
+    )]
+    #[case::service_uuid128(
+        advertising_data_builder_service_uuid128(),
+        27, &[0x05, 0x12, 0x06, 0x00, 0x10, 0x00, 0x11, 0x07, 0x40, 0xD6, 0x6E, 0xFD, 0xD0, 0x11, 0x2C,
+            0xAD, 0x9E, 0x4C, 0x7D, 0x22, 0x7E, 0x28, 0xA1, 0xF5, 0x02, 0x0A, 0x00]
+    )]
+    #[case::service_solicitation_uuid16(
+        advertising_data_builder_service_solicitation_uuid16(),
+        24, &[0x05, 0x14, 0x0F, 0x18, 0x10, 0x18, 0x11, 0x24, 0x17, 0x00,
+            b'/', b'/', b'e', b'x', b'a', b'm', b'p', b'l', b'e', b'.', b'o', b'r', b'g', b'/']
+    )]
+    #[case::service_solicitation_uuid32(
+        advertising_data_builder_service_solicitation_uuid32(),
+        19, &[0x08, 0xFF, 0x30, 0x00, 0x9E, 0xF5, 0x40, 0x7C, 0x0F, 0x09, 0x1F, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00]
+    )]
+    #[case::service_solicitation_uuid128(
+        advertising_data_builder_service_solicitation_uuid128(),
+        18, &[0x11, 0x15, 0x40, 0xD6, 0x6E, 0xFD, 0xD0, 0x11, 0x2C, 0xAD, 0x9E, 0x4C, 0x7D, 0x22, 0x7E, 0x28, 0xA1, 0xF5]
+    )]
+    fn test_advertising_data_builder(
+        #[case] adv_data: AdvertisingData,
+        #[case] expected_encoded_size: usize,
+        #[case] expected_encoded_data: &[u8],
+    ) -> Result<(), bletio_utils::Error> {
+        let mut buffer = Buffer::<31>::default();
+        assert_eq!(adv_data.encoded_size(), expected_encoded_size);
+        assert_eq!(adv_data.encode(&mut buffer)?, expected_encoded_size);
+        assert_eq!(buffer.data(), expected_encoded_data);
+
+        let mut hci_expected_encoded_data = [0u8; 32];
+        hci_expected_encoded_data[0] = expected_encoded_size as u8;
+        hci_expected_encoded_data[1..1 + expected_encoded_size].copy_from_slice(buffer.data());
+        let mut buffer = Buffer::<32>::default();
+        let hci_advertising_data: bletio_hci::AdvertisingData = (&adv_data).try_into().unwrap();
+        assert_eq!(hci_advertising_data.encoded_size(), 32);
+        assert_eq!(hci_advertising_data.encode(&mut buffer)?, 32);
+        assert_eq!(buffer.data(), &hci_expected_encoded_data);
+
+        Ok(())
+    }
+
+    #[fixture]
+    fn scan_response_data_builder_empty<'a>() -> ScanResponseData<'a> {
+        let builder = ScanResponseData::builder();
+        assert_eq!(builder.data, ScanResponseData::default());
+        builder.build()
+    }
+
+    #[fixture]
+    fn scan_response_data_builder_service_uuid16<'a>() -> ScanResponseData<'a> {
+        let uuids = &[ServiceUuid::Battery, ServiceUuid::BloodPressure];
+        let builder = ScanResponseData::builder()
+            .with_advertising_interval(AdvertisingIntervalValue::default())
+            .with_appearance()
+            .with_service_uuid16(uuids, ServiceListComplete::Complete)
+            .unwrap();
+        assert_eq!(
+            builder.data.base.advertising_interval,
+            Some(AdvertisingIntervalAdStruct::new(
+                AdvertisingIntervalValue::default()
+            ))
+        );
+        assert_eq!(
+            builder.data.base.appearance,
+            Some(AppearanceAdStruct::new(AppearanceValue::GenericUnknown))
+        );
+        assert_eq!(
+            builder.data.base.service_uuid16,
+            Some(ServiceUuid16AdStruct::try_new(uuids, ServiceListComplete::Complete).unwrap())
+        );
+        builder.build()
+    }
+
+    #[fixture]
+    fn scan_response_data_builder_service_uuid32<'a>() -> ScanResponseData<'a> {
+        let uuids = &[Uuid32(0x0000_1803), Uuid32(0x0000_180F)];
+        let builder = ScanResponseData::builder()
+            .with_le_supported_features()
+            .with_service_uuid32(uuids, ServiceListComplete::Incomplete)
+            .unwrap();
+        assert_eq!(
+            builder.data.base.le_supported_features,
+            Some(LeSupportedFeaturesAdStruct::new(
+                SupportedLeFeatures::default()
+            ))
+        );
+        assert_eq!(
+            builder.data.base.service_uuid32,
+            Some(ServiceUuid32AdStruct::try_new(uuids, ServiceListComplete::Incomplete).unwrap())
+        );
+        builder.build()
+    }
+
+    #[fixture]
+    fn scan_response_data_builder_service_uuid128<'a>() -> ScanResponseData<'a> {
+        let connection_interval = 0x0006.try_into().unwrap()..=0x0010.try_into().unwrap();
+        let uuids = &[Uuid128(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640)];
+        let builder = ScanResponseData::builder()
+            .with_peripheral_connection_interval_range(connection_interval.clone())
+            .with_tx_power_level()
+            .with_service_uuid128(uuids, ServiceListComplete::Complete)
+            .unwrap();
+        assert_eq!(
+            builder.data.base.peripheral_connection_interval,
+            Some(PeripheralConnectionIntervalRangeAdStruct::new(
+                connection_interval
+            ))
+        );
+        assert_eq!(
+            builder.data.base.tx_power_level,
+            Some(TxPowerLevelAdStruct::new(TxPowerLevel::default()))
+        );
+        assert_eq!(
+            builder.data.base.service_uuid128,
+            Some(ServiceUuid128AdStruct::try_new(uuids, ServiceListComplete::Complete).unwrap())
+        );
+        builder.build()
+    }
+
+    #[fixture]
+    fn scan_response_data_builder_service_solicitation_uuid16<'a>() -> ScanResponseData<'a> {
+        let uri = Uri::new(ProvisionedUriScheme::Https, "//example.org/");
+        let uuids = &[ServiceUuid::Battery, ServiceUuid::BloodPressure];
+        let builder = ScanResponseData::builder()
+            .with_uri(uri.clone())
+            .with_service_solicitation_uuid16(uuids)
+            .unwrap();
+        assert_eq!(builder.data.base.uri, Some(UriAdStruct::new(uri)));
+        assert_eq!(
+            builder.data.base.service_solicitation_uuid16,
+            Some(ServiceSolicitationUuid16AdStruct::new(uuids))
+        );
+        builder.build()
+    }
+
+    #[fixture]
+    fn scan_response_data_builder_service_solicitation_uuid32<'a>() -> ScanResponseData<'a> {
+        let data = &[0x9E, 0xF5, 0x40, 0x7C, 0x0F];
+        let uuids = &[Uuid32(0x0000_1803), Uuid32(0x0000_180F)];
+        let builder = ScanResponseData::builder()
+            .with_manufacturer_specific_data(CompanyIdentifier::StMicroelectronics, data)
+            .with_service_solicitation_uuid32(uuids)
+            .unwrap();
+        assert_eq!(
+            builder.data.base.manufacturer_specific_data,
+            Some(ManufacturerSpecificDataAdStruct::new(
+                CompanyIdentifier::StMicroelectronics,
+                data
+            ))
+        );
+        assert_eq!(
+            builder.data.base.service_solicitation_uuid32,
+            Some(ServiceSolicitationUuid32AdStruct::new(uuids))
+        );
+        builder.build()
+    }
+
+    #[fixture]
+    fn scan_response_data_builder_service_solicitation_uuid128<'a>() -> ScanResponseData<'a> {
+        let uuids = &[Uuid128(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640)];
+        let builder = ScanResponseData::builder()
+            .with_service_solicitation_uuid128(uuids)
+            .unwrap();
+        assert_eq!(
+            builder.data.base.service_solicitation_uuid128,
+            Some(ServiceSolicitationUuid128AdStruct::new(uuids))
+        );
+        builder.build()
+    }
+
+    #[rstest]
+    #[case::empty(scan_response_data_builder_empty(), 0, &[])]
+    #[case::service_uuid16(
+        scan_response_data_builder_service_uuid16(),
+        14, &[0x03, 0x1A, 0x00, 0x08, 0x03, 0x19, 0x00, 0x00, 0x05, 0x03, 0x0F, 0x18, 0x10, 0x18]
+    )]
+    #[case::service_uuid32(
+        scan_response_data_builder_service_uuid32(),
+        12, &[0x01, 0x27, 0x09, 0x04, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00]
+    )]
+    #[case::service_uuid128(
+        scan_response_data_builder_service_uuid128(),
+        27, &[0x05, 0x12, 0x06, 0x00, 0x10, 0x00, 0x11, 0x07, 0x40, 0xD6, 0x6E, 0xFD, 0xD0, 0x11, 0x2C,
+            0xAD, 0x9E, 0x4C, 0x7D, 0x22, 0x7E, 0x28, 0xA1, 0xF5, 0x02, 0x0A, 0x00]
+    )]
+    #[case::service_solicitation_uuid16(
+        scan_response_data_builder_service_solicitation_uuid16(),
+        24, &[0x05, 0x14, 0x0F, 0x18, 0x10, 0x18, 0x11, 0x24, 0x17, 0x00,
+            b'/', b'/', b'e', b'x', b'a', b'm', b'p', b'l', b'e', b'.', b'o', b'r', b'g', b'/']
+    )]
+    #[case::service_solicitation_uuid32(
+        scan_response_data_builder_service_solicitation_uuid32(),
+        19, &[0x08, 0xFF, 0x30, 0x00, 0x9E, 0xF5, 0x40, 0x7C, 0x0F, 0x09, 0x1F, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00]
+    )]
+    #[case::service_solicitation_uuid128(
+        scan_response_data_builder_service_solicitation_uuid128(),
+        18, &[0x11, 0x15, 0x40, 0xD6, 0x6E, 0xFD, 0xD0, 0x11, 0x2C, 0xAD, 0x9E, 0x4C, 0x7D, 0x22, 0x7E, 0x28, 0xA1, 0xF5]
+    )]
+    fn test_scan_response_data_builder(
+        #[case] scanresp_data: ScanResponseData,
+        #[case] expected_encoded_size: usize,
+        #[case] expected_encoded_data: &[u8],
+    ) -> Result<(), bletio_utils::Error> {
+        let mut buffer = Buffer::<31>::default();
+        assert_eq!(scanresp_data.encoded_size(), expected_encoded_size);
+        assert_eq!(scanresp_data.encode(&mut buffer)?, expected_encoded_size);
+        assert_eq!(buffer.data(), expected_encoded_data);
+
+        let mut hci_expected_encoded_data = [0u8; 32];
+        hci_expected_encoded_data[0] = expected_encoded_size as u8;
+        hci_expected_encoded_data[1..1 + expected_encoded_size].copy_from_slice(buffer.data());
+        let mut buffer = Buffer::<32>::default();
+        let hci_scan_response_data: bletio_hci::ScanResponseData =
+            (&scanresp_data).try_into().unwrap();
+        assert_eq!(hci_scan_response_data.encoded_size(), 32);
+        assert_eq!(hci_scan_response_data.encode(&mut buffer)?, 32);
+        assert_eq!(buffer.data(), &hci_expected_encoded_data);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_full_advertising_data_success() -> Result<(), Error> {
+        let adv_data = AdvertisingData::builder()
+            .with_appearance()
+            .with_tx_power_level()
+            .with_le_supported_features()
+            .build();
+        let scanresp_data = ScanResponseData::builder().build();
+        let full_adv_data = FullAdvertisingData::try_new(adv_data.clone(), scanresp_data.clone())?;
+        assert_eq!(
+            full_adv_data.adv_data.base.appearance,
+            Some(AppearanceAdStruct::new(AppearanceValue::GenericUnknown))
+        );
+        assert_eq!(
+            full_adv_data.adv_data.base.tx_power_level,
+            Some(TxPowerLevelAdStruct::new(TxPowerLevel::default()))
+        );
+        assert_eq!(
+            full_adv_data.adv_data.base.le_supported_features,
+            Some(LeSupportedFeaturesAdStruct::new(
+                SupportedLeFeatures::default()
+            ))
+        );
+        assert_eq!(full_adv_data.adv_data, adv_data);
+        assert_eq!(full_adv_data.scanresp_data, Some(scanresp_data));
+
+        let appearance = AppearanceValue::Thermostat;
+        let tx_power_level = TxPowerLevel::try_new(-8).unwrap();
+        let supported_le_features =
+            SupportedLeFeatures::LE_2M_PHY | SupportedLeFeatures::LE_CODED_PHY;
+        let mut device_information = DeviceInformation::default();
+        device_information.appearance = appearance;
+        device_information.tx_power_level = tx_power_level;
+        device_information.supported_le_features = supported_le_features;
+        let filled_full_adv_data = full_adv_data.fill_automatic_data(&device_information);
+        assert_eq!(
+            filled_full_adv_data.adv_data.base.appearance,
+            Some(AppearanceAdStruct::new(appearance))
+        );
+        assert_eq!(
+            filled_full_adv_data.adv_data.base.tx_power_level,
+            Some(TxPowerLevelAdStruct::new(tx_power_level))
+        );
+        assert_eq!(
+            filled_full_adv_data.adv_data.base.le_supported_features,
+            Some(LeSupportedFeaturesAdStruct::new(supported_le_features))
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_full_advertising_data_failure() {
+        let adv_data = AdvertisingData::builder().with_appearance().build();
+        let scanresp_data = ScanResponseData::builder().with_appearance().build();
+        let err = FullAdvertisingData::try_new(adv_data, scanresp_data);
+        assert_eq!(
+            err,
+            Err(Error::Advertising(
+                AdvertisingError::AppearanceNotAllowedInBothAdvertisingDataAndScanResponseData
+            ))
+        );
     }
 }
