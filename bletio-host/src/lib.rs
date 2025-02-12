@@ -43,3 +43,17 @@ impl From<HciDriverError> for Error {
         Self::Hci(value.into())
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_error_from_hci_driver_error() {
+        let err: Error = HciDriverError::ReadFailure.into();
+        assert_eq!(
+            err,
+            Error::Hci(HciError::HciDriver(HciDriverError::ReadFailure))
+        );
+    }
+}
