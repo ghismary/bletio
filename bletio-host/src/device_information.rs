@@ -9,9 +9,10 @@ use bletio_hci::{
 use crate::assigned_numbers::AppearanceValue;
 
 #[derive(Debug, Clone)]
-pub(crate) struct DeviceInformation {
+pub(crate) struct DeviceInformation<'a> {
     pub(crate) appearance: AppearanceValue,
     pub(crate) le_data_packet_length: NonZeroU16,
+    pub(crate) local_name: &'a str,
     pub(crate) num_le_data_packets: NonZeroU16,
     pub(crate) public_device_address: PublicDeviceAddress,
     pub(crate) random_static_device_address: Option<RandomStaticDeviceAddress>,
@@ -22,7 +23,7 @@ pub(crate) struct DeviceInformation {
     pub(crate) tx_power_level: TxPowerLevel,
 }
 
-impl DeviceInformation {
+impl DeviceInformation<'_> {
     pub(crate) fn is_command_supported(&self, command: SupportedCommands) -> bool {
         self.supported_commands.contains(command)
     }
@@ -32,11 +33,12 @@ impl DeviceInformation {
     }
 }
 
-impl Default for DeviceInformation {
+impl Default for DeviceInformation<'_> {
     fn default() -> Self {
         Self {
             appearance: AppearanceValue::GenericUnknown,
             le_data_packet_length: NonZeroU16::MIN,
+            local_name: Default::default(),
             num_le_data_packets: NonZeroU16::MIN,
             public_device_address: Default::default(),
             random_static_device_address: Default::default(),
@@ -61,6 +63,7 @@ mod test {
             AppearanceValue::GenericUnknown
         );
         assert_eq!(device_information.le_data_packet_length, NonZeroU16::MIN);
+        assert_eq!(device_information.local_name, "");
         assert_eq!(device_information.num_le_data_packets, NonZeroU16::MIN);
         assert_eq!(
             device_information.public_device_address,
@@ -95,6 +98,7 @@ mod test {
         let device_information = DeviceInformation {
             appearance: AppearanceValue::TemperatureSensor,
             le_data_packet_length: NonZeroU16::new(255).unwrap(),
+            local_name: "bletio-device",
             num_le_data_packets: NonZeroU16::new(2).unwrap(),
             public_device_address: PublicDeviceAddress::new([0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56]),
             random_static_device_address: Some(
@@ -114,6 +118,7 @@ mod test {
             device_information.le_data_packet_length,
             NonZeroU16::new(255).unwrap()
         );
+        assert_eq!(device_information.local_name, "bletio-device");
         assert_eq!(
             device_information.num_le_data_packets,
             NonZeroU16::new(2).unwrap()

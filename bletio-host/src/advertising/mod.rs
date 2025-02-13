@@ -16,6 +16,7 @@ pub mod advertising_parameters;
 pub mod uri;
 
 pub use ad_struct::flags::Flags;
+pub use ad_struct::local_name::LocalNameComplete;
 pub use ad_struct::service_uuid::ServiceListComplete;
 pub use advertising_data::{
     AdvertisingData, AdvertisingDataBuilder, FullAdvertisingData, ScanResponseData,

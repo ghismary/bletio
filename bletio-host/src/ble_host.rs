@@ -19,7 +19,7 @@ where
     H: HciDriver,
 {
     hci: &'a mut Hci<H>,
-    device_information: DeviceInformation,
+    device_information: DeviceInformation<'a>,
     phantom: PhantomData<State>,
 }
 
@@ -42,12 +42,14 @@ where
     pub(crate) async fn setup(
         hci: &'a mut Hci<H>,
         appearance: AppearanceValue,
+        local_name: &'a str,
     ) -> Result<BleHost<'a, H, BleHostStateStandby>, Error>
     where
         H: HciDriver,
     {
         let mut device_information = DeviceInformation {
             appearance,
+            local_name,
             ..Default::default()
         };
 
@@ -143,7 +145,7 @@ where
     ) -> Result<BleHost<'a, H, BleHostStateAdvertising>, (Error, Self)> {
         async fn inner<H>(
             hci: &mut Hci<H>,
-            device_information: &mut DeviceInformation,
+            device_information: &mut DeviceInformation<'_>,
             adv_params: &AdvertisingParameters,
             full_adv_data: &FullAdvertisingData<'_>,
         ) -> Result<(), Error>
@@ -207,6 +209,14 @@ where
     H: HciDriver,
     S: BleHostState,
 {
+    pub fn appearance(&self) -> AppearanceValue {
+        self.device_information.appearance
+    }
+
+    pub fn local_name(&self) -> &str {
+        self.device_information.local_name
+    }
+
     pub fn public_device_address(&self) -> &PublicDeviceAddress {
         &self.device_information.public_device_address
     }
