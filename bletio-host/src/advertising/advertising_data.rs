@@ -1,16 +1,16 @@
 use core::ops::RangeInclusive;
 
 use bletio_hci::{
-    AdvertisingIntervalValue, ConnectionInterval, PublicDeviceAddress, SupportedLeFeatures,
-    TxPowerLevel,
+    AdvertisingIntervalValue, ConnectionInterval, PublicDeviceAddress, RandomAddress,
+    SupportedLeFeatures, TxPowerLevel,
 };
 use bletio_utils::{BufferOps, EncodeToBuffer};
 
 use crate::advertising::ad_struct::{
     AdvertisingIntervalAdStruct, AppearanceAdStruct, FlagsAdStruct, LeSupportedFeaturesAdStruct,
     LocalNameAdStruct, ManufacturerSpecificDataAdStruct, PeripheralConnectionIntervalRangeAdStruct,
-    PublicTargetAddressAdStruct, ServiceDataUuid128AdStruct, ServiceDataUuid16AdStruct,
-    ServiceDataUuid32AdStruct, ServiceSolicitationUuid128AdStruct,
+    PublicTargetAddressAdStruct, RandomTargetAddressAdStruct, ServiceDataUuid128AdStruct,
+    ServiceDataUuid16AdStruct, ServiceDataUuid32AdStruct, ServiceSolicitationUuid128AdStruct,
     ServiceSolicitationUuid16AdStruct, ServiceSolicitationUuid32AdStruct, ServiceUuid128AdStruct,
     ServiceUuid16AdStruct, ServiceUuid32AdStruct, TxPowerLevelAdStruct, UriAdStruct,
 };
@@ -162,6 +162,20 @@ impl<'a> AdvertisingDataBuilder<'a> {
         Ok(self)
     }
 
+    /// Add a Random Target Address Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `addresses` — The list of random addresses to put in the added Random Target Address Advertising Structure.
+    pub fn with_random_target_address(
+        mut self,
+        addresses: &'a [RandomAddress],
+    ) -> Result<Self, AdvertisingError> {
+        self.data.base.random_target_address =
+            Some(RandomTargetAddressAdStruct::try_new(addresses)?);
+        Ok(self)
+    }
+
     /// Add a Service Data for a 16-bit Service UUID Advertising Structure to the `AdvertisingData`.
     ///
     /// # Arguments
@@ -308,6 +322,7 @@ pub struct AdvertisingDataBase<'a> {
     manufacturer_specific_data: Option<ManufacturerSpecificDataAdStruct<'a>>,
     peripheral_connection_interval: Option<PeripheralConnectionIntervalRangeAdStruct>,
     public_target_address: Option<PublicTargetAddressAdStruct<'a>>,
+    random_target_address: Option<RandomTargetAddressAdStruct<'a>>,
     service_data_uuid16: Option<ServiceDataUuid16AdStruct<'a>>,
     service_data_uuid32: Option<ServiceDataUuid32AdStruct<'a>>,
     service_data_uuid128: Option<ServiceDataUuid128AdStruct<'a>>,
@@ -367,6 +382,9 @@ impl EncodeToBuffer for AdvertisingDataBase<'_> {
         if let Some(addresses) = self.public_target_address.as_ref() {
             addresses.encode(buffer)?;
         }
+        if let Some(addresses) = self.random_target_address.as_ref() {
+            addresses.encode(buffer)?;
+        }
         if let Some(service_data_uuid16) = self.service_data_uuid16.as_ref() {
             service_data_uuid16.encode(buffer)?;
         }
@@ -424,6 +442,9 @@ impl EncodeToBuffer for AdvertisingDataBase<'_> {
             len += data.encoded_size();
         }
         if let Some(addresses) = self.public_target_address.as_ref() {
+            len += addresses.encoded_size();
+        }
+        if let Some(addresses) = self.random_target_address.as_ref() {
             len += addresses.encoded_size();
         }
         if let Some(service_data_uuid16) = self.service_data_uuid16.as_ref() {
@@ -615,6 +636,20 @@ impl<'a> ScanResponseDataBuilder<'a> {
         Ok(self)
     }
 
+    /// Add a Random Target Address Advertising Structure to the `ScanResponseData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `addresses` — The list of random addresses to put in the added Random Target Address Advertising Structure.
+    pub fn with_random_target_address(
+        mut self,
+        addresses: &'a [RandomAddress],
+    ) -> Result<Self, AdvertisingError> {
+        self.data.base.random_target_address =
+            Some(RandomTargetAddressAdStruct::try_new(addresses)?);
+        Ok(self)
+    }
+
     /// Add a Service Data for a 16-bit Service UUID Advertising Structure to the `ScanResponseData`.
     ///
     /// # Arguments
@@ -801,6 +836,7 @@ impl TryFrom<&ScanResponseData<'_>> for bletio_hci::ScanResponseData {
 
 #[cfg(test)]
 mod test {
+    use bletio_hci::RandomStaticDeviceAddress;
     use bletio_utils::{Buffer, BufferOps};
     use rstest::{fixture, rstest};
 
@@ -818,6 +854,7 @@ mod test {
         assert_eq!(adv_data_base.manufacturer_specific_data, None);
         assert_eq!(adv_data_base.peripheral_connection_interval, None);
         assert_eq!(adv_data_base.public_target_address, None);
+        assert_eq!(adv_data_base.random_target_address, None);
         assert_eq!(adv_data_base.service_data_uuid16, None);
         assert_eq!(adv_data_base.service_data_uuid32, None);
         assert_eq!(adv_data_base.service_data_uuid128, None);
@@ -981,7 +1018,15 @@ mod test {
     #[fixture]
     fn advertising_data_builder_service_solicitation_uuid128<'a>() -> AdvertisingData<'a> {
         let uuids = &[Uuid128(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640)];
+        const ADDRESSES: &[RandomAddress] = &[RandomAddress::Static(
+            match RandomStaticDeviceAddress::try_new([0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7]) {
+                Ok(v) => v,
+                Err(_) => unreachable!(),
+            },
+        )];
         let builder = AdvertisingData::builder()
+            .with_random_target_address(ADDRESSES)
+            .unwrap()
             .with_service_solicitation_uuid128(uuids)
             .unwrap();
         assert_eq!(
@@ -1032,7 +1077,8 @@ mod test {
     )]
     #[case::service_solicitation_uuid128(
         advertising_data_builder_service_solicitation_uuid128(),
-        18, &[0x11, 0x15, 0x40, 0xD6, 0x6E, 0xFD, 0xD0, 0x11, 0x2C, 0xAD, 0x9E, 0x4C, 0x7D, 0x22, 0x7E, 0x28, 0xA1, 0xF5]
+        26, &[0x07, 0x18, 0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7, 0x11, 0x15, 0x40, 0xD6, 0x6E, 0xFD, 0xD0,
+            0x11, 0x2C, 0xAD, 0x9E, 0x4C, 0x7D, 0x22, 0x7E, 0x28, 0xA1, 0xF5]
     )]
     #[case::service_data_uuid128(
         advertising_data_builder_service_data_uuid128(),
@@ -1200,7 +1246,15 @@ mod test {
     #[fixture]
     fn scan_response_data_builder_service_solicitation_uuid128<'a>() -> ScanResponseData<'a> {
         let uuids = &[Uuid128(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640)];
+        const ADDRESSES: &[RandomAddress] = &[RandomAddress::Static(
+            match RandomStaticDeviceAddress::try_new([0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7]) {
+                Ok(v) => v,
+                Err(_) => unreachable!(),
+            },
+        )];
         let builder = ScanResponseData::builder()
+            .with_random_target_address(ADDRESSES)
+            .unwrap()
             .with_service_solicitation_uuid128(uuids)
             .unwrap();
         assert_eq!(
@@ -1250,7 +1304,8 @@ mod test {
     )]
     #[case::service_solicitation_uuid128(
         scan_response_data_builder_service_solicitation_uuid128(),
-        18, &[0x11, 0x15, 0x40, 0xD6, 0x6E, 0xFD, 0xD0, 0x11, 0x2C, 0xAD, 0x9E, 0x4C, 0x7D, 0x22, 0x7E, 0x28, 0xA1, 0xF5]
+        26, &[0x07, 0x18, 0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7, 0x11, 0x15, 0x40, 0xD6, 0x6E, 0xFD, 0xD0,
+            0x11, 0x2C, 0xAD, 0x9E, 0x4C, 0x7D, 0x22, 0x7E, 0x28, 0xA1, 0xF5]
     )]
     #[case::service_data_uuid128(
         scan_response_data_builder_service_data_uuid128(),

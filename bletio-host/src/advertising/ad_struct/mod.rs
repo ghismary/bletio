@@ -16,6 +16,7 @@ pub(crate) mod local_name;
 pub(crate) mod manufacturer_specific_data;
 pub(crate) mod peripheral_connection_interval_range;
 pub(crate) mod public_target_address;
+pub(crate) mod random_target_address;
 pub(crate) mod service_data;
 pub(crate) mod service_solicitation;
 pub(crate) mod service_uuid;
@@ -30,6 +31,7 @@ pub(crate) use local_name::LocalNameAdStruct;
 pub(crate) use manufacturer_specific_data::ManufacturerSpecificDataAdStruct;
 pub(crate) use peripheral_connection_interval_range::PeripheralConnectionIntervalRangeAdStruct;
 pub(crate) use public_target_address::PublicTargetAddressAdStruct;
+pub(crate) use random_target_address::RandomTargetAddressAdStruct;
 pub(crate) use service_data::{
     ServiceDataUuid128AdStruct, ServiceDataUuid16AdStruct, ServiceDataUuid32AdStruct,
 };

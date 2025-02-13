@@ -185,23 +185,82 @@ impl From<RandomNonResolvablePrivateAddress> for RandomAddress {
     }
 }
 
+impl EncodeToBuffer for RandomAddress {
+    fn encode<B: bletio_utils::BufferOps>(
+        &self,
+        buffer: &mut B,
+    ) -> Result<usize, bletio_utils::Error> {
+        match self {
+            Self::Static(address) => address.encode(buffer),
+            Self::ResolvablePrivate(address) => address.encode(buffer),
+            Self::NonResolvablePrivate(address) => address.encode(buffer),
+        }
+    }
+
+    fn encoded_size(&self) -> usize {
+        match self {
+            Self::Static(address) => address.encoded_size(),
+            Self::ResolvablePrivate(address) => address.encoded_size(),
+            Self::NonResolvablePrivate(address) => address.encoded_size(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RandomStaticDeviceAddress {
     base: AddressBase,
 }
 
 impl RandomStaticDeviceAddress {
-    pub fn try_new(address: [u8; 6]) -> Result<Self, Error> {
-        address.try_into()
+    pub const fn try_new(address: [u8; 6]) -> Result<Self, Error> {
+        if Self::is_valid(&address) {
+            Ok(Self {
+                base: AddressBase { value: address },
+            })
+        } else {
+            Err(Error::InvalidRandomStaticDeviceAddress)
+        }
     }
 
-    pub fn try_new_from_random_bytes(mut bytes: [u8; 6]) -> Result<Self, Error> {
+    pub const fn try_new_from_random_bytes(mut bytes: [u8; 6]) -> Result<Self, Error> {
         bytes[5] |= 0b1100_0000;
-        bytes.try_into()
+        Self::try_new(bytes)
     }
 
     pub const fn value(&self) -> &[u8; 6] {
         &self.base.value
+    }
+
+    const fn is_random_static_device_address(address: &[u8; 6]) -> bool {
+        (address[5] & 0b1100_0000) == 0b1100_0000
+    }
+
+    const fn all_bits_are_zero(address: &[u8; 6]) -> bool {
+        let mut i: usize = 0;
+        while i < 5 {
+            if address[i] != 0x00 {
+                return false;
+            }
+            i += 1;
+        }
+        address[5] == 0b1100_0000
+    }
+
+    const fn all_bits_are_one(address: &[u8; 6]) -> bool {
+        let mut i: usize = 0;
+        while i < 6 {
+            if address[i] != 0xFF {
+                return false;
+            }
+            i += 1;
+        }
+        true
+    }
+
+    const fn is_valid(address: &[u8; 6]) -> bool {
+        Self::is_random_static_device_address(address)
+            && !Self::all_bits_are_zero(address)
+            && !Self::all_bits_are_one(address)
     }
 }
 
@@ -222,14 +281,7 @@ impl TryFrom<[u8; 6]> for RandomStaticDeviceAddress {
     type Error = Error;
 
     fn try_from(value: [u8; 6]) -> Result<Self, Self::Error> {
-        if ((value[5] & 0b1100_0000) != 0b1100_0000)
-            || ((value[..5].iter().all(|v| *v == 0x00) && (value[5] == 0b1100_0000))
-                || (value.iter().all(|v| *v == 0xFF)))
-        {
-            Err(Error::InvalidRandomStaticDeviceAddress)
-        } else {
-            Ok(Self { base: value.into() })
-        }
+        Self::try_new(value)
     }
 }
 
@@ -239,12 +291,50 @@ pub struct RandomResolvablePrivateAddress {
 }
 
 impl RandomResolvablePrivateAddress {
-    pub fn try_new(address: [u8; 6]) -> Result<Self, Error> {
-        address.try_into()
+    pub const fn try_new(address: [u8; 6]) -> Result<Self, Error> {
+        if Self::is_valid(&address) {
+            Ok(Self {
+                base: AddressBase { value: address },
+            })
+        } else {
+            Err(Error::InvalidRandomResolvablePrivateAddress)
+        }
     }
 
     pub const fn value(&self) -> &[u8; 6] {
         &self.base.value
+    }
+
+    const fn is_random_resolvable_private_address(address: &[u8; 6]) -> bool {
+        (address[5] & 0b1100_0000) == 0b0100_0000
+    }
+
+    const fn all_bits_are_zero(address: &[u8; 6]) -> bool {
+        let mut i: usize = 0;
+        while i < 5 {
+            if address[i] != 0x00 {
+                return false;
+            }
+            i += 1;
+        }
+        address[5] == 0b0100_0000
+    }
+
+    const fn all_bits_are_one(address: &[u8; 6]) -> bool {
+        let mut i: usize = 0;
+        while i < 5 {
+            if address[i] != 0xFF {
+                return false;
+            }
+            i += 1;
+        }
+        address[5] == 0b0111_1111
+    }
+
+    const fn is_valid(address: &[u8; 6]) -> bool {
+        Self::is_random_resolvable_private_address(address)
+            && !Self::all_bits_are_zero(address)
+            && !Self::all_bits_are_one(address)
     }
 }
 
@@ -252,14 +342,20 @@ impl TryFrom<[u8; 6]> for RandomResolvablePrivateAddress {
     type Error = Error;
 
     fn try_from(value: [u8; 6]) -> Result<Self, Self::Error> {
-        if ((value[5] & 0b1100_0000) != 0b0100_0000)
-            || ((value[..5].iter().all(|v| *v == 0x00) && (value[5] == 0b0100_0000))
-                || (value[..5].iter().all(|v| *v == 0xFF) && (value[5] == 0b0111_1111)))
-        {
-            Err(Error::InvalidRandomResolvablePrivateAddress)
-        } else {
-            Ok(Self { base: value.into() })
-        }
+        Self::try_new(value)
+    }
+}
+
+impl EncodeToBuffer for RandomResolvablePrivateAddress {
+    fn encode<B: bletio_utils::BufferOps>(
+        &self,
+        buffer: &mut B,
+    ) -> Result<usize, bletio_utils::Error> {
+        buffer.copy_from_slice(&self.base.value)
+    }
+
+    fn encoded_size(&self) -> usize {
+        6
     }
 }
 
@@ -269,12 +365,50 @@ pub struct RandomNonResolvablePrivateAddress {
 }
 
 impl RandomNonResolvablePrivateAddress {
-    pub fn try_new(address: [u8; 6]) -> Result<Self, Error> {
-        address.try_into()
+    pub const fn try_new(address: [u8; 6]) -> Result<Self, Error> {
+        if Self::is_valid(&address) {
+            Ok(Self {
+                base: AddressBase { value: address },
+            })
+        } else {
+            Err(Error::InvalidRandomNonResolvablePrivateAddress)
+        }
     }
 
     pub const fn value(&self) -> &[u8; 6] {
         &self.base.value
+    }
+
+    const fn is_random_non_resolvable_private_address(address: &[u8; 6]) -> bool {
+        (address[5] & 0b1100_0000) == 0b0000_0000
+    }
+
+    const fn all_bits_are_zero(address: &[u8; 6]) -> bool {
+        let mut i: usize = 3;
+        while i < 6 {
+            if address[i] != 0x00 {
+                return false;
+            }
+            i += 1;
+        }
+        true
+    }
+
+    const fn all_bits_are_one(address: &[u8; 6]) -> bool {
+        let mut i: usize = 3;
+        while i < 5 {
+            if address[i] != 0xFF {
+                return false;
+            }
+            i += 1;
+        }
+        address[5] == 0b0011_1111
+    }
+
+    const fn is_valid(address: &[u8; 6]) -> bool {
+        Self::is_random_non_resolvable_private_address(address)
+            && !Self::all_bits_are_zero(address)
+            && !Self::all_bits_are_one(address)
     }
 }
 
@@ -282,14 +416,20 @@ impl TryFrom<[u8; 6]> for RandomNonResolvablePrivateAddress {
     type Error = Error;
 
     fn try_from(value: [u8; 6]) -> Result<Self, Self::Error> {
-        if ((value[5] & 0b1100_0000) != 0b0000_0000)
-            || (value[3..].iter().all(|v| *v == 0x00))
-            || (value[3..5].iter().all(|v| *v == 0xFF) && (value[5] == 0b0011_1111))
-        {
-            Err(Error::InvalidRandomNonResolvablePrivateAddress)
-        } else {
-            Ok(Self { base: value.into() })
-        }
+        Self::try_new(value)
+    }
+}
+
+impl EncodeToBuffer for RandomNonResolvablePrivateAddress {
+    fn encode<B: bletio_utils::BufferOps>(
+        &self,
+        buffer: &mut B,
+    ) -> Result<usize, bletio_utils::Error> {
+        buffer.copy_from_slice(&self.base.value)
+    }
+
+    fn encoded_size(&self) -> usize {
+        6
     }
 }
 
@@ -363,6 +503,15 @@ mod test {
     #[case([0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56])]
     #[case([0xF4, 0x23, 0x14, 0xC3, 0xDC, 0x24])]
     #[case([0x38, 0x5E, 0x43, 0xCA, 0x4C, 0x40])]
+    fn test_address_base(#[case] input: [u8; 6]) {
+        let address_base: AddressBase = input.into();
+        assert_eq!(address_base.value, input);
+    }
+
+    #[rstest]
+    #[case([0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56])]
+    #[case([0xF4, 0x23, 0x14, 0xC3, 0xDC, 0x24])]
+    #[case([0x38, 0x5E, 0x43, 0xCA, 0x4C, 0x40])]
     fn test_public_device_address(#[case] input: [u8; 6]) {
         let address = PublicDeviceAddress::new(input);
         assert_eq!(address.value(), &input);
@@ -389,6 +538,10 @@ mod test {
         let random_address: RandomAddress = random_static_device_address.clone().into();
         assert!(matches!(random_address, RandomAddress::Static(_)));
         assert_eq!(random_address.value(), &input);
+        let mut buffer = Buffer::<6>::default();
+        assert_eq!(random_address.encoded_size(), input.len());
+        random_address.encode(&mut buffer).unwrap();
+        assert_eq!(buffer.data(), input);
         let device_address: DeviceAddress = random_static_device_address.into();
         assert!(matches!(
             device_address,
@@ -430,12 +583,25 @@ mod test {
     fn test_valid_random_resolvable_private_address(#[case] input: [u8; 6]) -> Result<(), Error> {
         let random_resolvable_private_address = RandomResolvablePrivateAddress::try_new(input)?;
         assert_eq!(random_resolvable_private_address.value(), &input);
+        let mut buffer = Buffer::<6>::default();
+        assert_eq!(
+            random_resolvable_private_address.encoded_size(),
+            input.len()
+        );
+        random_resolvable_private_address
+            .encode(&mut buffer)
+            .unwrap();
+        assert_eq!(buffer.data(), input);
         let random_address: RandomAddress = random_resolvable_private_address.clone().into();
         assert!(matches!(
             random_address,
             RandomAddress::ResolvablePrivate(_)
         ));
         assert_eq!(random_address.value(), &input);
+        let mut buffer = Buffer::<6>::default();
+        assert_eq!(random_address.encoded_size(), input.len());
+        random_address.encode(&mut buffer).unwrap();
+        assert_eq!(buffer.data(), input);
         let device_address: DeviceAddress = random_resolvable_private_address.into();
         assert!(matches!(
             device_address,
@@ -469,12 +635,25 @@ mod test {
         let random_non_resolvable_private_address =
             RandomNonResolvablePrivateAddress::try_new(input)?;
         assert_eq!(random_non_resolvable_private_address.value(), &input);
+        let mut buffer = Buffer::<6>::default();
+        assert_eq!(
+            random_non_resolvable_private_address.encoded_size(),
+            input.len()
+        );
+        random_non_resolvable_private_address
+            .encode(&mut buffer)
+            .unwrap();
+        assert_eq!(buffer.data(), input);
         let random_address: RandomAddress = random_non_resolvable_private_address.clone().into();
         assert!(matches!(
             random_address,
             RandomAddress::NonResolvablePrivate(_)
         ));
         assert_eq!(random_address.value(), &input);
+        let mut buffer = Buffer::<6>::default();
+        assert_eq!(random_address.encoded_size(), input.len());
+        random_address.encode(&mut buffer).unwrap();
+        assert_eq!(buffer.data(), input);
         let device_address: DeviceAddress = random_non_resolvable_private_address.into();
         assert!(matches!(
             device_address,
