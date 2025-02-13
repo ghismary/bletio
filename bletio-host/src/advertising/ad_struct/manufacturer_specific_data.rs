@@ -17,7 +17,7 @@ pub(crate) struct ManufacturerSpecificDataAdStruct<'a> {
 }
 
 impl<'a> ManufacturerSpecificDataAdStruct<'a> {
-    pub(crate) fn new(manufacturer: CompanyIdentifier, data: &'a [u8]) -> Self {
+    pub(crate) const fn new(manufacturer: CompanyIdentifier, data: &'a [u8]) -> Self {
         Self { manufacturer, data }
     }
 }

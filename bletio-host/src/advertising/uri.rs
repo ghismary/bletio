@@ -224,7 +224,7 @@ pub enum UriScheme {
 }
 
 impl UriScheme {
-    fn value(&self) -> u16 {
+    const fn value(&self) -> u16 {
         match self {
             Self::Provisioned(scheme) => *scheme as u16,
             Self::Custom(_) => EMPTY_SCHEME_NAME_VALUE,

@@ -17,7 +17,9 @@ pub(crate) struct PublicTargetAddressAdStruct<'a> {
 }
 
 impl<'a> PublicTargetAddressAdStruct<'a> {
-    pub(crate) fn try_new(addresses: &'a [PublicDeviceAddress]) -> Result<Self, AdvertisingError> {
+    pub(crate) const fn try_new(
+        addresses: &'a [PublicDeviceAddress],
+    ) -> Result<Self, AdvertisingError> {
         if addresses.is_empty() {
             Err(AdvertisingError::PublicTargetAddressAdStructMustContainAtLeastOneAddress)
         } else {

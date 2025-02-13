@@ -18,7 +18,7 @@ pub(crate) struct RandomTargetAddressAdStruct<'a> {
 
 impl<'a> RandomTargetAddressAdStruct<'a> {
     // TODO: Limit to random static and random resolvable addresses
-    pub(crate) fn try_new(addresses: &'a [RandomAddress]) -> Result<Self, AdvertisingError> {
+    pub(crate) const fn try_new(addresses: &'a [RandomAddress]) -> Result<Self, AdvertisingError> {
         if addresses.is_empty() {
             Err(AdvertisingError::RandomTargetAddressAdStructMustContainAtLeastOneAddress)
         } else {

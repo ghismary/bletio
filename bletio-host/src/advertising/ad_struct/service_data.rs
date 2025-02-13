@@ -13,7 +13,7 @@ pub(crate) struct ServiceDataUuid16AdStruct<'a> {
 }
 
 impl<'a> ServiceDataUuid16AdStruct<'a> {
-    pub(crate) fn new(uuid: ServiceUuid, data: &'a [u8]) -> Self {
+    pub(crate) const fn new(uuid: ServiceUuid, data: &'a [u8]) -> Self {
         Self { uuid, data }
     }
 }
@@ -45,7 +45,7 @@ pub(crate) struct ServiceDataUuid32AdStruct<'a> {
 }
 
 impl<'a> ServiceDataUuid32AdStruct<'a> {
-    pub(crate) fn new(uuid: Uuid32, data: &'a [u8]) -> Self {
+    pub(crate) const fn new(uuid: Uuid32, data: &'a [u8]) -> Self {
         Self { uuid, data }
     }
 }
@@ -77,7 +77,7 @@ pub(crate) struct ServiceDataUuid128AdStruct<'a> {
 }
 
 impl<'a> ServiceDataUuid128AdStruct<'a> {
-    pub(crate) fn new(uuid: Uuid128, data: &'a [u8]) -> Self {
+    pub(crate) const fn new(uuid: Uuid128, data: &'a [u8]) -> Self {
         Self { uuid, data }
     }
 }

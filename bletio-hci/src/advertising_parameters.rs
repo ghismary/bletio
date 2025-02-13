@@ -27,16 +27,20 @@ pub struct AdvertisingIntervalValue {
 
 impl AdvertisingIntervalValue {
     /// Create a valid advertising interval value.
-    pub fn try_new(value: u16) -> Result<Self, Error> {
-        value.try_into()
+    pub const fn try_new(value: u16) -> Result<Self, Error> {
+        if (value >= 0x0020) && (value <= 0x4000) {
+            Ok(Self { value })
+        } else {
+            Err(Error::InvalidAdvertisingIntervalValue(value))
+        }
     }
 
     /// Get the value of the advertising interval value in milliseconds.
-    pub fn milliseconds(&self) -> f32 {
+    pub const fn milliseconds(&self) -> f32 {
         (self.value as f32) * 0.625
     }
 
-    pub fn value(&self) -> u16 {
+    pub const fn value(&self) -> u16 {
         self.value
     }
 }
@@ -51,11 +55,7 @@ impl TryFrom<u16> for AdvertisingIntervalValue {
     type Error = Error;
 
     fn try_from(value: u16) -> Result<Self, Self::Error> {
-        if (0x0020..=0x4000).contains(&value) {
-            Ok(Self { value })
-        } else {
-            Err(Error::InvalidAdvertisingIntervalValue(value))?
-        }
+        Self::try_new(value)
     }
 }
 
