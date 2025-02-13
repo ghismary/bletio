@@ -12,6 +12,7 @@ pub(crate) mod advertising_interval;
 pub(crate) mod appearance;
 pub(crate) mod flags;
 pub(crate) mod le_supported_features;
+pub(crate) mod local_name;
 pub(crate) mod manufacturer_specific_data;
 pub(crate) mod peripheral_connection_interval_range;
 pub(crate) mod service_solicitation;
@@ -23,6 +24,7 @@ pub(crate) use advertising_interval::AdvertisingIntervalAdStruct;
 pub(crate) use appearance::AppearanceAdStruct;
 pub(crate) use flags::FlagsAdStruct;
 pub(crate) use le_supported_features::LeSupportedFeaturesAdStruct;
+pub(crate) use local_name::LocalNameAdStruct;
 pub(crate) use manufacturer_specific_data::ManufacturerSpecificDataAdStruct;
 pub(crate) use peripheral_connection_interval_range::PeripheralConnectionIntervalRangeAdStruct;
 pub(crate) use service_solicitation::{

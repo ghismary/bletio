@@ -5,12 +5,12 @@ use bletio_utils::{BufferOps, EncodeToBuffer};
 
 use crate::advertising::ad_struct::{
     AdvertisingIntervalAdStruct, AppearanceAdStruct, FlagsAdStruct, LeSupportedFeaturesAdStruct,
-    ManufacturerSpecificDataAdStruct, PeripheralConnectionIntervalRangeAdStruct,
+    LocalNameAdStruct, ManufacturerSpecificDataAdStruct, PeripheralConnectionIntervalRangeAdStruct,
     ServiceSolicitationUuid128AdStruct, ServiceSolicitationUuid16AdStruct,
     ServiceSolicitationUuid32AdStruct, ServiceUuid128AdStruct, ServiceUuid16AdStruct,
     ServiceUuid32AdStruct, TxPowerLevelAdStruct, UriAdStruct,
 };
-use crate::advertising::{AdvertisingError, Flags, ServiceListComplete, Uri};
+use crate::advertising::{AdvertisingError, Flags, LocalNameComplete, ServiceListComplete, Uri};
 use crate::assigned_numbers::{AppearanceValue, CompanyIdentifier, ServiceUuid};
 use crate::uuid::{Uuid128, Uuid32};
 use crate::{DeviceInformation, Error};
@@ -43,7 +43,7 @@ impl<'a> FullAdvertisingData<'a> {
         })
     }
 
-    pub(crate) fn fill_automatic_data(&self, device_information: &DeviceInformation) -> Self {
+    pub(crate) fn fill_automatic_data(&self, device_information: &'a DeviceInformation) -> Self {
         let mut filled = self.clone();
         filled.adv_data.base.fill_automatic_data(device_information);
         if let Some(scanresp_data) = filled.scanresp_data.as_mut() {
@@ -101,6 +101,16 @@ impl<'a> AdvertisingDataBuilder<'a> {
         self.data.base.le_supported_features = Some(LeSupportedFeaturesAdStruct::new(
             SupportedLeFeatures::default(),
         ));
+        self
+    }
+
+    /// Add a Local Name Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `complete` — Whether the local name should be put complete or shortened in the added Local Name Advertising Structure.
+    pub fn with_local_name(mut self, complete: LocalNameComplete) -> Self {
+        self.data.base.local_name = Some(LocalNameAdStruct::new("", complete));
         self
     }
 
@@ -243,6 +253,7 @@ pub struct AdvertisingDataBase<'a> {
     advertising_interval: Option<AdvertisingIntervalAdStruct>,
     appearance: Option<AppearanceAdStruct>,
     le_supported_features: Option<LeSupportedFeaturesAdStruct>,
+    local_name: Option<LocalNameAdStruct<'a>>,
     manufacturer_specific_data: Option<ManufacturerSpecificDataAdStruct<'a>>,
     peripheral_connection_interval: Option<PeripheralConnectionIntervalRangeAdStruct>,
     service_uuid16: Option<ServiceUuid16AdStruct<'a>>,
@@ -255,14 +266,20 @@ pub struct AdvertisingDataBase<'a> {
     uri: Option<UriAdStruct>,
 }
 
-impl AdvertisingDataBase<'_> {
-    fn fill_automatic_data(&mut self, device_information: &DeviceInformation) {
+impl<'a> AdvertisingDataBase<'a> {
+    fn fill_automatic_data(&mut self, device_information: &'a DeviceInformation) {
         if self.appearance.is_some() {
             self.appearance = Some(AppearanceAdStruct::new(device_information.appearance));
         }
         if self.le_supported_features.is_some() {
             self.le_supported_features = Some(LeSupportedFeaturesAdStruct::new(
                 device_information.supported_le_features,
+            ));
+        }
+        if let Some(local_name) = self.local_name.clone() {
+            self.local_name = Some(LocalNameAdStruct::new(
+                device_information.local_name,
+                local_name.complete,
             ));
         }
         if self.tx_power_level.is_some() {
@@ -285,6 +302,9 @@ impl EncodeToBuffer for AdvertisingDataBase<'_> {
         }
         if let Some(features) = self.le_supported_features.as_ref() {
             features.encode(buffer)?;
+        }
+        if let Some(local_name) = self.local_name.as_ref() {
+            local_name.encode(buffer)?;
         }
         if let Some(data) = self.manufacturer_specific_data.as_ref() {
             data.encode(buffer)?;
@@ -329,6 +349,9 @@ impl EncodeToBuffer for AdvertisingDataBase<'_> {
         }
         if let Some(features) = self.le_supported_features.as_ref() {
             len += features.encoded_size();
+        }
+        if let Some(local_name) = self.local_name.as_ref() {
+            len += local_name.encoded_size();
         }
         if let Some(data) = self.manufacturer_specific_data.as_ref() {
             len += data.encoded_size();
@@ -456,6 +479,16 @@ impl<'a> ScanResponseDataBuilder<'a> {
         self.data.base.le_supported_features = Some(LeSupportedFeaturesAdStruct::new(
             SupportedLeFeatures::default(),
         ));
+        self
+    }
+
+    /// Add a Local Name Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `complete` — Whether the local name should be put complete or shortened in the added Local Name Advertising Structure.
+    pub fn with_local_name(mut self, complete: LocalNameComplete) -> Self {
+        self.data.base.local_name = Some(LocalNameAdStruct::new("", complete));
         self
     }
 
@@ -655,6 +688,7 @@ mod test {
         assert_eq!(adv_data_base.advertising_interval, None);
         assert_eq!(adv_data_base.appearance, None);
         assert_eq!(adv_data_base.le_supported_features, None);
+        assert_eq!(adv_data_base.local_name, None);
         assert_eq!(adv_data_base.manufacturer_specific_data, None);
         assert_eq!(adv_data_base.peripheral_connection_interval, None);
         assert_eq!(adv_data_base.service_uuid16, None);
@@ -687,6 +721,7 @@ mod test {
         let builder = AdvertisingData::builder()
             .with_advertising_interval(AdvertisingIntervalValue::default())
             .with_appearance()
+            .with_local_name(LocalNameComplete::Complete)
             .with_service_uuid16(uuids, ServiceListComplete::Complete)
             .unwrap();
         assert_eq!(
@@ -698,6 +733,10 @@ mod test {
         assert_eq!(
             builder.data.base.appearance,
             Some(AppearanceAdStruct::new(AppearanceValue::GenericUnknown))
+        );
+        assert_eq!(
+            builder.data.base.local_name,
+            Some(LocalNameAdStruct::new("", LocalNameComplete::Complete))
         );
         assert_eq!(
             builder.data.base.service_uuid16,
@@ -713,6 +752,7 @@ mod test {
         let builder = AdvertisingData::builder()
             .with_flags(flags)
             .with_le_supported_features()
+            .with_local_name(LocalNameComplete::Shortened(9))
             .with_service_uuid32(uuids, ServiceListComplete::Incomplete)
             .unwrap();
         assert_eq!(builder.data.flags, Some(FlagsAdStruct::new(flags)));
@@ -721,6 +761,10 @@ mod test {
             Some(LeSupportedFeaturesAdStruct::new(
                 SupportedLeFeatures::default()
             ))
+        );
+        assert_eq!(
+            builder.data.base.local_name,
+            Some(LocalNameAdStruct::new("", LocalNameComplete::Shortened(9)))
         );
         assert_eq!(
             builder.data.base.service_uuid32,
@@ -810,11 +854,11 @@ mod test {
     #[case::empty(advertising_data_builder_empty(), 0, &[])]
     #[case::service_uuid16(
         advertising_data_builder_service_uuid16(),
-        14, &[0x03, 0x1A, 0x00, 0x08, 0x03, 0x19, 0x00, 0x00, 0x05, 0x03, 0x0F, 0x18, 0x10, 0x18]
+        16, &[0x03, 0x1A, 0x00, 0x08, 0x03, 0x19, 0x00, 0x00, 0x01, 0x09, 0x05, 0x03, 0x0F, 0x18, 0x10, 0x18]
     )]
     #[case::service_uuid32(
         advertising_data_builder_service_uuid32(),
-        15, &[0x02, 0x01, 0x06, 0x01, 0x27, 0x09, 0x04, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00]
+        17, &[0x02, 0x01, 0x06, 0x01, 0x27, 0x01, 0x08, 0x09, 0x04, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00]
     )]
     #[case::service_uuid128(
         advertising_data_builder_service_uuid128(),
@@ -869,6 +913,7 @@ mod test {
         let builder = ScanResponseData::builder()
             .with_advertising_interval(AdvertisingIntervalValue::default())
             .with_appearance()
+            .with_local_name(LocalNameComplete::Complete)
             .with_service_uuid16(uuids, ServiceListComplete::Complete)
             .unwrap();
         assert_eq!(
@@ -882,6 +927,10 @@ mod test {
             Some(AppearanceAdStruct::new(AppearanceValue::GenericUnknown))
         );
         assert_eq!(
+            builder.data.base.local_name,
+            Some(LocalNameAdStruct::new("", LocalNameComplete::Complete))
+        );
+        assert_eq!(
             builder.data.base.service_uuid16,
             Some(ServiceUuid16AdStruct::try_new(uuids, ServiceListComplete::Complete).unwrap())
         );
@@ -893,6 +942,7 @@ mod test {
         let uuids = &[Uuid32(0x0000_1803), Uuid32(0x0000_180F)];
         let builder = ScanResponseData::builder()
             .with_le_supported_features()
+            .with_local_name(LocalNameComplete::Shortened(7))
             .with_service_uuid32(uuids, ServiceListComplete::Incomplete)
             .unwrap();
         assert_eq!(
@@ -900,6 +950,10 @@ mod test {
             Some(LeSupportedFeaturesAdStruct::new(
                 SupportedLeFeatures::default()
             ))
+        );
+        assert_eq!(
+            builder.data.base.local_name,
+            Some(LocalNameAdStruct::new("", LocalNameComplete::Shortened(7)))
         );
         assert_eq!(
             builder.data.base.service_uuid32,
@@ -989,11 +1043,11 @@ mod test {
     #[case::empty(scan_response_data_builder_empty(), 0, &[])]
     #[case::service_uuid16(
         scan_response_data_builder_service_uuid16(),
-        14, &[0x03, 0x1A, 0x00, 0x08, 0x03, 0x19, 0x00, 0x00, 0x05, 0x03, 0x0F, 0x18, 0x10, 0x18]
+        16, &[0x03, 0x1A, 0x00, 0x08, 0x03, 0x19, 0x00, 0x00, 0x01, 0x09, 0x05, 0x03, 0x0F, 0x18, 0x10, 0x18]
     )]
     #[case::service_uuid32(
         scan_response_data_builder_service_uuid32(),
-        12, &[0x01, 0x27, 0x09, 0x04, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00]
+        14, &[0x01, 0x27, 0x01, 0x08, 0x09, 0x04, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00]
     )]
     #[case::service_uuid128(
         scan_response_data_builder_service_uuid128(),
@@ -1038,16 +1092,24 @@ mod test {
 
     #[test]
     fn test_full_advertising_data_success() -> Result<(), Error> {
+        let local_name = "bletio";
         let adv_data = AdvertisingData::builder()
             .with_appearance()
             .with_tx_power_level()
             .with_le_supported_features()
+            .with_local_name(LocalNameComplete::Shortened(3))
             .build();
-        let scanresp_data = ScanResponseData::builder().build();
+        let scanresp_data = ScanResponseData::builder()
+            .with_local_name(LocalNameComplete::Complete)
+            .build();
         let full_adv_data = FullAdvertisingData::try_new(adv_data.clone(), scanresp_data.clone())?;
         assert_eq!(
             full_adv_data.adv_data.base.appearance,
             Some(AppearanceAdStruct::new(AppearanceValue::GenericUnknown))
+        );
+        assert_eq!(
+            full_adv_data.adv_data.base.local_name,
+            Some(LocalNameAdStruct::new("", LocalNameComplete::Shortened(3)))
         );
         assert_eq!(
             full_adv_data.adv_data.base.tx_power_level,
@@ -1059,6 +1121,15 @@ mod test {
                 SupportedLeFeatures::default()
             ))
         );
+        assert_eq!(
+            full_adv_data
+                .scanresp_data
+                .as_ref()
+                .unwrap()
+                .base
+                .local_name,
+            Some(LocalNameAdStruct::new("", LocalNameComplete::Complete))
+        );
         assert_eq!(full_adv_data.adv_data, adv_data);
         assert_eq!(full_adv_data.scanresp_data, Some(scanresp_data));
 
@@ -1068,6 +1139,7 @@ mod test {
             SupportedLeFeatures::LE_2M_PHY | SupportedLeFeatures::LE_CODED_PHY;
         let mut device_information = DeviceInformation::default();
         device_information.appearance = appearance;
+        device_information.local_name = "bletio";
         device_information.tx_power_level = tx_power_level;
         device_information.supported_le_features = supported_le_features;
         let filled_full_adv_data = full_adv_data.fill_automatic_data(&device_information);
@@ -1076,12 +1148,31 @@ mod test {
             Some(AppearanceAdStruct::new(appearance))
         );
         assert_eq!(
+            filled_full_adv_data.adv_data.base.local_name,
+            Some(LocalNameAdStruct::new(
+                local_name,
+                LocalNameComplete::Shortened(3)
+            ))
+        );
+        assert_eq!(
             filled_full_adv_data.adv_data.base.tx_power_level,
             Some(TxPowerLevelAdStruct::new(tx_power_level))
         );
         assert_eq!(
             filled_full_adv_data.adv_data.base.le_supported_features,
             Some(LeSupportedFeaturesAdStruct::new(supported_le_features))
+        );
+        assert_eq!(
+            filled_full_adv_data
+                .scanresp_data
+                .as_ref()
+                .unwrap()
+                .base
+                .local_name,
+            Some(LocalNameAdStruct::new(
+                local_name,
+                LocalNameComplete::Complete
+            ))
         );
 
         Ok(())
