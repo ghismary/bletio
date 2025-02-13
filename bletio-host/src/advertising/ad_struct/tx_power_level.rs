@@ -17,7 +17,7 @@ pub(crate) struct TxPowerLevelAdStruct {
 }
 
 impl TxPowerLevelAdStruct {
-    pub(crate) fn new(tx_power_level: TxPowerLevel) -> Self {
+    pub(crate) const fn new(tx_power_level: TxPowerLevel) -> Self {
         Self { tx_power_level }
     }
 }

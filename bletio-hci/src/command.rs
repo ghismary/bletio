@@ -112,7 +112,7 @@ impl Command {
         })
     }
 
-    pub(crate) fn opcode(&self) -> CommandOpCode {
+    pub(crate) const fn opcode(&self) -> CommandOpCode {
         match self {
             // Self::LeClearFilterAcceptList => CommandOpCode::LeClearFilterAcceptList,
             Self::LeRand => CommandOpCode::LeRand,

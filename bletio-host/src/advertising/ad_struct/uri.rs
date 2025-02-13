@@ -12,7 +12,7 @@ pub(crate) struct UriAdStruct {
 }
 
 impl UriAdStruct {
-    pub(crate) fn new(uri: Uri) -> Self {
+    pub(crate) const fn new(uri: Uri) -> Self {
         Self { uri }
     }
 }

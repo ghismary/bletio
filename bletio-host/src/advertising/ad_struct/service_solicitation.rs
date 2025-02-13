@@ -17,7 +17,7 @@ pub(crate) struct ServiceSolicitationUuid16AdStruct<'a> {
 }
 
 impl<'a> ServiceSolicitationUuid16AdStruct<'a> {
-    pub(crate) fn new(uuids: &'a [ServiceUuid]) -> Self {
+    pub(crate) const fn new(uuids: &'a [ServiceUuid]) -> Self {
         Self { uuids }
     }
 }
@@ -54,7 +54,7 @@ pub(crate) struct ServiceSolicitationUuid32AdStruct<'a> {
 }
 
 impl<'a> ServiceSolicitationUuid32AdStruct<'a> {
-    pub(crate) fn new(uuids: &'a [Uuid32]) -> Self {
+    pub(crate) const fn new(uuids: &'a [Uuid32]) -> Self {
         Self { uuids }
     }
 }
@@ -91,7 +91,7 @@ pub(crate) struct ServiceSolicitationUuid128AdStruct<'a> {
 }
 
 impl<'a> ServiceSolicitationUuid128AdStruct<'a> {
-    pub(crate) fn new(uuids: &'a [Uuid128]) -> Self {
+    pub(crate) const fn new(uuids: &'a [Uuid128]) -> Self {
         Self { uuids }
     }
 }

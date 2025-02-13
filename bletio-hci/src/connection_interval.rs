@@ -14,19 +14,25 @@ pub struct ConnectionInterval {
 
 impl ConnectionInterval {
     /// Create a connection interval value with a defined value.
-    pub fn try_new(value: u16) -> Result<Self, Error> {
-        value.try_into()
+    pub const fn try_new(value: u16) -> Result<Self, Error> {
+        if (value >= 0x0006) && (value <= 0x0C80) {
+            Ok(Self {
+                value: ConnectionIntervalType::Defined(value),
+            })
+        } else {
+            Err(Error::InvalidConnectionIntervalValue(value))
+        }
     }
 
     /// Create an undefined connection interval value.
-    pub fn undefined() -> Self {
+    pub const fn undefined() -> Self {
         Self {
             value: ConnectionIntervalType::Undefined,
         }
     }
 
     /// Get the value of the connection interval value in milliseconds.
-    pub fn milliseconds(&self) -> Option<f32> {
+    pub const fn milliseconds(&self) -> Option<f32> {
         match self.value {
             ConnectionIntervalType::Defined(value) => Some(value as f32 * 1.25),
             ConnectionIntervalType::Undefined => None,
@@ -44,13 +50,7 @@ impl TryFrom<u16> for ConnectionInterval {
     type Error = Error;
 
     fn try_from(value: u16) -> Result<Self, Self::Error> {
-        if (0x0006..=0x0C80).contains(&value) {
-            Ok(Self {
-                value: ConnectionIntervalType::Defined(value),
-            })
-        } else {
-            Err(Error::InvalidConnectionIntervalValue(value))
-        }
+        Self::try_new(value)
     }
 }
 

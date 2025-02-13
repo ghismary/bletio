@@ -9,11 +9,15 @@ pub struct TxPowerLevel {
 }
 
 impl TxPowerLevel {
-    pub fn try_new(value: i8) -> Result<Self, Error> {
-        value.try_into()
+    pub const fn try_new(value: i8) -> Result<Self, Error> {
+        if value > 20 {
+            Err(Error::InvalidTxPowerLevelValue(value))
+        } else {
+            Ok(Self { value })
+        }
     }
 
-    pub fn value(&self) -> i8 {
+    pub const fn value(&self) -> i8 {
         self.value
     }
 }
@@ -22,11 +26,7 @@ impl TryFrom<i8> for TxPowerLevel {
     type Error = Error;
 
     fn try_from(value: i8) -> Result<Self, Error> {
-        if value > 20 {
-            Err(Error::InvalidTxPowerLevelValue(value))
-        } else {
-            Ok(Self { value })
-        }
+        Self::try_new(value)
     }
 }
 

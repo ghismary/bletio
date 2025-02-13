@@ -188,7 +188,7 @@ pub enum ErrorCode {
 }
 
 impl ErrorCode {
-    pub fn is_success(&self) -> bool {
+    pub const fn is_success(&self) -> bool {
         matches!(self, Self::Success)
     }
 }

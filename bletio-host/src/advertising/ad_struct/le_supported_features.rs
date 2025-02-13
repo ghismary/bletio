@@ -16,7 +16,7 @@ pub(crate) struct LeSupportedFeaturesAdStruct {
 }
 
 impl LeSupportedFeaturesAdStruct {
-    pub(crate) fn new(features: SupportedLeFeatures) -> Self {
+    pub(crate) const fn new(features: SupportedLeFeatures) -> Self {
         Self { features }
     }
 

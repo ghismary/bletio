@@ -23,7 +23,6 @@ pub(crate) enum PacketType {
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum Packet {
-    #[allow(dead_code)]
     Command(Command),
     Event(Event),
 }

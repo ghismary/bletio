@@ -17,7 +17,7 @@ pub(crate) struct AdvertisingIntervalAdStruct {
 }
 
 impl AdvertisingIntervalAdStruct {
-    pub(crate) fn new(interval: AdvertisingIntervalValue) -> Self {
+    pub(crate) const fn new(interval: AdvertisingIntervalValue) -> Self {
         Self { interval }
     }
 }

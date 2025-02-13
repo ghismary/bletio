@@ -22,14 +22,14 @@ pub struct LocalNameAdStruct<'a> {
 }
 
 impl<'a> LocalNameAdStruct<'a> {
-    pub(crate) fn new(local_name: &'a str, complete: LocalNameComplete) -> Self {
+    pub(crate) const fn new(local_name: &'a str, complete: LocalNameComplete) -> Self {
         Self {
             local_name,
             complete,
         }
     }
 
-    fn len(&self) -> usize {
+    const fn len(&self) -> usize {
         match self.complete {
             LocalNameComplete::Complete => self.local_name.len(),
             LocalNameComplete::Shortened(len) => {

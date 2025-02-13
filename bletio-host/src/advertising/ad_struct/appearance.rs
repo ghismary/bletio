@@ -16,7 +16,7 @@ pub struct AppearanceAdStruct {
 }
 
 impl AppearanceAdStruct {
-    pub(crate) fn new(appearance: AppearanceValue) -> Self {
+    pub(crate) const fn new(appearance: AppearanceValue) -> Self {
         Self { appearance }
     }
 }

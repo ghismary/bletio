@@ -17,7 +17,7 @@ pub(crate) struct PeripheralConnectionIntervalRangeAdStruct {
 }
 
 impl PeripheralConnectionIntervalRangeAdStruct {
-    pub(crate) fn new(range: RangeInclusive<ConnectionInterval>) -> Self {
+    pub(crate) const fn new(range: RangeInclusive<ConnectionInterval>) -> Self {
         Self { range }
     }
 }

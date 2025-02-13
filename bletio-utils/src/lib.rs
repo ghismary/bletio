@@ -12,7 +12,7 @@ pub enum Error {
     BufferTooSmall,
 }
 
-pub(crate) fn encode_le_u128(buffer: &mut [u8], data: u128) -> Result<usize, Error> {
+pub(crate) const fn encode_le_u128(buffer: &mut [u8], data: u128) -> Result<usize, Error> {
     if buffer.len() < 16 {
         Err(Error::BufferTooSmall)
     } else {
@@ -36,7 +36,7 @@ pub(crate) fn encode_le_u128(buffer: &mut [u8], data: u128) -> Result<usize, Err
     }
 }
 
-pub(crate) fn encode_le_u64(buffer: &mut [u8], data: u64) -> Result<usize, Error> {
+pub(crate) const fn encode_le_u64(buffer: &mut [u8], data: u64) -> Result<usize, Error> {
     if buffer.len() < 8 {
         Err(Error::BufferTooSmall)
     } else {
@@ -52,7 +52,7 @@ pub(crate) fn encode_le_u64(buffer: &mut [u8], data: u64) -> Result<usize, Error
     }
 }
 
-pub(crate) fn encode_le_u32(buffer: &mut [u8], data: u32) -> Result<usize, Error> {
+pub(crate) const fn encode_le_u32(buffer: &mut [u8], data: u32) -> Result<usize, Error> {
     if buffer.len() < 4 {
         Err(Error::BufferTooSmall)
     } else {
@@ -64,7 +64,7 @@ pub(crate) fn encode_le_u32(buffer: &mut [u8], data: u32) -> Result<usize, Error
     }
 }
 
-pub(crate) fn encode_le_u16(buffer: &mut [u8], data: u16) -> Result<usize, Error> {
+pub(crate) const fn encode_le_u16(buffer: &mut [u8], data: u16) -> Result<usize, Error> {
     if buffer.len() < 2 {
         Err(Error::BufferTooSmall)
     } else {

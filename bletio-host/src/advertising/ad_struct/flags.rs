@@ -18,7 +18,7 @@ pub(crate) struct FlagsAdStruct {
 }
 
 impl FlagsAdStruct {
-    pub(crate) fn new(flags: Flags) -> Self {
+    pub(crate) const fn new(flags: Flags) -> Self {
         Self { flags }
     }
 }
