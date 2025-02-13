@@ -6,6 +6,7 @@ use bletio_utils::{BufferOps, EncodeToBuffer};
 use crate::advertising::ad_struct::{
     AdvertisingIntervalAdStruct, AppearanceAdStruct, FlagsAdStruct, LeSupportedFeaturesAdStruct,
     LocalNameAdStruct, ManufacturerSpecificDataAdStruct, PeripheralConnectionIntervalRangeAdStruct,
+    ServiceDataUuid128AdStruct, ServiceDataUuid16AdStruct, ServiceDataUuid32AdStruct,
     ServiceSolicitationUuid128AdStruct, ServiceSolicitationUuid16AdStruct,
     ServiceSolicitationUuid32AdStruct, ServiceUuid128AdStruct, ServiceUuid16AdStruct,
     ServiceUuid32AdStruct, TxPowerLevelAdStruct, UriAdStruct,
@@ -144,6 +145,39 @@ impl<'a> AdvertisingDataBuilder<'a> {
         self
     }
 
+    /// Add a Service Data for a 16-bit Service UUID Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `uuid` — The 16-bit Service UUID to put in the added Service Data Advertising Structure.
+    /// * `data` — The data to put in the added Service Data Advertising Structure.
+    pub fn with_service_data_uuid16(mut self, uuid: ServiceUuid, data: &'a [u8]) -> Self {
+        self.data.base.service_data_uuid16 = Some(ServiceDataUuid16AdStruct::new(uuid, data));
+        self
+    }
+
+    /// Add a Service Data for a 32-bit Service UUID Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `uuid` — The 32-bit Service UUID to put in the added Service Data Advertising Structure.
+    /// * `data` — The data to put in the added Service Data Advertising Structure.
+    pub fn with_service_data_uuid32(mut self, uuid: Uuid32, data: &'a [u8]) -> Self {
+        self.data.base.service_data_uuid32 = Some(ServiceDataUuid32AdStruct::new(uuid, data));
+        self
+    }
+
+    /// Add a Service Data for a 128-bit Service UUID Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `uuid` — The 128-bit Service UUID to put in the added Service Data Advertising Structure.
+    /// * `data` — The data to put in the added Service Data Advertising Structure.
+    pub fn with_service_data_uuid128(mut self, uuid: Uuid128, data: &'a [u8]) -> Self {
+        self.data.base.service_data_uuid128 = Some(ServiceDataUuid128AdStruct::new(uuid, data));
+        self
+    }
+
     /// Add a list of 16-bit Service Solicitation UUIDs Advertising Structure to the `AdvertisingData`.
     ///
     /// # Arguments
@@ -256,6 +290,9 @@ pub struct AdvertisingDataBase<'a> {
     local_name: Option<LocalNameAdStruct<'a>>,
     manufacturer_specific_data: Option<ManufacturerSpecificDataAdStruct<'a>>,
     peripheral_connection_interval: Option<PeripheralConnectionIntervalRangeAdStruct>,
+    service_data_uuid16: Option<ServiceDataUuid16AdStruct<'a>>,
+    service_data_uuid32: Option<ServiceDataUuid32AdStruct<'a>>,
+    service_data_uuid128: Option<ServiceDataUuid128AdStruct<'a>>,
     service_uuid16: Option<ServiceUuid16AdStruct<'a>>,
     service_uuid32: Option<ServiceUuid32AdStruct<'a>>,
     service_uuid128: Option<ServiceUuid128AdStruct<'a>>,
@@ -309,6 +346,15 @@ impl EncodeToBuffer for AdvertisingDataBase<'_> {
         if let Some(data) = self.manufacturer_specific_data.as_ref() {
             data.encode(buffer)?;
         }
+        if let Some(service_data_uuid16) = self.service_data_uuid16.as_ref() {
+            service_data_uuid16.encode(buffer)?;
+        }
+        if let Some(service_data_uuid32) = self.service_data_uuid32.as_ref() {
+            service_data_uuid32.encode(buffer)?;
+        }
+        if let Some(service_data_uuid128) = self.service_data_uuid128.as_ref() {
+            service_data_uuid128.encode(buffer)?;
+        }
         if let Some(service_solicitation_uuid16) = self.service_solicitation_uuid16.as_ref() {
             service_solicitation_uuid16.encode(buffer)?;
         }
@@ -355,6 +401,15 @@ impl EncodeToBuffer for AdvertisingDataBase<'_> {
         }
         if let Some(data) = self.manufacturer_specific_data.as_ref() {
             len += data.encoded_size();
+        }
+        if let Some(service_data_uuid16) = self.service_data_uuid16.as_ref() {
+            len += service_data_uuid16.encoded_size();
+        }
+        if let Some(service_data_uuid32) = self.service_data_uuid32.as_ref() {
+            len += service_data_uuid32.encoded_size();
+        }
+        if let Some(service_data_uuid128) = self.service_data_uuid128.as_ref() {
+            len += service_data_uuid128.encoded_size();
         }
         if let Some(service_solicitation_uuid16) = self.service_solicitation_uuid16.as_ref() {
             len += service_solicitation_uuid16.encoded_size();
@@ -482,7 +537,7 @@ impl<'a> ScanResponseDataBuilder<'a> {
         self
     }
 
-    /// Add a Local Name Advertising Structure to the `AdvertisingData`.
+    /// Add a Local Name Advertising Structure to the `ScanResponseData`.
     ///
     /// # Arguments
     ///
@@ -519,6 +574,39 @@ impl<'a> ScanResponseDataBuilder<'a> {
     ) -> Self {
         self.data.base.peripheral_connection_interval =
             Some(PeripheralConnectionIntervalRangeAdStruct::new(range));
+        self
+    }
+
+    /// Add a Service Data for a 16-bit Service UUID Advertising Structure to the `ScanResponseData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `uuid` — The 16-bit Service UUID to put in the added Service Data Advertising Structure.
+    /// * `data` — The data to put in the added Service Data Advertising Structure.
+    pub fn with_service_data_uuid16(mut self, uuid: ServiceUuid, data: &'a [u8]) -> Self {
+        self.data.base.service_data_uuid16 = Some(ServiceDataUuid16AdStruct::new(uuid, data));
+        self
+    }
+
+    /// Add a Service Data for a 32-bit Service UUID Advertising Structure to the `ScanResponseData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `uuid` — The 32-bit Service UUID to put in the added Service Data Advertising Structure.
+    /// * `data` — The data to put in the added Service Data Advertising Structure.
+    pub fn with_service_data_uuid32(mut self, uuid: Uuid32, data: &'a [u8]) -> Self {
+        self.data.base.service_data_uuid32 = Some(ServiceDataUuid32AdStruct::new(uuid, data));
+        self
+    }
+
+    /// Add a Service Data for a 128-bit Service UUID Advertising Structure to the `ScanResponseData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `uuid` — The 128-bit Service UUID to put in the added Service Data Advertising Structure.
+    /// * `data` — The data to put in the added Service Data Advertising Structure.
+    pub fn with_service_data_uuid128(mut self, uuid: Uuid128, data: &'a [u8]) -> Self {
+        self.data.base.service_data_uuid128 = Some(ServiceDataUuid128AdStruct::new(uuid, data));
         self
     }
 
@@ -691,6 +779,9 @@ mod test {
         assert_eq!(adv_data_base.local_name, None);
         assert_eq!(adv_data_base.manufacturer_specific_data, None);
         assert_eq!(adv_data_base.peripheral_connection_interval, None);
+        assert_eq!(adv_data_base.service_data_uuid16, None);
+        assert_eq!(adv_data_base.service_data_uuid32, None);
+        assert_eq!(adv_data_base.service_data_uuid128, None);
         assert_eq!(adv_data_base.service_uuid16, None);
         assert_eq!(adv_data_base.service_uuid32, None);
         assert_eq!(adv_data_base.service_uuid128, None);
@@ -722,6 +813,7 @@ mod test {
             .with_advertising_interval(AdvertisingIntervalValue::default())
             .with_appearance()
             .with_local_name(LocalNameComplete::Complete)
+            .with_service_data_uuid16(ServiceUuid::Battery, &[0x50, 0x84, 0x91, 0xAF])
             .with_service_uuid16(uuids, ServiceListComplete::Complete)
             .unwrap();
         assert_eq!(
@@ -821,6 +913,7 @@ mod test {
         let uuids = &[Uuid32(0x0000_1803), Uuid32(0x0000_180F)];
         let builder = AdvertisingData::builder()
             .with_manufacturer_specific_data(CompanyIdentifier::StMicroelectronics, data)
+            .with_service_data_uuid32(Uuid32(0x0000_1803), &[0x50, 0x84, 0x91, 0xAF])
             .with_service_solicitation_uuid32(uuids)
             .unwrap();
         assert_eq!(
@@ -850,11 +943,24 @@ mod test {
         builder.build()
     }
 
+    #[fixture]
+    fn advertising_data_builder_service_data_uuid128<'a>() -> AdvertisingData<'a> {
+        let uuid = Uuid128(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640);
+        let data: &[u8] = &[0x50, 0x84, 0x91, 0xAF];
+        let builder = AdvertisingData::builder().with_service_data_uuid128(uuid, data);
+        assert_eq!(
+            builder.data.base.service_data_uuid128,
+            Some(ServiceDataUuid128AdStruct::new(uuid, data))
+        );
+        builder.build()
+    }
+
     #[rstest]
     #[case::empty(advertising_data_builder_empty(), 0, &[])]
     #[case::service_uuid16(
         advertising_data_builder_service_uuid16(),
-        16, &[0x03, 0x1A, 0x00, 0x08, 0x03, 0x19, 0x00, 0x00, 0x01, 0x09, 0x05, 0x03, 0x0F, 0x18, 0x10, 0x18]
+        24, &[0x03, 0x1A, 0x00, 0x08, 0x03, 0x19, 0x00, 0x00, 0x01, 0x09, 0x07, 0x16, 0x0F, 0x18,
+            0x50, 0x84, 0x91, 0xAF, 0x05, 0x03, 0x0F, 0x18, 0x10, 0x18]
     )]
     #[case::service_uuid32(
         advertising_data_builder_service_uuid32(),
@@ -872,11 +978,16 @@ mod test {
     )]
     #[case::service_solicitation_uuid32(
         advertising_data_builder_service_solicitation_uuid32(),
-        19, &[0x08, 0xFF, 0x30, 0x00, 0x9E, 0xF5, 0x40, 0x7C, 0x0F, 0x09, 0x1F, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00]
+        29, &[0x08, 0xFF, 0x30, 0x00, 0x9E, 0xF5, 0x40, 0x7C, 0x0F, 0x09, 0x20, 0x03, 0x18, 0x00,
+            0x00, 0x50, 0x84, 0x91, 0xAF, 0x09, 0x1F, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00]
     )]
     #[case::service_solicitation_uuid128(
         advertising_data_builder_service_solicitation_uuid128(),
         18, &[0x11, 0x15, 0x40, 0xD6, 0x6E, 0xFD, 0xD0, 0x11, 0x2C, 0xAD, 0x9E, 0x4C, 0x7D, 0x22, 0x7E, 0x28, 0xA1, 0xF5]
+    )]
+    #[case::service_data_uuid128(
+        advertising_data_builder_service_data_uuid128(),
+        22, &[0x15, 0x21, 0x40, 0xD6, 0x6E, 0xFD, 0xD0, 0x11, 0x2C, 0xAD, 0x9E, 0x4C, 0x7D, 0x22, 0x7E, 0x28, 0xA1, 0xF5, 0x50, 0x84, 0x91, 0xAF]
     )]
     fn test_advertising_data_builder(
         #[case] adv_data: AdvertisingData,
@@ -914,6 +1025,7 @@ mod test {
             .with_advertising_interval(AdvertisingIntervalValue::default())
             .with_appearance()
             .with_local_name(LocalNameComplete::Complete)
+            .with_service_data_uuid16(ServiceUuid::Battery, &[0x50, 0x84, 0x91, 0xAF])
             .with_service_uuid16(uuids, ServiceListComplete::Complete)
             .unwrap();
         assert_eq!(
@@ -1010,6 +1122,7 @@ mod test {
         let uuids = &[Uuid32(0x0000_1803), Uuid32(0x0000_180F)];
         let builder = ScanResponseData::builder()
             .with_manufacturer_specific_data(CompanyIdentifier::StMicroelectronics, data)
+            .with_service_data_uuid32(Uuid32(0x0000_1803), &[0x50, 0x84, 0x91, 0xAF])
             .with_service_solicitation_uuid32(uuids)
             .unwrap();
         assert_eq!(
@@ -1039,11 +1152,24 @@ mod test {
         builder.build()
     }
 
+    #[fixture]
+    fn scan_response_data_builder_service_data_uuid128<'a>() -> ScanResponseData<'a> {
+        let uuid = Uuid128(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640);
+        let data: &[u8] = &[0x50, 0x84, 0x91, 0xAF];
+        let builder = ScanResponseData::builder().with_service_data_uuid128(uuid, data);
+        assert_eq!(
+            builder.data.base.service_data_uuid128,
+            Some(ServiceDataUuid128AdStruct::new(uuid, data))
+        );
+        builder.build()
+    }
+
     #[rstest]
     #[case::empty(scan_response_data_builder_empty(), 0, &[])]
     #[case::service_uuid16(
         scan_response_data_builder_service_uuid16(),
-        16, &[0x03, 0x1A, 0x00, 0x08, 0x03, 0x19, 0x00, 0x00, 0x01, 0x09, 0x05, 0x03, 0x0F, 0x18, 0x10, 0x18]
+        24, &[0x03, 0x1A, 0x00, 0x08, 0x03, 0x19, 0x00, 0x00, 0x01, 0x09, 0x07, 0x16, 0x0F, 0x18,
+            0x50, 0x84, 0x91, 0xAF, 0x05, 0x03, 0x0F, 0x18, 0x10, 0x18]
     )]
     #[case::service_uuid32(
         scan_response_data_builder_service_uuid32(),
@@ -1061,11 +1187,16 @@ mod test {
     )]
     #[case::service_solicitation_uuid32(
         scan_response_data_builder_service_solicitation_uuid32(),
-        19, &[0x08, 0xFF, 0x30, 0x00, 0x9E, 0xF5, 0x40, 0x7C, 0x0F, 0x09, 0x1F, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00]
+        29, &[0x08, 0xFF, 0x30, 0x00, 0x9E, 0xF5, 0x40, 0x7C, 0x0F, 0x09, 0x20, 0x03, 0x18, 0x00,
+            0x00, 0x50, 0x84, 0x91, 0xAF, 0x09, 0x1F, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00]
     )]
     #[case::service_solicitation_uuid128(
         scan_response_data_builder_service_solicitation_uuid128(),
         18, &[0x11, 0x15, 0x40, 0xD6, 0x6E, 0xFD, 0xD0, 0x11, 0x2C, 0xAD, 0x9E, 0x4C, 0x7D, 0x22, 0x7E, 0x28, 0xA1, 0xF5]
+    )]
+    #[case::service_data_uuid128(
+        scan_response_data_builder_service_data_uuid128(),
+        22, &[0x15, 0x21, 0x40, 0xD6, 0x6E, 0xFD, 0xD0, 0x11, 0x2C, 0xAD, 0x9E, 0x4C, 0x7D, 0x22, 0x7E, 0x28, 0xA1, 0xF5, 0x50, 0x84, 0x91, 0xAF]
     )]
     fn test_scan_response_data_builder(
         #[case] scanresp_data: ScanResponseData,
