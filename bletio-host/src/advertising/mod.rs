@@ -37,6 +37,9 @@ pub enum AdvertisingError {
     /// An empty service UUID list Advertising Structure needs to be complete.
     #[error("An empty service UUID list Advertising Structure needs to be complete")]
     EmptyServiceUuidListShallBeComplete,
+    /// The Public Target Address Advertising Structure must contain at least one address.
+    #[error("The Public Target Address Advertising Structure must contain at least one address")]
+    PublicTargetAddressAdStructMustContainAtLeastOneAddress,
     /// The advertising parameters are not valid, probably because the advertising type is ScannableUndirected or NonConnectableUndirected, and the minimum advertising interval value is less than 0x00A0.
     #[error("The advertising parameters are not valid, probably because the advertising type is ScannableUndirected or NonConnectableUndirected, and the minimum advertising interval value is less than 0x00A0")]
     InvalidAdvertisingParameters,

@@ -21,7 +21,7 @@ pub enum DeviceAddress {
 }
 
 impl DeviceAddress {
-    pub fn value(&self) -> &[u8; 6] {
+    pub const fn value(&self) -> &[u8; 6] {
         match self {
             Self::Public(address) => address.value(),
             Self::Random(address) => address.value(),
@@ -83,18 +83,20 @@ pub struct PublicDeviceAddress {
 
 impl PublicDeviceAddress {
     /// Create a public device address.
-    pub fn new(address: [u8; 6]) -> Self {
-        address.into()
+    pub const fn new(address: [u8; 6]) -> Self {
+        Self {
+            base: AddressBase { value: address },
+        }
     }
 
-    pub fn value(&self) -> &[u8; 6] {
+    pub const fn value(&self) -> &[u8; 6] {
         &self.base.value
     }
 }
 
 impl From<[u8; 6]> for PublicDeviceAddress {
     fn from(value: [u8; 6]) -> Self {
-        Self { base: value.into() }
+        Self::new(value)
     }
 }
 
@@ -108,6 +110,19 @@ impl TryFrom<&str> for PublicDeviceAddress {
     }
 }
 
+impl EncodeToBuffer for PublicDeviceAddress {
+    fn encode<B: bletio_utils::BufferOps>(
+        &self,
+        buffer: &mut B,
+    ) -> Result<usize, bletio_utils::Error> {
+        buffer.copy_from_slice(&self.base.value)
+    }
+
+    fn encoded_size(&self) -> usize {
+        6
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RandomAddress {
     Static(RandomStaticDeviceAddress),
@@ -116,7 +131,7 @@ pub enum RandomAddress {
 }
 
 impl RandomAddress {
-    pub fn value(&self) -> &[u8; 6] {
+    pub const fn value(&self) -> &[u8; 6] {
         match self {
             Self::Static(address) => address.value(),
             Self::ResolvablePrivate(address) => address.value(),
@@ -185,7 +200,7 @@ impl RandomStaticDeviceAddress {
         bytes.try_into()
     }
 
-    pub fn value(&self) -> &[u8; 6] {
+    pub const fn value(&self) -> &[u8; 6] {
         &self.base.value
     }
 }
@@ -228,7 +243,7 @@ impl RandomResolvablePrivateAddress {
         address.try_into()
     }
 
-    pub fn value(&self) -> &[u8; 6] {
+    pub const fn value(&self) -> &[u8; 6] {
         &self.base.value
     }
 }
@@ -258,7 +273,7 @@ impl RandomNonResolvablePrivateAddress {
         address.try_into()
     }
 
-    pub fn value(&self) -> &[u8; 6] {
+    pub const fn value(&self) -> &[u8; 6] {
         &self.base.value
     }
 }
@@ -351,6 +366,10 @@ mod test {
     fn test_public_device_address(#[case] input: [u8; 6]) {
         let address = PublicDeviceAddress::new(input);
         assert_eq!(address.value(), &input);
+        let mut buffer = Buffer::<6>::default();
+        assert_eq!(address.encoded_size(), input.len());
+        address.encode(&mut buffer).unwrap();
+        assert_eq!(buffer.data(), input);
         let address: DeviceAddress = address.into();
         assert!(matches!(address, DeviceAddress::Public(_)));
         assert_eq!(address.value(), &input);

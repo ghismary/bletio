@@ -1,15 +1,18 @@
 use core::ops::RangeInclusive;
 
-use bletio_hci::{AdvertisingIntervalValue, ConnectionInterval, SupportedLeFeatures, TxPowerLevel};
+use bletio_hci::{
+    AdvertisingIntervalValue, ConnectionInterval, PublicDeviceAddress, SupportedLeFeatures,
+    TxPowerLevel,
+};
 use bletio_utils::{BufferOps, EncodeToBuffer};
 
 use crate::advertising::ad_struct::{
     AdvertisingIntervalAdStruct, AppearanceAdStruct, FlagsAdStruct, LeSupportedFeaturesAdStruct,
     LocalNameAdStruct, ManufacturerSpecificDataAdStruct, PeripheralConnectionIntervalRangeAdStruct,
-    ServiceDataUuid128AdStruct, ServiceDataUuid16AdStruct, ServiceDataUuid32AdStruct,
-    ServiceSolicitationUuid128AdStruct, ServiceSolicitationUuid16AdStruct,
-    ServiceSolicitationUuid32AdStruct, ServiceUuid128AdStruct, ServiceUuid16AdStruct,
-    ServiceUuid32AdStruct, TxPowerLevelAdStruct, UriAdStruct,
+    PublicTargetAddressAdStruct, ServiceDataUuid128AdStruct, ServiceDataUuid16AdStruct,
+    ServiceDataUuid32AdStruct, ServiceSolicitationUuid128AdStruct,
+    ServiceSolicitationUuid16AdStruct, ServiceSolicitationUuid32AdStruct, ServiceUuid128AdStruct,
+    ServiceUuid16AdStruct, ServiceUuid32AdStruct, TxPowerLevelAdStruct, UriAdStruct,
 };
 use crate::advertising::{AdvertisingError, Flags, LocalNameComplete, ServiceListComplete, Uri};
 use crate::assigned_numbers::{AppearanceValue, CompanyIdentifier, ServiceUuid};
@@ -143,6 +146,20 @@ impl<'a> AdvertisingDataBuilder<'a> {
         self.data.base.peripheral_connection_interval =
             Some(PeripheralConnectionIntervalRangeAdStruct::new(range));
         self
+    }
+
+    /// Add a Public Target Address Advertising Structure to the `AdvertisingData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `addresses` — The list of public device addresses to put in the added Public Target Address Advertising Structure.
+    pub fn with_public_target_address(
+        mut self,
+        addresses: &'a [PublicDeviceAddress],
+    ) -> Result<Self, AdvertisingError> {
+        self.data.base.public_target_address =
+            Some(PublicTargetAddressAdStruct::try_new(addresses)?);
+        Ok(self)
     }
 
     /// Add a Service Data for a 16-bit Service UUID Advertising Structure to the `AdvertisingData`.
@@ -290,6 +307,7 @@ pub struct AdvertisingDataBase<'a> {
     local_name: Option<LocalNameAdStruct<'a>>,
     manufacturer_specific_data: Option<ManufacturerSpecificDataAdStruct<'a>>,
     peripheral_connection_interval: Option<PeripheralConnectionIntervalRangeAdStruct>,
+    public_target_address: Option<PublicTargetAddressAdStruct<'a>>,
     service_data_uuid16: Option<ServiceDataUuid16AdStruct<'a>>,
     service_data_uuid32: Option<ServiceDataUuid32AdStruct<'a>>,
     service_data_uuid128: Option<ServiceDataUuid128AdStruct<'a>>,
@@ -346,6 +364,9 @@ impl EncodeToBuffer for AdvertisingDataBase<'_> {
         if let Some(data) = self.manufacturer_specific_data.as_ref() {
             data.encode(buffer)?;
         }
+        if let Some(addresses) = self.public_target_address.as_ref() {
+            addresses.encode(buffer)?;
+        }
         if let Some(service_data_uuid16) = self.service_data_uuid16.as_ref() {
             service_data_uuid16.encode(buffer)?;
         }
@@ -401,6 +422,9 @@ impl EncodeToBuffer for AdvertisingDataBase<'_> {
         }
         if let Some(data) = self.manufacturer_specific_data.as_ref() {
             len += data.encoded_size();
+        }
+        if let Some(addresses) = self.public_target_address.as_ref() {
+            len += addresses.encoded_size();
         }
         if let Some(service_data_uuid16) = self.service_data_uuid16.as_ref() {
             len += service_data_uuid16.encoded_size();
@@ -575,6 +599,20 @@ impl<'a> ScanResponseDataBuilder<'a> {
         self.data.base.peripheral_connection_interval =
             Some(PeripheralConnectionIntervalRangeAdStruct::new(range));
         self
+    }
+
+    /// Add a Public Target Address Advertising Structure to the `ScanResponseData`.
+    ///
+    /// # Arguments
+    ///
+    /// * `addresses` — The list of public device addresses to put in the added Public Target Address Advertising Structure.
+    pub fn with_public_target_address(
+        mut self,
+        addresses: &'a [PublicDeviceAddress],
+    ) -> Result<Self, AdvertisingError> {
+        self.data.base.public_target_address =
+            Some(PublicTargetAddressAdStruct::try_new(addresses)?);
+        Ok(self)
     }
 
     /// Add a Service Data for a 16-bit Service UUID Advertising Structure to the `ScanResponseData`.
@@ -779,6 +817,7 @@ mod test {
         assert_eq!(adv_data_base.local_name, None);
         assert_eq!(adv_data_base.manufacturer_specific_data, None);
         assert_eq!(adv_data_base.peripheral_connection_interval, None);
+        assert_eq!(adv_data_base.public_target_address, None);
         assert_eq!(adv_data_base.service_data_uuid16, None);
         assert_eq!(adv_data_base.service_data_uuid32, None);
         assert_eq!(adv_data_base.service_data_uuid128, None);
@@ -841,10 +880,15 @@ mod test {
     fn advertising_data_builder_service_uuid32<'a>() -> AdvertisingData<'a> {
         let flags = Flags::BREDR_NOT_SUPPORTED | Flags::LE_GENERAL_DISCOVERABLE_MODE;
         let uuids = &[Uuid32(0x0000_1803), Uuid32(0x0000_180F)];
+        const ADDRESSES: &[PublicDeviceAddress] = &[PublicDeviceAddress::new([
+            0xF4, 0x23, 0x14, 0xC3, 0xDC, 0x24,
+        ])];
         let builder = AdvertisingData::builder()
             .with_flags(flags)
             .with_le_supported_features()
             .with_local_name(LocalNameComplete::Shortened(9))
+            .with_public_target_address(ADDRESSES)
+            .unwrap()
             .with_service_uuid32(uuids, ServiceListComplete::Incomplete)
             .unwrap();
         assert_eq!(builder.data.flags, Some(FlagsAdStruct::new(flags)));
@@ -857,6 +901,10 @@ mod test {
         assert_eq!(
             builder.data.base.local_name,
             Some(LocalNameAdStruct::new("", LocalNameComplete::Shortened(9)))
+        );
+        assert_eq!(
+            builder.data.base.public_target_address,
+            Some(PublicTargetAddressAdStruct::try_new(ADDRESSES).unwrap())
         );
         assert_eq!(
             builder.data.base.service_uuid32,
@@ -964,7 +1012,8 @@ mod test {
     )]
     #[case::service_uuid32(
         advertising_data_builder_service_uuid32(),
-        17, &[0x02, 0x01, 0x06, 0x01, 0x27, 0x01, 0x08, 0x09, 0x04, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00]
+        25, &[0x02, 0x01, 0x06, 0x01, 0x27, 0x01, 0x08, 0x07, 0x17, 0xF4, 0x23, 0x14, 0xC3, 0xDC, 0x24,
+            0x09, 0x04, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00]
     )]
     #[case::service_uuid128(
         advertising_data_builder_service_uuid128(),
@@ -1052,9 +1101,14 @@ mod test {
     #[fixture]
     fn scan_response_data_builder_service_uuid32<'a>() -> ScanResponseData<'a> {
         let uuids = &[Uuid32(0x0000_1803), Uuid32(0x0000_180F)];
+        const ADDRESSES: &[PublicDeviceAddress] = &[PublicDeviceAddress::new([
+            0xF4, 0x23, 0x14, 0xC3, 0xDC, 0x24,
+        ])];
         let builder = ScanResponseData::builder()
             .with_le_supported_features()
             .with_local_name(LocalNameComplete::Shortened(7))
+            .with_public_target_address(ADDRESSES)
+            .unwrap()
             .with_service_uuid32(uuids, ServiceListComplete::Incomplete)
             .unwrap();
         assert_eq!(
@@ -1066,6 +1120,10 @@ mod test {
         assert_eq!(
             builder.data.base.local_name,
             Some(LocalNameAdStruct::new("", LocalNameComplete::Shortened(7)))
+        );
+        assert_eq!(
+            builder.data.base.public_target_address,
+            Some(PublicTargetAddressAdStruct::try_new(ADDRESSES).unwrap())
         );
         assert_eq!(
             builder.data.base.service_uuid32,
@@ -1173,7 +1231,7 @@ mod test {
     )]
     #[case::service_uuid32(
         scan_response_data_builder_service_uuid32(),
-        14, &[0x01, 0x27, 0x01, 0x08, 0x09, 0x04, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00]
+        22, &[0x01, 0x27, 0x01, 0x08, 0x07, 0x17, 0xF4, 0x23, 0x14, 0xC3, 0xDC, 0x24, 0x09, 0x04, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00]
     )]
     #[case::service_uuid128(
         scan_response_data_builder_service_uuid128(),
