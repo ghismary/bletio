@@ -5,15 +5,15 @@
 use bitflags::bitflags;
 use bletio_utils::{BufferOps, EncodeToBuffer, Error as UtilsError};
 use core::ops::RangeInclusive;
-use num_enum::TryFromPrimitive;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 
-use crate::{DeviceAddress, Error};
+use crate::{DeviceAddress, Error, OwnAddressType};
 
-/// Advertising interval value.
+/// Advertising interval.
 ///
 /// Used for undirected and low duty cycle directed advertising.
 ///
-/// Here are the characteristics of this advertising interval value:
+/// Here are the characteristics of this advertising interval:
 ///  - Range: 0x0020 to 0x4000
 ///  - Default: 0x0800 (1.28 s)
 ///  - Time = N × 0.625 ms
@@ -21,21 +21,21 @@ use crate::{DeviceAddress, Error};
 ///
 /// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct AdvertisingIntervalValue {
+pub struct AdvertisingInterval {
     value: u16,
 }
 
-impl AdvertisingIntervalValue {
-    /// Create a valid advertising interval value.
+impl AdvertisingInterval {
+    /// Create a valid advertising interval.
     pub const fn try_new(value: u16) -> Result<Self, Error> {
         if (value >= 0x0020) && (value <= 0x4000) {
             Ok(Self { value })
         } else {
-            Err(Error::InvalidAdvertisingIntervalValue(value))
+            Err(Error::InvalidAdvertisingInterval(value))
         }
     }
 
-    /// Get the value of the advertising interval value in milliseconds.
+    /// Get the value of the advertising interval in milliseconds.
     pub const fn milliseconds(&self) -> f32 {
         (self.value as f32) * 0.625
     }
@@ -45,13 +45,13 @@ impl AdvertisingIntervalValue {
     }
 }
 
-impl Default for AdvertisingIntervalValue {
+impl Default for AdvertisingInterval {
     fn default() -> Self {
         Self { value: 0x0800 }
     }
 }
 
-impl TryFrom<u16> for AdvertisingIntervalValue {
+impl TryFrom<u16> for AdvertisingInterval {
     type Error = Error;
 
     fn try_from(value: u16) -> Result<Self, Self::Error> {
@@ -59,10 +59,20 @@ impl TryFrom<u16> for AdvertisingIntervalValue {
     }
 }
 
+impl EncodeToBuffer for AdvertisingInterval {
+    fn encode<B: BufferOps>(&self, buffer: &mut B) -> Result<usize, UtilsError> {
+        buffer.encode_le_u16(self.value)
+    }
+
+    fn encoded_size(&self) -> usize {
+        size_of::<u16>()
+    }
+}
+
 /// Advertising type.
 ///
 /// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, TryFromPrimitive)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, IntoPrimitive, TryFromPrimitive)]
 #[num_enum(error_type(name = Error, constructor = Error::InvalidAdvertisingType))]
 #[repr(u8)]
 #[non_exhaustive]
@@ -80,31 +90,20 @@ pub enum AdvertisingType {
     ConnectableLowDutyCycleDirected = 0x04,
 }
 
-/// Own address type.
-///
-/// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, TryFromPrimitive)]
-#[num_enum(error_type(name = Error, constructor = Error::InvalidOwnAddressType))]
-#[repr(u8)]
-#[non_exhaustive]
-pub enum OwnAddressType {
-    /// Public Device Address (default).
-    #[default]
-    PublicDeviceAddress = 0x00,
-    /// Random Device Address.
-    RandomDeviceAddress = 0x01,
-    /// Controller generates Resolvable Private Address based on the local IRK from the resolving list.
-    /// If the resolving list contains no matching entry, use the public address.
-    GeneratedResolvablePrivateAddressFallbackPublic = 0x02,
-    /// Controller generates Resolvable Private Address based on the local IRK from the resolving list.
-    /// If the resolving list contains no matching entry, use the random address from `LE_Set_Random_Address`.
-    GeneratedResolvablePrivateAddressFallbackRandom = 0x03,
+impl EncodeToBuffer for AdvertisingType {
+    fn encode<B: BufferOps>(&self, buffer: &mut B) -> Result<usize, UtilsError> {
+        buffer.try_push((*self).into())
+    }
+
+    fn encoded_size(&self) -> usize {
+        size_of::<AdvertisingType>()
+    }
 }
 
 /// Peer address type.
 ///
 /// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, TryFromPrimitive)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, IntoPrimitive, TryFromPrimitive)]
 #[num_enum(error_type(name = Error, constructor = Error::InvalidPeerAddressType))]
 #[repr(u8)]
 #[non_exhaustive]
@@ -122,6 +121,16 @@ impl From<&DeviceAddress> for PeerAddressType {
             DeviceAddress::Public(_) => Self::Public,
             DeviceAddress::Random(_) => Self::Random,
         }
+    }
+}
+
+impl EncodeToBuffer for PeerAddressType {
+    fn encode<B: BufferOps>(&self, buffer: &mut B) -> Result<usize, UtilsError> {
+        buffer.try_push((*self).into())
+    }
+
+    fn encoded_size(&self) -> usize {
+        size_of::<PeerAddressType>()
     }
 }
 
@@ -156,10 +165,20 @@ impl Default for AdvertisingChannelMap {
     }
 }
 
+impl EncodeToBuffer for AdvertisingChannelMap {
+    fn encode<B: BufferOps>(&self, buffer: &mut B) -> Result<usize, UtilsError> {
+        buffer.try_push(self.bits())
+    }
+
+    fn encoded_size(&self) -> usize {
+        size_of::<AdvertisingChannelMap>()
+    }
+}
+
 /// Advertising Filter Policy.
 ///
 /// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, TryFromPrimitive)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, IntoPrimitive, TryFromPrimitive)]
 #[num_enum(error_type(name = Error, constructor = Error::InvalidAdvertisingFilterPolicy))]
 #[repr(u8)]
 #[non_exhaustive]
@@ -175,6 +194,16 @@ pub enum AdvertisingFilterPolicy {
     ScanFilterAcceptListAndConnectionFilterAcceptList = 0x03,
 }
 
+impl EncodeToBuffer for AdvertisingFilterPolicy {
+    fn encode<B: BufferOps>(&self, buffer: &mut B) -> Result<usize, UtilsError> {
+        buffer.try_push((*self).into())
+    }
+
+    fn encoded_size(&self) -> usize {
+        size_of::<AdvertisingFilterPolicy>()
+    }
+}
+
 /// Advertising parameters to be set before starting advertising.
 ///
 /// It contains this information:
@@ -187,11 +216,9 @@ pub enum AdvertisingFilterPolicy {
 ///  - the advertising filter policy
 ///
 /// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
-///
-/// Use the [`AdvertisingParametersBuilder`] to instantiate it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AdvertisingParameters {
-    pub interval: RangeInclusive<AdvertisingIntervalValue>,
+    pub interval: RangeInclusive<AdvertisingInterval>,
     pub r#type: AdvertisingType,
     pub own_address_type: OwnAddressType,
     pub peer_address: DeviceAddress,
@@ -201,32 +228,39 @@ pub struct AdvertisingParameters {
 
 impl EncodeToBuffer for AdvertisingParameters {
     fn encode<B: BufferOps>(&self, buffer: &mut B) -> Result<usize, UtilsError> {
-        buffer.encode_le_u16(self.interval.start().value)?;
-        buffer.encode_le_u16(self.interval.end().value)?;
-        buffer.try_push(self.r#type as u8)?;
-        buffer.try_push(self.own_address_type as u8)?;
         let peer_address_type: PeerAddressType = (&self.peer_address).into();
-        buffer.try_push(peer_address_type as u8)?;
-        buffer.copy_from_slice(self.peer_address.value())?;
-        buffer.try_push(self.channel_map.bits())?;
-        buffer.try_push(self.filter_policy as u8)?;
+        self.interval.start().encode(buffer)?;
+        self.interval.end().encode(buffer)?;
+        self.r#type.encode(buffer)?;
+        self.own_address_type.encode(buffer)?;
+        peer_address_type.encode(buffer)?;
+        self.peer_address.encode(buffer)?;
+        self.channel_map.encode(buffer)?;
+        self.filter_policy.encode(buffer)?;
         Ok(self.encoded_size())
     }
 
     fn encoded_size(&self) -> usize {
-        15
+        self.interval.start().encoded_size()
+            + self.interval.end().encoded_size()
+            + self.r#type.encoded_size()
+            + self.own_address_type.encoded_size()
+            + size_of::<PeerAddressType>()
+            + self.peer_address.encoded_size()
+            + self.channel_map.encoded_size()
+            + self.filter_policy.encoded_size()
     }
 }
 
 impl Default for AdvertisingParameters {
     fn default() -> Self {
         Self {
-            interval: (AdvertisingIntervalValue::default()..=AdvertisingIntervalValue::default()),
-            r#type: AdvertisingType::default(),
-            own_address_type: OwnAddressType::default(),
-            peer_address: DeviceAddress::default(),
-            channel_map: AdvertisingChannelMap::default(),
-            filter_policy: AdvertisingFilterPolicy::default(),
+            interval: (Default::default()..=Default::default()),
+            r#type: Default::default(),
+            own_address_type: Default::default(),
+            peer_address: Default::default(),
+            channel_map: Default::default(),
+            filter_policy: Default::default(),
         }
     }
 }
@@ -242,29 +276,28 @@ pub(crate) mod parser {
         IResult, Parser,
     };
 
-    use crate::{device_address::RandomAddress, PublicDeviceAddress};
+    use crate::{
+        device_address::RandomAddress, own_address_type::parser::own_address_type,
+        PublicDeviceAddress,
+    };
 
     use super::*;
 
-    fn advertising_interval_value(input: &[u8]) -> IResult<&[u8], AdvertisingIntervalValue> {
+    fn advertising_interval(input: &[u8]) -> IResult<&[u8], AdvertisingInterval> {
         map_res(le_u16(), TryInto::try_into).parse(input)
     }
 
-    fn advertising_interval(
+    fn advertising_interval_range(
         input: &[u8],
-    ) -> IResult<&[u8], RangeInclusive<AdvertisingIntervalValue>> {
+    ) -> IResult<&[u8], RangeInclusive<AdvertisingInterval>> {
         map(
-            pair(advertising_interval_value, advertising_interval_value),
+            pair(advertising_interval, advertising_interval),
             |(start, end)| (start..=end),
         )
         .parse(input)
     }
 
     fn advertising_type(input: &[u8]) -> IResult<&[u8], AdvertisingType> {
-        map_res(le_u8(), TryInto::try_into).parse(input)
-    }
-
-    fn own_address_type(input: &[u8]) -> IResult<&[u8], OwnAddressType> {
         map_res(le_u8(), TryInto::try_into).parse(input)
     }
 
@@ -305,7 +338,7 @@ pub(crate) mod parser {
     pub(crate) fn advertising_parameters(input: &[u8]) -> IResult<&[u8], AdvertisingParameters> {
         all_consuming(map(
             (
-                advertising_interval,
+                advertising_interval_range,
                 advertising_type,
                 own_address_type,
                 peer_address,
@@ -330,6 +363,7 @@ pub(crate) mod parser {
 #[cfg(test)]
 mod test {
     use approx::assert_relative_eq;
+    use bletio_utils::Buffer;
     use rstest::rstest;
 
     use crate::{RandomAddress, RandomStaticDeviceAddress};
@@ -337,8 +371,8 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_advertising_interval_value_default() {
-        let value = AdvertisingIntervalValue::default();
+    fn test_advertising_interval_default() {
+        let value = AdvertisingInterval::default();
         assert_eq!(value.value(), 0x800);
         assert_relative_eq!(value.milliseconds(), 1280f32, epsilon = 1.0e-6);
     }
@@ -346,11 +380,11 @@ mod test {
     #[rstest]
     #[case(0x0020, 20f32)]
     #[case(0x4000, 10240f32)]
-    fn test_advertising_interval_value_success(
+    fn test_advertising_interval_success(
         #[case] input: u16,
         #[case] expected_milliseconds: f32,
     ) -> Result<(), Error> {
-        let value = AdvertisingIntervalValue::try_new(input)?;
+        let value = AdvertisingInterval::try_new(input)?;
         assert_eq!(value.value(), input);
         assert_relative_eq!(
             value.milliseconds(),
@@ -363,20 +397,28 @@ mod test {
     #[rstest]
     #[case(0x0010)]
     #[case(0x8000)]
-    fn test_advertising_interval_value_failure(#[case] input: u16) {
-        let err = AdvertisingIntervalValue::try_new(input);
-        assert_eq!(err, Err(Error::InvalidAdvertisingIntervalValue(input)));
+    fn test_advertising_interval_failure(#[case] input: u16) {
+        let err = AdvertisingInterval::try_new(input);
+        assert_eq!(err, Err(Error::InvalidAdvertisingInterval(input)));
     }
 
     #[rstest]
-    #[case(DeviceAddress::default(), PeerAddressType::Public)]
+    #[case(DeviceAddress::default(), PeerAddressType::Public, &[0x00])]
     #[case(
         DeviceAddress::Random(RandomAddress::Static(RandomStaticDeviceAddress::try_new([0xFE, 0x92, 0x2F, 0x0F, 0x4B, 0xD2]).unwrap())),
-        PeerAddressType::Random
+        PeerAddressType::Random, &[0x01]
     )]
-    fn test_peer_address_type(#[case] input: DeviceAddress, #[case] expected: PeerAddressType) {
+    fn test_peer_address_type(
+        #[case] input: DeviceAddress,
+        #[case] expected: PeerAddressType,
+        #[case] expected_encoded_peer_address_type: &[u8],
+    ) {
         let peer_address_type: PeerAddressType = (&input).into();
         assert_eq!(peer_address_type, expected);
+        let mut buffer = Buffer::<6>::default();
+        assert_eq!(peer_address_type.encoded_size(), 1);
+        peer_address_type.encode(&mut buffer).unwrap();
+        assert_eq!(buffer.data(), expected_encoded_peer_address_type);
     }
 
     #[rstest]
@@ -395,8 +437,7 @@ mod test {
         assert_eq!(
             adv_params,
             AdvertisingParameters {
-                interval: (AdvertisingIntervalValue::default()
-                    ..=AdvertisingIntervalValue::default()),
+                interval: (AdvertisingInterval::default()..=AdvertisingInterval::default()),
                 r#type: AdvertisingType::default(),
                 own_address_type: OwnAddressType::default(),
                 peer_address: DeviceAddress::default(),

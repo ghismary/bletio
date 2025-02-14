@@ -21,7 +21,7 @@ pub enum Error {
     #[error(
         "The advertising interval value {0} is invalid, it needs to be between 0x0020 and 0x4000"
     )]
-    InvalidAdvertisingIntervalValue(u16),
+    InvalidAdvertisingInterval(u16),
     /// The provided advertising type is invalid.
     #[error("The advertising type {0} is invalid")]
     InvalidAdvertisingType(u8),
@@ -66,7 +66,22 @@ pub enum Error {
     /// The provided random static device address is invalid.
     #[error("The random static device address is invalid")]
     InvalidRandomStaticDeviceAddress,
+    /// The provided scan interval is invalid, it needs to be between 0x0004 and 0x4000.
+    #[error("The scan interval {0} is invalid, it needs to be between 0x0004 and 0x4000")]
+    InvalidScanInterval(u16),
+    /// The provided scan type is invalid.
+    #[error("The scan type {0} is invalid")]
+    InvalidScanType(u8),
+    /// The provided scan window is invalid, it needs to be between 0x0004 and 0x4000.
+    #[error("The scan window {0} is invalid, it needs to be between 0x0004 and 0x4000")]
+    InvalidScanWindow(u16),
+    /// The provided scanning filter policy is invalid.
+    #[error("The scanning filter policy {0} is invalid")]
+    InvalidScanningFilterPolicy(u8),
     /// The provided TX power level value is invalid.
     #[error("The TX power level value {0} is invalid")]
     InvalidTxPowerLevelValue(i8),
+    /// The scan window must be smaller or equal to the scan interval.
+    #[error("The scan window must be smaller or equal to the scan interval")]
+    ScanWindowMustBeSmallerOrEqualToScanInterval,
 }

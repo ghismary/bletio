@@ -6,8 +6,9 @@ use core::{
 use crate::{
     AdvertisingData, AdvertisingEnable, AdvertisingParameters, Command, CommandCompleteEvent,
     CommandOpCode, Error, Event, EventMask, EventParameter, HciBuffer, HciDriver, LeEventMask,
-    Packet, PublicDeviceAddress, RandomStaticDeviceAddress, ScanResponseData, SupportedCommands,
-    SupportedFeatures, SupportedLeFeatures, SupportedLeStates, TxPowerLevel, WithTimeout,
+    Packet, PublicDeviceAddress, RandomStaticDeviceAddress, ScanParameters, ScanResponseData,
+    SupportedCommands, SupportedFeatures, SupportedLeFeatures, SupportedLeStates, TxPowerLevel,
+    WithTimeout,
 };
 
 const HCI_COMMAND_TIMEOUT: Duration = Duration::from_millis(1000);
@@ -131,6 +132,14 @@ where
         address: RandomStaticDeviceAddress,
     ) -> Result<(), Error> {
         self.cmd_with_status_response(Command::LeSetRandomAddress(address))
+            .await
+    }
+
+    pub async fn cmd_le_set_scan_parameters(
+        &mut self,
+        parameters: ScanParameters,
+    ) -> Result<(), Error> {
+        self.cmd_with_status_response(Command::LeSetScanParameters(parameters))
             .await
     }
 
@@ -669,7 +678,7 @@ mod test {
     #[fixture]
     fn mock_cmd_le_set_advertising_parameters_success() -> Mock {
         tokio_test::io::Builder::new()
-            .write(&[1, 06, 32, 15, 0, 8, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0])
+            .write(&[1, 6, 32, 15, 0, 8, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0])
             .read(&[4, 14, 4, 1, 6, 32, 0])
             .build()
     }
@@ -677,7 +686,7 @@ mod test {
     #[fixture]
     fn mock_cmd_le_set_advertising_parameters_unknown_hci_command() -> Mock {
         tokio_test::io::Builder::new()
-            .write(&[1, 06, 32, 15, 0, 8, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0])
+            .write(&[1, 6, 32, 15, 0, 8, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0])
             .read(&[4, 14, 4, 1, 6, 32, 1])
             .build()
     }
@@ -795,6 +804,46 @@ mod test {
                 RandomStaticDeviceAddress::try_new([68, 223, 27, 9, 83, 250]).unwrap()
             )
             .await,
+            expected
+        );
+    }
+
+    #[fixture]
+    fn mock_cmd_le_set_scan_parameters_success() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 11, 32, 7, 0, 16, 0, 16, 0, 0, 0])
+            .read(&[4, 14, 4, 1, 11, 32, 0])
+            .build()
+    }
+
+    #[fixture]
+    fn mock_cmd_le_set_scan_parameters_unknown_hci_command() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 11, 32, 7, 0, 16, 0, 16, 0, 0, 0])
+            .read(&[4, 14, 4, 1, 11, 32, 1])
+            .build()
+    }
+
+    #[rstest]
+    #[case::success(mock_cmd_le_set_scan_parameters_success(), Ok(()))]
+    #[case::unknown_hci_command(
+        mock_cmd_le_set_scan_parameters_unknown_hci_command(),
+        Err(Error::ErrorCode(ErrorCode::UnknownHciCommand))
+    )]
+    #[tokio::test(flavor = "current_thread", start_paused = true)]
+    async fn test_cmd_le_set_scan_parameters(
+        #[case] mock: Mock,
+        #[case] expected: Result<(), Error>,
+    ) {
+        let hci_driver = TokioHciDriver { hci: mock };
+        let mut hci = Hci {
+            driver: hci_driver,
+            num_hci_command_packets: 1,
+            read_buffer: Default::default(),
+        };
+        assert_eq!(
+            hci.cmd_le_set_scan_parameters(ScanParameters::default())
+                .await,
             expected
         );
     }

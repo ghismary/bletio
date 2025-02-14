@@ -14,7 +14,9 @@ mod event_mask;
 mod hci;
 mod le_event_mask;
 mod le_states;
+mod own_address_type;
 mod packet;
+mod scan_parameters;
 mod supported_commands;
 mod supported_features;
 mod supported_le_features;
@@ -45,8 +47,8 @@ pub(crate) use packet::{Packet, PacketType};
 pub use advertising_data::{AdvertisingData, ScanResponseData};
 pub use advertising_enable::AdvertisingEnable;
 pub use advertising_parameters::{
-    AdvertisingChannelMap, AdvertisingFilterPolicy, AdvertisingIntervalValue,
-    AdvertisingParameters, AdvertisingType, OwnAddressType,
+    AdvertisingChannelMap, AdvertisingFilterPolicy, AdvertisingInterval, AdvertisingParameters,
+    AdvertisingType,
 };
 pub use connection_interval::ConnectionInterval;
 pub use device_address::{
@@ -59,6 +61,10 @@ pub use event_mask::EventMask;
 pub use hci::Hci;
 pub use le_event_mask::LeEventMask;
 pub use le_states::{LeCombinedState, LeSingleState, LeState};
+pub use own_address_type::OwnAddressType;
+pub use scan_parameters::{
+    ScanInterval, ScanParameters, ScanType, ScanWindow, ScanningFilterPolicy,
+};
 pub use supported_commands::SupportedCommands;
 pub use supported_features::SupportedFeatures;
 pub use supported_le_features::SupportedLeFeatures;
