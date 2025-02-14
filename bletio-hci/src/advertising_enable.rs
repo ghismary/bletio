@@ -1,12 +1,12 @@
 use bletio_utils::{BufferOps, EncodeToBuffer};
-use num_enum::TryFromPrimitive;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 use crate::Error;
 
 /// Enable/disable advertising.
 ///
 /// See [Core Specification 6.0, Vol.4, Part E, 7.8.9](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-e58c6816-c25e-367a-0023-9da1700a3794).
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, TryFromPrimitive)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, IntoPrimitive, TryFromPrimitive)]
 #[num_enum(error_type(name = Error, constructor = Error::InvalidAdvertisingEnableValue))]
 #[repr(u8)]
 #[non_exhaustive]
@@ -20,11 +20,11 @@ pub enum AdvertisingEnable {
 
 impl EncodeToBuffer for AdvertisingEnable {
     fn encode<B: BufferOps>(&self, buffer: &mut B) -> Result<usize, bletio_utils::Error> {
-        buffer.try_push(*self as u8)
+        buffer.try_push((*self).into())
     }
 
     fn encoded_size(&self) -> usize {
-        1
+        size_of::<AdvertisingEnable>()
     }
 }
 

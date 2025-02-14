@@ -58,9 +58,9 @@ mod test {
     use crate::{
         AdvertisingChannelMap, AdvertisingData, AdvertisingEnable, AdvertisingFilterPolicy,
         AdvertisingParameters, AdvertisingType, CommandCompleteEvent, CommandOpCode, DeviceAddress,
-        ErrorCode, EventMask, EventParameter, LeEventMask, OwnAddressType, PublicDeviceAddress,
-        RandomAddress, RandomStaticDeviceAddress, ScanParameters, ScanResponseData,
-        StatusAndBdAddrEventParameter, StatusAndBufferSizeEventParameter,
+        ErrorCode, EventMask, EventParameter, FilterDuplicates, LeEventMask, OwnAddressType,
+        PublicDeviceAddress, RandomAddress, RandomStaticDeviceAddress, ScanEnable, ScanParameters,
+        ScanResponseData, StatusAndBdAddrEventParameter, StatusAndBufferSizeEventParameter,
         StatusAndLeBufferSizeEventParameter, StatusAndRandomNumberEventParameter,
         StatusAndSupportedCommandsEventParameter, StatusAndSupportedFeaturesEventParameter,
         StatusAndSupportedLeFeaturesEventParameter, StatusAndSupportedLeStatesEventParameter,
@@ -127,6 +127,10 @@ mod test {
     #[case::le_set_random_address(
         Command::LeSetRandomAddress([68, 223, 27, 9, 83, 250].try_into().unwrap()),
         &[1, 5, 32, 6, 68, 223, 27, 9, 83, 250]
+    )]
+    #[case::le_set_scan_enable(
+        Command::LeSetScanEnable(ScanEnable::Enabled, FilterDuplicates::Disabled),
+        &[1, 12, 32, 2, 1, 0]
     )]
     #[case::le_set_scan_parameters(
         Command::LeSetScanParameters(ScanParameters::default()),
@@ -204,6 +208,10 @@ mod test {
             1, CommandOpCode::LeSetRandomAddress,
             StatusEventParameter { status: ErrorCode::Success }
         ), &[4, 14, 4, 1, 5, 32, 0])]
+    #[case::le_set_scan_enable(CommandCompleteEvent::new(
+            1, CommandOpCode::LeSetScanEnable,
+            StatusEventParameter { status: ErrorCode::Success }
+        ), &[4, 14, 4, 1, 12, 32, 0])]
     #[case::le_set_scan_parameters(CommandCompleteEvent::new(
             1, CommandOpCode::LeSetScanParameters,
             StatusEventParameter { status: ErrorCode::Success }
