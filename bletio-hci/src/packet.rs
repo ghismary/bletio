@@ -59,13 +59,13 @@ mod test {
         AdvertisingChannelMap, AdvertisingData, AdvertisingEnable, AdvertisingFilterPolicy,
         AdvertisingParameters, AdvertisingType, CommandCompleteEvent, CommandOpCode, DeviceAddress,
         ErrorCode, EventMask, EventParameter, LeEventMask, OwnAddressType, PublicDeviceAddress,
-        RandomAddress, RandomStaticDeviceAddress, ScanResponseData, StatusAndBdAddrEventParameter,
-        StatusAndBufferSizeEventParameter, StatusAndLeBufferSizeEventParameter,
-        StatusAndRandomNumberEventParameter, StatusAndSupportedCommandsEventParameter,
-        StatusAndSupportedFeaturesEventParameter, StatusAndSupportedLeFeaturesEventParameter,
-        StatusAndSupportedLeStatesEventParameter, StatusAndTxPowerLevelEventParameter,
-        StatusEventParameter, SupportedCommands, SupportedFeatures, SupportedLeFeatures,
-        TxPowerLevel,
+        RandomAddress, RandomStaticDeviceAddress, ScanParameters, ScanResponseData,
+        StatusAndBdAddrEventParameter, StatusAndBufferSizeEventParameter,
+        StatusAndLeBufferSizeEventParameter, StatusAndRandomNumberEventParameter,
+        StatusAndSupportedCommandsEventParameter, StatusAndSupportedFeaturesEventParameter,
+        StatusAndSupportedLeFeaturesEventParameter, StatusAndSupportedLeStatesEventParameter,
+        StatusAndTxPowerLevelEventParameter, StatusEventParameter, SupportedCommands,
+        SupportedFeatures, SupportedLeFeatures, TxPowerLevel,
     };
 
     #[test]
@@ -127,6 +127,10 @@ mod test {
     #[case::le_set_random_address(
         Command::LeSetRandomAddress([68, 223, 27, 9, 83, 250].try_into().unwrap()),
         &[1, 5, 32, 6, 68, 223, 27, 9, 83, 250]
+    )]
+    #[case::le_set_scan_parameters(
+        Command::LeSetScanParameters(ScanParameters::default()),
+        &[1, 11, 32, 7, 0, 16, 0, 16, 0, 0, 0]
     )]
     #[case::le_set_scan_response_data(
         Command::LeSetScanResponseData(ScanResponseData::default()),
@@ -200,6 +204,10 @@ mod test {
             1, CommandOpCode::LeSetRandomAddress,
             StatusEventParameter { status: ErrorCode::Success }
         ), &[4, 14, 4, 1, 5, 32, 0])]
+    #[case::le_set_scan_parameters(CommandCompleteEvent::new(
+            1, CommandOpCode::LeSetScanParameters,
+            StatusEventParameter { status: ErrorCode::Success }
+        ), &[4, 14, 4, 1, 11, 32, 0])]
     #[case::le_set_scan_response_data(CommandCompleteEvent::new(
             1, CommandOpCode::LeSetScanResponseData,
             StatusEventParameter { status: ErrorCode::Success }

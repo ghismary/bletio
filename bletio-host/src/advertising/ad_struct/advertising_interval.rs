@@ -1,4 +1,4 @@
-use bletio_hci::AdvertisingIntervalValue;
+use bletio_hci::AdvertisingInterval;
 use bletio_utils::EncodeToBuffer;
 
 use crate::assigned_numbers::AdType;
@@ -13,11 +13,11 @@ const ADVERTISING_INTERVAL_AD_STRUCT_SIZE: usize = 3;
 /// [Core Specification 6.0, Vol. 6, Part B, 4.4.2.2](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/low-energy-controller/link-layer-specification.html#UUID-f6cd1541-800c-c516-b32b-95dd0479840b).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct AdvertisingIntervalAdStruct {
-    interval: AdvertisingIntervalValue,
+    interval: AdvertisingInterval,
 }
 
 impl AdvertisingIntervalAdStruct {
-    pub(crate) const fn new(interval: AdvertisingIntervalValue) -> Self {
+    pub(crate) const fn new(interval: AdvertisingInterval) -> Self {
         Self { interval }
     }
 }
@@ -46,11 +46,11 @@ mod test {
     use super::*;
 
     #[rstest]
-    #[case(AdvertisingIntervalValue::default(), &[0x03, 0x1A, 0x00, 0x08])]
-    #[case(AdvertisingIntervalValue::try_new(0x0020).unwrap(), &[0x03, 0x1A, 0x20, 0x00])]
-    #[case(AdvertisingIntervalValue::try_new(0x4000).unwrap(), &[0x03, 0x1A, 0x00, 0x40])]
+    #[case(AdvertisingInterval::default(), &[0x03, 0x1A, 0x00, 0x08])]
+    #[case(AdvertisingInterval::try_new(0x0020).unwrap(), &[0x03, 0x1A, 0x20, 0x00])]
+    #[case(AdvertisingInterval::try_new(0x4000).unwrap(), &[0x03, 0x1A, 0x00, 0x40])]
     fn test_advertising_interval_ad_struct(
-        #[case] interval: AdvertisingIntervalValue,
+        #[case] interval: AdvertisingInterval,
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<4>::default();

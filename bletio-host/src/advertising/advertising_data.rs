@@ -1,7 +1,7 @@
 use core::ops::RangeInclusive;
 
 use bletio_hci::{
-    AdvertisingIntervalValue, ConnectionInterval, PublicDeviceAddress, RandomAddress,
+    AdvertisingInterval, ConnectionInterval, PublicDeviceAddress, RandomAddress,
     SupportedLeFeatures, TxPowerLevel,
 };
 use bletio_utils::{BufferOps, EncodeToBuffer};
@@ -79,7 +79,7 @@ impl<'a> AdvertisingDataBuilder<'a> {
     /// # Arguments
     ///
     /// * `interval` — The Advertising Interval value to put in the added Advertising Interval Advertising Structure.
-    pub fn with_advertising_interval(mut self, interval: AdvertisingIntervalValue) -> Self {
+    pub fn with_advertising_interval(mut self, interval: AdvertisingInterval) -> Self {
         self.data.base.advertising_interval = Some(AdvertisingIntervalAdStruct::new(interval));
         self
     }
@@ -563,7 +563,7 @@ impl<'a> ScanResponseDataBuilder<'a> {
     /// # Arguments
     ///
     /// * `interval` — The Advertising Interval value to put in the added Advertising Interval Advertising Structure.
-    pub fn with_advertising_interval(mut self, interval: AdvertisingIntervalValue) -> Self {
+    pub fn with_advertising_interval(mut self, interval: AdvertisingInterval) -> Self {
         self.data.base.advertising_interval = Some(AdvertisingIntervalAdStruct::new(interval));
         self
     }
@@ -886,7 +886,7 @@ mod test {
     fn advertising_data_builder_service_uuid16<'a>() -> AdvertisingData<'a> {
         let uuids = &[ServiceUuid::Battery, ServiceUuid::BloodPressure];
         let builder = AdvertisingData::builder()
-            .with_advertising_interval(AdvertisingIntervalValue::default())
+            .with_advertising_interval(AdvertisingInterval::default())
             .with_appearance()
             .with_local_name(LocalNameComplete::Complete)
             .with_service_data_uuid16(ServiceUuid::Battery, &[0x50, 0x84, 0x91, 0xAF])
@@ -895,7 +895,7 @@ mod test {
         assert_eq!(
             builder.data.base.advertising_interval,
             Some(AdvertisingIntervalAdStruct::new(
-                AdvertisingIntervalValue::default()
+                AdvertisingInterval::default()
             ))
         );
         assert_eq!(
@@ -1117,7 +1117,7 @@ mod test {
     fn scan_response_data_builder_service_uuid16<'a>() -> ScanResponseData<'a> {
         let uuids = &[ServiceUuid::Battery, ServiceUuid::BloodPressure];
         let builder = ScanResponseData::builder()
-            .with_advertising_interval(AdvertisingIntervalValue::default())
+            .with_advertising_interval(AdvertisingInterval::default())
             .with_appearance()
             .with_local_name(LocalNameComplete::Complete)
             .with_service_data_uuid16(ServiceUuid::Battery, &[0x50, 0x84, 0x91, 0xAF])
@@ -1126,7 +1126,7 @@ mod test {
         assert_eq!(
             builder.data.base.advertising_interval,
             Some(AdvertisingIntervalAdStruct::new(
-                AdvertisingIntervalValue::default()
+                AdvertisingInterval::default()
             ))
         );
         assert_eq!(

@@ -65,6 +65,25 @@ impl From<RandomNonResolvablePrivateAddress> for DeviceAddress {
     }
 }
 
+impl EncodeToBuffer for DeviceAddress {
+    fn encode<B: bletio_utils::BufferOps>(
+        &self,
+        buffer: &mut B,
+    ) -> Result<usize, bletio_utils::Error> {
+        match self {
+            Self::Public(public) => public.encode(buffer),
+            Self::Random(random) => random.encode(buffer),
+        }
+    }
+
+    fn encoded_size(&self) -> usize {
+        match self {
+            Self::Public(public) => public.encoded_size(),
+            Self::Random(random) => random.encoded_size(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct AddressBase {
     value: [u8; 6],
@@ -554,6 +573,10 @@ mod test {
             DeviceAddress::Random(RandomAddress::Static(_))
         ));
         assert_eq!(device_address.value(), &input);
+        let mut buffer = Buffer::<6>::default();
+        assert_eq!(device_address.encoded_size(), input.len());
+        device_address.encode(&mut buffer).unwrap();
+        assert_eq!(buffer.data(), input);
         Ok(())
     }
 
@@ -614,6 +637,10 @@ mod test {
             DeviceAddress::Random(RandomAddress::ResolvablePrivate(_))
         ));
         assert_eq!(device_address.value(), &input);
+        let mut buffer = Buffer::<6>::default();
+        assert_eq!(device_address.encoded_size(), input.len());
+        device_address.encode(&mut buffer).unwrap();
+        assert_eq!(buffer.data(), input);
         Ok(())
     }
 
@@ -666,6 +693,10 @@ mod test {
             DeviceAddress::Random(RandomAddress::NonResolvablePrivate(_))
         ));
         assert_eq!(device_address.value(), &input);
+        let mut buffer = Buffer::<6>::default();
+        assert_eq!(device_address.encoded_size(), input.len());
+        device_address.encode(&mut buffer).unwrap();
+        assert_eq!(buffer.data(), input);
         Ok(())
     }
 

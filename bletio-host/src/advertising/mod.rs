@@ -5,7 +5,7 @@
 //!  - definition of all the [advertising structures](crate::advertising::ad_struct) to be used in the [`AdvertisingData`] or [`ScanResponseData`] packets.
 
 pub use bletio_hci::{
-    AdvertisingChannelMap, AdvertisingEnable, AdvertisingFilterPolicy, AdvertisingIntervalValue,
+    AdvertisingChannelMap, AdvertisingEnable, AdvertisingFilterPolicy, AdvertisingInterval,
     AdvertisingType,
 };
 

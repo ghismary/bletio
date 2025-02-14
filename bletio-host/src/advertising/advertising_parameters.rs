@@ -1,7 +1,7 @@
 use core::ops::{Deref, RangeInclusive};
 
 use bletio_hci::{
-    AdvertisingChannelMap, AdvertisingFilterPolicy, AdvertisingIntervalValue, AdvertisingType,
+    AdvertisingChannelMap, AdvertisingFilterPolicy, AdvertisingInterval, AdvertisingType,
     DeviceAddress, OwnAddressType,
 };
 
@@ -29,7 +29,7 @@ impl AdvertisingParametersBuilder {
     }
 
     /// Define the advertising interval.
-    pub fn with_interval(mut self, interval: RangeInclusive<AdvertisingIntervalValue>) -> Self {
+    pub fn with_interval(mut self, interval: RangeInclusive<AdvertisingInterval>) -> Self {
         self.data.inner.interval = interval;
         self
     }
