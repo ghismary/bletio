@@ -39,6 +39,9 @@ pub enum Error {
     /// Invalid HCI event packet.
     #[error("Invalid HCI event packet")]
     InvalidEventPacket,
+    /// The provided filter duplicates value is invalid.
+    #[error("The filter duplicates value {0} is invalid")]
+    InvalidFilterDuplicatesValue(u8),
     /// The provided own address type is invalid.
     #[error("The own address type {0} is invalid")]
     InvalidOwnAddressType(u8),
@@ -66,6 +69,9 @@ pub enum Error {
     /// The provided random static device address is invalid.
     #[error("The random static device address is invalid")]
     InvalidRandomStaticDeviceAddress,
+    /// The provided scan enable value is invalid.
+    #[error("The scan enable value {0} is invalid")]
+    InvalidScanEnableValue(u8),
     /// The provided scan interval is invalid, it needs to be between 0x0004 and 0x4000.
     #[error("The scan interval {0} is invalid, it needs to be between 0x0004 and 0x4000")]
     InvalidScanInterval(u16),

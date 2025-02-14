@@ -2,8 +2,9 @@ use bletio_utils::{Buffer, BufferOps, EncodeToBuffer};
 use num_enum::{FromPrimitive, IntoPrimitive};
 
 use crate::{
-    AdvertisingData, AdvertisingEnable, AdvertisingParameters, Error, EventMask, LeEventMask,
-    PacketType, RandomStaticDeviceAddress, ScanParameters, ScanResponseData,
+    AdvertisingData, AdvertisingEnable, AdvertisingParameters, Error, EventMask, FilterDuplicates,
+    LeEventMask, PacketType, RandomStaticDeviceAddress, ScanEnable, ScanParameters,
+    ScanResponseData,
 };
 
 const NOP_OGF: u16 = 0x00;
@@ -35,6 +36,7 @@ pub(crate) enum CommandOpCode {
     LeSetScanResponseData = opcode(LE_CONTROLLER_OGF, 0x0009),
     LeSetAdvertisingEnable = opcode(LE_CONTROLLER_OGF, 0x000A),
     LeSetScanParameters = opcode(LE_CONTROLLER_OGF, 0x000B),
+    LeSetScanEnable = opcode(LE_CONTROLLER_OGF, 0x000C),
     // LeReadFilterAcceptListSize = opcode(LE_CONTROLLER_OGF, 0x000F),
     // LeClearFilterAcceptList = opcode(LE_CONTROLLER_OGF, 0x0010),
     // LeAddDeviceToFilterAcceptList = opcode(LE_CONTROLLER_OGF, 0x0011),
@@ -63,6 +65,7 @@ pub(crate) enum Command {
     LeSetAdvertisingData(AdvertisingData),
     LeSetAdvertisingParameters(AdvertisingParameters),
     LeSetRandomAddress(RandomStaticDeviceAddress),
+    LeSetScanEnable(ScanEnable, FilterDuplicates),
     LeSetScanParameters(ScanParameters),
     LeSetScanResponseData(ScanResponseData),
     Nop,
@@ -104,6 +107,11 @@ impl Command {
             Command::LeSetRandomAddress(random_address) => {
                 CommandPacket::new(self.opcode()).encode(random_address)?
             }
+            Command::LeSetScanEnable(enable, filter_duplicates) => {
+                CommandPacket::new(self.opcode())
+                    .encode(enable)?
+                    .encode(filter_duplicates)?
+            }
             Command::LeSetScanParameters(parameters) => {
                 CommandPacket::new(self.opcode()).encode(parameters)?
             }
@@ -133,6 +141,7 @@ impl Command {
             Self::LeSetAdvertisingParameters(_) => CommandOpCode::LeSetAdvertisingParameters,
             Self::LeSetEventMask(_) => CommandOpCode::LeSetEventMask,
             Self::LeSetRandomAddress(_) => CommandOpCode::LeSetRandomAddress,
+            Self::LeSetScanEnable(_, _) => CommandOpCode::LeSetScanEnable,
             Self::LeSetScanParameters(_) => CommandOpCode::LeSetScanParameters,
             Self::LeSetScanResponseData(_) => CommandOpCode::LeSetScanResponseData,
             Self::Nop => CommandOpCode::Nop,
@@ -195,6 +204,7 @@ pub(crate) mod parser {
     use crate::event_mask::parser::event_mask;
     use crate::le_event_mask::parser::le_event_mask;
     use crate::packet::parser::parameter_total_length;
+    use crate::scan_enable::parser::scan_enable_parameters;
     use crate::scan_parameters::parser::scan_parameters;
     use crate::{Command, CommandOpCode, Packet};
 
@@ -241,6 +251,10 @@ pub(crate) mod parser {
                 CommandOpCode::LeSetRandomAddress => {
                     let (_, random_address) = random_address(parameters)?;
                     Command::LeSetRandomAddress(random_address)
+                }
+                CommandOpCode::LeSetScanEnable => {
+                    let (_, (scan_enable, filter_duplicates)) = scan_enable_parameters(parameters)?;
+                    Command::LeSetScanEnable(scan_enable, filter_duplicates)
                 }
                 CommandOpCode::LeSetScanParameters => {
                     let (_, scan_parameters) = scan_parameters(parameters)?;
@@ -328,6 +342,9 @@ mod test {
         Command::LeSetRandomAddress([68, 223, 27, 9, 83, 250].try_into().unwrap()),
         CommandOpCode::LeSetRandomAddress,
         &[1, 5, 32, 6, 68, 223, 27, 9, 83, 250]
+    )]
+    #[case::le_set_scan_enable(
+        Command::LeSetScanEnable(ScanEnable::Enabled, FilterDuplicates::Disabled), CommandOpCode::LeSetScanEnable, &[1, 12, 32, 2, 1, 0]
     )]
     #[case::le_set_scan_parameters(
         Command::LeSetScanParameters(ScanParameters::default()),

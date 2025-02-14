@@ -5,10 +5,10 @@ use core::{
 
 use crate::{
     AdvertisingData, AdvertisingEnable, AdvertisingParameters, Command, CommandCompleteEvent,
-    CommandOpCode, Error, Event, EventMask, EventParameter, HciBuffer, HciDriver, LeEventMask,
-    Packet, PublicDeviceAddress, RandomStaticDeviceAddress, ScanParameters, ScanResponseData,
-    SupportedCommands, SupportedFeatures, SupportedLeFeatures, SupportedLeStates, TxPowerLevel,
-    WithTimeout,
+    CommandOpCode, Error, Event, EventMask, EventParameter, FilterDuplicates, HciBuffer, HciDriver,
+    LeEventMask, Packet, PublicDeviceAddress, RandomStaticDeviceAddress, ScanEnable,
+    ScanParameters, ScanResponseData, SupportedCommands, SupportedFeatures, SupportedLeFeatures,
+    SupportedLeStates, TxPowerLevel, WithTimeout,
 };
 
 const HCI_COMMAND_TIMEOUT: Duration = Duration::from_millis(1000);
@@ -132,6 +132,15 @@ where
         address: RandomStaticDeviceAddress,
     ) -> Result<(), Error> {
         self.cmd_with_status_response(Command::LeSetRandomAddress(address))
+            .await
+    }
+
+    pub async fn cmd_le_set_scan_enable(
+        &mut self,
+        scan_enable: ScanEnable,
+        filter_duplicates: FilterDuplicates,
+    ) -> Result<(), Error> {
+        self.cmd_with_status_response(Command::LeSetScanEnable(scan_enable, filter_duplicates))
             .await
     }
 
@@ -804,6 +813,43 @@ mod test {
                 RandomStaticDeviceAddress::try_new([68, 223, 27, 9, 83, 250]).unwrap()
             )
             .await,
+            expected
+        );
+    }
+
+    #[fixture]
+    fn mock_cmd_le_set_scan_enable_success() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 12, 32, 2, 1, 0])
+            .read(&[4, 14, 4, 1, 12, 32, 0])
+            .build()
+    }
+
+    #[fixture]
+    fn mock_cmd_le_set_scan_enable_invalid_hci_command_parameters() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 12, 32, 2, 1, 0])
+            .read(&[4, 14, 4, 1, 12, 32, 18])
+            .build()
+    }
+
+    #[rstest]
+    #[case::success(mock_cmd_le_set_scan_enable_success(), Ok(()))]
+    #[case::invalid_hci_command_parameters(
+        mock_cmd_le_set_scan_enable_invalid_hci_command_parameters(),
+        Err(Error::ErrorCode(ErrorCode::InvalidHciCommandParameters))
+    )]
+    #[tokio::test(flavor = "current_thread", start_paused = true)]
+    async fn test_cmd_le_set_scan_enable(#[case] mock: Mock, #[case] expected: Result<(), Error>) {
+        let hci_driver = TokioHciDriver { hci: mock };
+        let mut hci = Hci {
+            driver: hci_driver,
+            num_hci_command_packets: 1,
+            read_buffer: Default::default(),
+        };
+        assert_eq!(
+            hci.cmd_le_set_scan_enable(ScanEnable::Enabled, FilterDuplicates::Disabled)
+                .await,
             expected
         );
     }
