@@ -8,9 +8,14 @@ use bletio_hci::{
 use crate::advertising::AdvertisingError;
 
 /// Builder to create [`AdvertisingParameters`].
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct AdvertisingParametersBuilder {
-    data: AdvertisingParameters,
+    interval: RangeInclusive<AdvertisingInterval>,
+    r#type: AdvertisingType,
+    own_address_type: OwnAddressType,
+    peer_address: DeviceAddress,
+    channel_map: AdvertisingChannelMap,
+    filter_policy: AdvertisingFilterPolicy,
 }
 
 impl AdvertisingParametersBuilder {
@@ -21,53 +26,66 @@ impl AdvertisingParametersBuilder {
 
     /// Try building the [`AdvertisingParameters`], checking that every set parameters are valid.
     pub fn try_build(self) -> Result<AdvertisingParameters, AdvertisingError> {
-        if self.is_valid() {
-            Ok(self.data)
-        } else {
-            Err(AdvertisingError::InvalidAdvertisingParameters)?
-        }
-    }
-
-    /// Define the advertising interval.
-    pub fn with_interval(mut self, interval: RangeInclusive<AdvertisingInterval>) -> Self {
-        self.data.inner.interval = interval;
-        self
-    }
-
-    /// Define the advertising type.
-    pub fn with_type(mut self, r#type: AdvertisingType) -> Self {
-        self.data.inner.r#type = r#type;
-        self
-    }
-
-    /// Define our own address type.
-    pub fn with_own_address_type(mut self, own_address_type: OwnAddressType) -> Self {
-        self.data.inner.own_address_type = own_address_type;
-        self
-    }
-
-    /// Define the peer address.
-    pub fn with_peer_address(mut self, peer_address: DeviceAddress) -> Self {
-        self.data.inner.peer_address = peer_address;
-        self
+        Ok(AdvertisingParameters {
+            inner: bletio_hci::AdvertisingParameters::try_new(
+                self.interval,
+                self.r#type,
+                self.own_address_type,
+                self.peer_address,
+                self.channel_map,
+                self.filter_policy,
+            )
+            .map_err(|_| AdvertisingError::InvalidAdvertisingParameters)?,
+        })
     }
 
     /// Define the advertising channels to be used.
     pub fn with_channel_map(mut self, channel_map: AdvertisingChannelMap) -> Self {
-        self.data.inner.channel_map = channel_map;
+        self.channel_map = channel_map;
         self
     }
 
     /// Defined the advertising filter policy.
     pub fn with_filter_policy(mut self, filter_policy: AdvertisingFilterPolicy) -> Self {
-        self.data.inner.filter_policy = filter_policy;
+        self.filter_policy = filter_policy;
         self
     }
 
-    fn is_valid(&self) -> bool {
-        !self.data.inner.channel_map.is_empty()
-            && !matches!(self.data.inner.r#type, AdvertisingType::ScannableUndirected
-                | AdvertisingType::NonConnectableUndirected if self.data.inner.interval.start().value() < 0x00A0)
+    /// Define the advertising interval.
+    pub fn with_interval(mut self, interval: RangeInclusive<AdvertisingInterval>) -> Self {
+        self.interval = interval;
+        self
+    }
+
+    /// Define our own address type.
+    pub fn with_own_address_type(mut self, own_address_type: OwnAddressType) -> Self {
+        self.own_address_type = own_address_type;
+        self
+    }
+
+    /// Define the peer address.
+    pub fn with_peer_address(mut self, peer_address: DeviceAddress) -> Self {
+        self.peer_address = peer_address;
+        self
+    }
+
+    /// Define the advertising type.
+    pub fn with_type(mut self, r#type: AdvertisingType) -> Self {
+        self.r#type = r#type;
+        self
+    }
+}
+
+impl Default for AdvertisingParametersBuilder {
+    fn default() -> Self {
+        Self {
+            interval: (Default::default()..=Default::default()),
+            r#type: Default::default(),
+            own_address_type: Default::default(),
+            peer_address: Default::default(),
+            channel_map: Default::default(),
+            filter_policy: Default::default(),
+        }
     }
 }
 
@@ -129,29 +147,26 @@ mod test {
             .with_channel_map(AdvertisingChannelMap::CHANNEL37 | AdvertisingChannelMap::CHANNEL39)
             .with_filter_policy(AdvertisingFilterPolicy::ScanAllAndConnectionFilterAcceptList)
             .try_build()?;
+        assert_eq!(adv_params.r#type(), AdvertisingType::ScannableUndirected);
         assert_eq!(
-            adv_params.inner.r#type,
-            AdvertisingType::ScannableUndirected
-        );
-        assert_eq!(
-            adv_params.inner.interval,
+            adv_params.interval(),
             0x0100.try_into().unwrap()..=0x110.try_into().unwrap()
         );
         assert!(matches!(
-            adv_params.inner.peer_address,
+            adv_params.peer_address(),
             DeviceAddress::Public(_)
         ));
-        assert_eq!(adv_params.inner.peer_address.value(), &[0, 0, 0, 0, 0, 0]);
+        assert_eq!(adv_params.peer_address().value(), &[0, 0, 0, 0, 0, 0]);
         assert_eq!(
-            adv_params.inner.own_address_type,
+            adv_params.own_address_type(),
             OwnAddressType::RandomDeviceAddress
         );
         assert_eq!(
-            adv_params.inner.channel_map,
+            adv_params.channel_map(),
             AdvertisingChannelMap::CHANNEL37 | AdvertisingChannelMap::CHANNEL39
         );
         assert_eq!(
-            adv_params.inner.filter_policy,
+            adv_params.filter_policy(),
             AdvertisingFilterPolicy::ScanAllAndConnectionFilterAcceptList
         );
         Ok(())
@@ -159,20 +174,9 @@ mod test {
 
     #[test]
     fn test_invalid_advertising_parameters_empty_channel_map() {
-        let builder =
-            AdvertisingParameters::builder().with_channel_map(AdvertisingChannelMap::empty());
-        assert!(!builder.is_valid());
-        let err = builder.try_build();
-        assert_eq!(err, Err(AdvertisingError::InvalidAdvertisingParameters));
-    }
-
-    #[test]
-    fn test_invalid_advertising_parameters_scannable_undirected_with_invalid_interval() {
-        let builder = AdvertisingParameters::builder()
-            .with_type(AdvertisingType::ScannableUndirected)
-            .with_interval(0x0080.try_into().unwrap()..=0x0085.try_into().unwrap());
-        assert!(!builder.is_valid());
-        let err = builder.try_build();
+        let err = AdvertisingParameters::builder()
+            .with_channel_map(AdvertisingChannelMap::empty())
+            .try_build();
         assert_eq!(err, Err(AdvertisingError::InvalidAdvertisingParameters));
     }
 }

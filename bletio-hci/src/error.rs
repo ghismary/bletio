@@ -3,6 +3,9 @@ use crate::{ErrorCode, HciDriverError};
 /// Error occuring in the HCI part of the BLE stack.
 #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
+    /// At least one channel must be enabled in the advertising channel map.
+    #[error("At least one channel must be enabled in the advertising channel map")]
+    AtLeastOneChannelMustBeEnabledInTheAdvertisingChannelMap,
     /// The provided data is too big to fit in an HCI command packet.
     #[error("The provided data is too big to fit in an HCI command packet")]
     DataWillNotFitCommandPacket,

@@ -218,12 +218,60 @@ impl EncodeToBuffer for AdvertisingFilterPolicy {
 /// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AdvertisingParameters {
-    pub interval: RangeInclusive<AdvertisingInterval>,
-    pub r#type: AdvertisingType,
-    pub own_address_type: OwnAddressType,
-    pub peer_address: DeviceAddress,
-    pub channel_map: AdvertisingChannelMap,
-    pub filter_policy: AdvertisingFilterPolicy,
+    interval: RangeInclusive<AdvertisingInterval>,
+    r#type: AdvertisingType,
+    own_address_type: OwnAddressType,
+    peer_address: DeviceAddress,
+    channel_map: AdvertisingChannelMap,
+    filter_policy: AdvertisingFilterPolicy,
+}
+
+impl AdvertisingParameters {
+    pub fn try_new(
+        interval: RangeInclusive<AdvertisingInterval>,
+        r#type: AdvertisingType,
+        own_address_type: OwnAddressType,
+        peer_address: DeviceAddress,
+        channel_map: AdvertisingChannelMap,
+        filter_policy: AdvertisingFilterPolicy,
+    ) -> Result<AdvertisingParameters, Error> {
+        if channel_map.is_empty() {
+            Err(Error::AtLeastOneChannelMustBeEnabledInTheAdvertisingChannelMap)
+        } else {
+            Ok(AdvertisingParameters {
+                interval,
+                r#type,
+                own_address_type,
+                peer_address,
+                channel_map,
+                filter_policy,
+            })
+        }
+    }
+
+    pub fn channel_map(&self) -> AdvertisingChannelMap {
+        self.channel_map
+    }
+
+    pub fn filter_policy(&self) -> AdvertisingFilterPolicy {
+        self.filter_policy
+    }
+
+    pub fn interval(&self) -> RangeInclusive<AdvertisingInterval> {
+        self.interval.clone()
+    }
+
+    pub fn own_address_type(&self) -> OwnAddressType {
+        self.own_address_type
+    }
+
+    pub fn peer_address(&self) -> &DeviceAddress {
+        &self.peer_address
+    }
+
+    pub fn r#type(&self) -> AdvertisingType {
+        self.r#type
+    }
 }
 
 impl EncodeToBuffer for AdvertisingParameters {
