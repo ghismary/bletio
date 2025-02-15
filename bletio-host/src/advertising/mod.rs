@@ -13,6 +13,7 @@ mod ad_struct;
 
 pub mod advertising_data;
 pub mod advertising_parameters;
+pub mod scan_parameters;
 pub mod uri;
 
 pub use ad_struct::flags::Flags;
@@ -23,6 +24,7 @@ pub use advertising_data::{
     ScanResponseDataBuilder,
 };
 pub use advertising_parameters::{AdvertisingParameters, AdvertisingParametersBuilder};
+pub use scan_parameters::{ScanParameters, ScanParametersBuilder};
 pub use uri::{custom_uri_scheme, CustomUriScheme, Uri, UriScheme};
 
 /// Error occuring in the advertising part of the BLE stack.
@@ -46,4 +48,7 @@ pub enum AdvertisingError {
     /// The advertising parameters are not valid, probably because the advertising type is ScannableUndirected or NonConnectableUndirected, and the minimum advertising interval value is less than 0x00A0.
     #[error("The advertising parameters are not valid, probably because the advertising type is ScannableUndirected or NonConnectableUndirected, and the minimum advertising interval value is less than 0x00A0")]
     InvalidAdvertisingParameters,
+    /// The scan parameters are not valid, probably because the scan window is larger than the scan interval.
+    #[error("The scan parameters are not valid, probably because the scan window is larger than the scan interval")]
+    InvalidScanParameters,
 }
