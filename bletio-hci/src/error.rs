@@ -25,6 +25,9 @@ pub enum Error {
         "The advertising interval value {0} is invalid, it needs to be between 0x0020 and 0x4000"
     )]
     InvalidAdvertisingInterval(u16),
+    /// The advertising interval range is invalid, the first value must be smaller or equal to the second one.
+    #[error("The advertising interval range is invalid, the first value must be smaller or equal to the second one")]
+    InvalidAdvertisingIntervalRange,
     /// The provided advertising type is invalid.
     #[error("The advertising type {0} is invalid")]
     InvalidAdvertisingType(u8),

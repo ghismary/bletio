@@ -6,7 +6,7 @@
 
 pub use bletio_hci::{
     AdvertisingChannelMap, AdvertisingEnable, AdvertisingFilterPolicy, AdvertisingInterval,
-    AdvertisingType,
+    AdvertisingIntervalRange, AdvertisingType,
 };
 
 mod ad_struct;

@@ -57,15 +57,16 @@ mod test {
     use super::*;
     use crate::{
         AdvertisingChannelMap, AdvertisingData, AdvertisingEnable, AdvertisingFilterPolicy,
-        AdvertisingParameters, AdvertisingType, CommandCompleteEvent, CommandOpCode, DeviceAddress,
-        ErrorCode, EventMask, EventParameter, FilterDuplicates, LeEventMask, OwnAddressType,
-        PublicDeviceAddress, RandomAddress, RandomStaticDeviceAddress, ScanEnable, ScanParameters,
-        ScanResponseData, StatusAndBdAddrEventParameter, StatusAndBufferSizeEventParameter,
-        StatusAndLeBufferSizeEventParameter, StatusAndRandomNumberEventParameter,
-        StatusAndSupportedCommandsEventParameter, StatusAndSupportedFeaturesEventParameter,
-        StatusAndSupportedLeFeaturesEventParameter, StatusAndSupportedLeStatesEventParameter,
-        StatusAndTxPowerLevelEventParameter, StatusEventParameter, SupportedCommands,
-        SupportedFeatures, SupportedLeFeatures, TxPowerLevel,
+        AdvertisingIntervalRange, AdvertisingParameters, AdvertisingType, CommandCompleteEvent,
+        CommandOpCode, DeviceAddress, ErrorCode, EventMask, EventParameter, FilterDuplicates,
+        LeEventMask, OwnAddressType, PublicDeviceAddress, RandomAddress, RandomStaticDeviceAddress,
+        ScanEnable, ScanParameters, ScanResponseData, StatusAndBdAddrEventParameter,
+        StatusAndBufferSizeEventParameter, StatusAndLeBufferSizeEventParameter,
+        StatusAndRandomNumberEventParameter, StatusAndSupportedCommandsEventParameter,
+        StatusAndSupportedFeaturesEventParameter, StatusAndSupportedLeFeaturesEventParameter,
+        StatusAndSupportedLeStatesEventParameter, StatusAndTxPowerLevelEventParameter,
+        StatusEventParameter, SupportedCommands, SupportedFeatures, SupportedLeFeatures,
+        TxPowerLevel,
     };
 
     #[test]
@@ -111,7 +112,7 @@ mod test {
     )]
     #[case::le_set_advertising_parameters::random_peer_address(
         Command::LeSetAdvertisingParameters(AdvertisingParameters::try_new(
-            0x0020.try_into().unwrap()..=0x0030.try_into().unwrap(),
+            AdvertisingIntervalRange::try_new(0x0020.try_into().unwrap(), 0x0030.try_into().unwrap()).unwrap(),
             AdvertisingType::ScannableUndirected,
             OwnAddressType::RandomDeviceAddress,
             DeviceAddress::Random(RandomAddress::Static(RandomStaticDeviceAddress::try_new([0xFE, 0x92, 0x2F, 0x0F, 0x4B, 0xD2]).unwrap())),
