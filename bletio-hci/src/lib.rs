@@ -49,8 +49,8 @@ pub(crate) use packet::{Packet, PacketType};
 pub use advertising_data::{AdvertisingData, ScanResponseData};
 pub use advertising_enable::AdvertisingEnable;
 pub use advertising_parameters::{
-    AdvertisingChannelMap, AdvertisingFilterPolicy, AdvertisingInterval, AdvertisingParameters,
-    AdvertisingType,
+    AdvertisingChannelMap, AdvertisingFilterPolicy, AdvertisingInterval, AdvertisingIntervalRange,
+    AdvertisingParameters, AdvertisingType,
 };
 pub use connection_interval::ConnectionInterval;
 pub use device_address::{
