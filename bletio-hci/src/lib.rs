@@ -1,5 +1,7 @@
 #![no_std]
 
+pub mod scan_parameters;
+
 mod advertising_data;
 mod advertising_enable;
 mod advertising_parameters;
@@ -17,7 +19,6 @@ mod le_states;
 mod own_address_type;
 mod packet;
 mod scan_enable;
-mod scan_parameters;
 mod supported_commands;
 mod supported_features;
 mod supported_le_features;
@@ -65,7 +66,8 @@ pub use le_states::{LeCombinedState, LeSingleState, LeState};
 pub use own_address_type::OwnAddressType;
 pub use scan_enable::{FilterDuplicates, ScanEnable};
 pub use scan_parameters::{
-    ScanInterval, ScanParameters, ScanType, ScanWindow, ScanningFilterPolicy,
+    scan_interval, scan_window, ScanInterval, ScanParameters, ScanType, ScanWindow,
+    ScanningFilterPolicy,
 };
 pub use supported_commands::SupportedCommands;
 pub use supported_features::SupportedFeatures;

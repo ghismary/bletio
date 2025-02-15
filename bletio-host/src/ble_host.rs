@@ -3,11 +3,14 @@ use core::num::NonZeroU16;
 use core::ops::Deref;
 
 use bletio_hci::{
-    EventMask, Hci, HciDriver, LeEventMask, PublicDeviceAddress, RandomStaticDeviceAddress,
-    SupportedCommands, SupportedFeatures, SupportedLeFeatures, SupportedLeStates,
+    EventMask, FilterDuplicates, Hci, HciDriver, LeEventMask, PublicDeviceAddress,
+    RandomStaticDeviceAddress, ScanEnable, SupportedCommands, SupportedFeatures,
+    SupportedLeFeatures, SupportedLeStates,
 };
 
-use crate::advertising::{AdvertisingEnable, AdvertisingParameters, FullAdvertisingData};
+use crate::advertising::{
+    AdvertisingEnable, AdvertisingParameters, FullAdvertisingData, ScanParameters,
+};
 use crate::assigned_numbers::AppearanceValue;
 use crate::device_information::DeviceInformation;
 use crate::Error;
@@ -29,10 +32,13 @@ pub struct BleHostStateInitial;
 pub struct BleHostStateStandby;
 #[derive(Debug, Default)]
 pub struct BleHostStateAdvertising;
+#[derive(Debug, Default)]
+pub struct BleHostStateScanning;
 
 impl BleHostState for BleHostStateInitial {}
 impl BleHostState for BleHostStateStandby {}
 impl BleHostState for BleHostStateAdvertising {}
+impl BleHostState for BleHostStateScanning {}
 
 impl<'a, H> BleHost<'a, H, BleHostStateInitial>
 where
@@ -186,6 +192,35 @@ where
             Err(e) => Err((e, self)),
         }
     }
+
+    pub async fn start_scanning(
+        self,
+        scan_params: &ScanParameters,
+        filter_duplicates: FilterDuplicates,
+    ) -> Result<BleHost<'a, H, BleHostStateScanning>, (Error, Self)> {
+        async fn inner<H>(
+            hci: &mut Hci<H>,
+            scan_params: &ScanParameters,
+            filter_duplicates: FilterDuplicates,
+        ) -> Result<(), Error>
+        where
+            H: HciDriver,
+        {
+            hci.cmd_le_set_scan_parameters(scan_params.deref().clone())
+                .await?;
+            hci.cmd_le_set_scan_enable(ScanEnable::Enabled, filter_duplicates)
+                .await?;
+            Ok(())
+        }
+        match inner(self.hci, scan_params, filter_duplicates).await {
+            Ok(()) => Ok(BleHost::<H, BleHostStateScanning> {
+                hci: self.hci,
+                device_information: self.device_information,
+                phantom: PhantomData,
+            }),
+            Err(e) => Err((e, self)),
+        }
+    }
 }
 
 impl<'a, H> BleHost<'a, H, BleHostStateAdvertising>
@@ -195,6 +230,22 @@ where
     pub async fn stop_advertising(self) -> Result<BleHost<'a, H, BleHostStateStandby>, Error> {
         self.hci
             .cmd_le_set_advertising_enable(AdvertisingEnable::Disabled)
+            .await?;
+        Ok(BleHost::<H, BleHostStateStandby> {
+            hci: self.hci,
+            device_information: self.device_information,
+            phantom: PhantomData,
+        })
+    }
+}
+
+impl<'a, H> BleHost<'a, H, BleHostStateScanning>
+where
+    H: HciDriver,
+{
+    pub async fn stop_scanning(self) -> Result<BleHost<'a, H, BleHostStateStandby>, Error> {
+        self.hci
+            .cmd_le_set_scan_enable(ScanEnable::Disabled, FilterDuplicates::Disabled)
             .await?;
         Ok(BleHost::<H, BleHostStateStandby> {
             hci: self.hci,

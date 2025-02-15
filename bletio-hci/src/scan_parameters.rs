@@ -51,11 +51,16 @@ pub struct ScanInterval {
 impl ScanInterval {
     /// Create a valid scan interval.
     pub const fn try_new(value: u16) -> Result<Self, Error> {
-        if (value >= 0x0004) && (value <= 0x4000) {
-            Ok(Self { value })
+        if check_scan_interval_value(value) {
+            Ok(Self::new_unchecked(value))
         } else {
             Err(Error::InvalidScanInterval(value))
         }
+    }
+
+    #[doc(hidden)]
+    pub const fn new_unchecked(value: u16) -> Self {
+        Self { value }
     }
 
     /// Get the value of the scan interval in milliseconds.
@@ -104,6 +109,49 @@ impl PartialOrd<ScanWindow> for ScanInterval {
     }
 }
 
+#[diagnostic::on_unimplemented(
+    message = "the scan interval value is invalid, it needs to be between 0x0004 and 0x4000"
+)]
+#[doc(hidden)]
+pub trait ScanIntervalValueValid {}
+
+#[doc(hidden)]
+pub struct ScanIntervalValueIsValid<const VALID: bool>;
+
+#[doc(hidden)]
+impl ScanIntervalValueValid for ScanIntervalValueIsValid<true> {}
+
+#[doc(hidden)]
+pub const fn scan_interval_value_is_valid<T: ScanIntervalValueValid>() {}
+
+#[doc(hidden)]
+pub const fn check_scan_interval_value(value: u16) -> bool {
+    (value >= 0x0004) && (value <= 0x4000)
+}
+
+/// Create a [`ScanInterval`], checking that it is valid at compile-time.
+///
+/// # Examples
+///
+/// ```
+/// # use bletio_hci::scan_interval;
+/// let interval = scan_interval!(0x0020);
+/// ```
+#[macro_export]
+#[doc(hidden)]
+macro_rules! __scan_interval__ {
+    ($value:expr) => {{
+        const ERR: bool = bletio_hci::scan_parameters::check_scan_interval_value($value);
+        bletio_hci::scan_parameters::scan_interval_value_is_valid::<
+            bletio_hci::scan_parameters::ScanIntervalValueIsValid<ERR>,
+        >();
+        bletio_hci::scan_parameters::ScanInterval::new_unchecked($value)
+    }};
+}
+
+#[doc(inline)]
+pub use __scan_interval__ as scan_interval;
+
 /// Scan window.
 ///
 /// The duration of the LE scan.
@@ -123,11 +171,16 @@ pub struct ScanWindow {
 impl ScanWindow {
     /// Create a valid scan window.
     pub const fn try_new(value: u16) -> Result<Self, Error> {
-        if (value >= 0x0004) && (value <= 0x4000) {
-            Ok(Self { value })
+        if check_scan_window_value(value) {
+            Ok(Self::new_unchecked(value))
         } else {
             Err(Error::InvalidScanWindow(value))
         }
+    }
+
+    #[doc(hidden)]
+    pub const fn new_unchecked(value: u16) -> Self {
+        Self { value }
     }
 
     /// Get the value of the scan window in milliseconds.
@@ -176,6 +229,49 @@ impl PartialOrd<ScanInterval> for ScanWindow {
     }
 }
 
+#[diagnostic::on_unimplemented(
+    message = "the scan window value is invalid, it needs to be between 0x0004 and 0x4000"
+)]
+#[doc(hidden)]
+pub trait ScanWindowValueValid {}
+
+#[doc(hidden)]
+pub struct ScanWindowValueIsValid<const VALID: bool>;
+
+#[doc(hidden)]
+impl ScanWindowValueValid for ScanWindowValueIsValid<true> {}
+
+#[doc(hidden)]
+pub const fn scan_window_value_is_valid<T: ScanWindowValueValid>() {}
+
+#[doc(hidden)]
+pub const fn check_scan_window_value(value: u16) -> bool {
+    (value >= 0x0004) && (value <= 0x4000)
+}
+
+/// Create a [`ScanWindow`], checking that it is valid at compile-time.
+///
+/// # Examples
+///
+/// ```
+/// # use bletio_hci::scan_window;
+/// let window = scan_window!(0x0040);
+/// ```
+#[macro_export]
+#[doc(hidden)]
+macro_rules! __scan_window__ {
+    ($value:expr) => {{
+        const ERR: bool = bletio_hci::scan_parameters::check_scan_window_value($value);
+        bletio_hci::scan_parameters::scan_window_value_is_valid::<
+            bletio_hci::scan_parameters::ScanWindowValueIsValid<ERR>,
+        >();
+        bletio_hci::scan_parameters::ScanWindow::new_unchecked($value)
+    }};
+}
+
+#[doc(inline)]
+pub use __scan_window__ as scan_window;
+
 /// Scanning Filter Policy.
 ///
 /// See [Core Specification 6.0, Vol.4, Part E, 7.8.10](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-fff6f93e-315b-04fe-51bf-a18f78ceec89).
@@ -217,11 +313,11 @@ impl EncodeToBuffer for ScanningFilterPolicy {
 /// See [Core Specification 6.0, Vol.4, Part E, 7.8.10](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-fff6f93e-315b-04fe-51bf-a18f78ceec89).
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct ScanParameters {
-    pub r#type: ScanType,
-    pub interval: ScanInterval,
-    pub window: ScanWindow,
-    pub own_address_type: OwnAddressType,
-    pub filter_policy: ScanningFilterPolicy,
+    r#type: ScanType,
+    interval: ScanInterval,
+    window: ScanWindow,
+    own_address_type: OwnAddressType,
+    filter_policy: ScanningFilterPolicy,
 }
 
 impl ScanParameters {
@@ -243,6 +339,26 @@ impl ScanParameters {
         } else {
             Err(Error::ScanWindowMustBeSmallerOrEqualToScanInterval)
         }
+    }
+
+    pub fn filter_policy(&self) -> ScanningFilterPolicy {
+        self.filter_policy
+    }
+
+    pub fn interval(&self) -> ScanInterval {
+        self.interval
+    }
+
+    pub fn own_address_type(&self) -> OwnAddressType {
+        self.own_address_type
+    }
+
+    pub fn r#type(&self) -> ScanType {
+        self.r#type
+    }
+
+    pub fn window(&self) -> ScanWindow {
+        self.window
     }
 }
 
@@ -436,6 +552,31 @@ mod test {
         let scan_window = ScanWindow::try_new(scan_window_value)?;
         assert_ge!(scan_interval, scan_window);
         assert_le!(scan_window, scan_interval);
+        Ok(())
+    }
+
+    #[test]
+    fn test_valid_scan_parameters_success() -> Result<(), Error> {
+        let interval = ScanInterval::try_new(0x0020)?;
+        let window = ScanWindow::try_new(0x0010)?;
+        let scan_params = ScanParameters::try_new(
+            ScanType::PassiveScanning,
+            interval,
+            window,
+            OwnAddressType::RandomDeviceAddress,
+            ScanningFilterPolicy::BasicFiltered,
+        )?;
+        assert_eq!(scan_params.r#type(), ScanType::PassiveScanning);
+        assert_eq!(scan_params.interval(), interval);
+        assert_eq!(scan_params.window(), window);
+        assert_eq!(
+            scan_params.own_address_type(),
+            OwnAddressType::RandomDeviceAddress
+        );
+        assert_eq!(
+            scan_params.filter_policy(),
+            ScanningFilterPolicy::BasicFiltered
+        );
         Ok(())
     }
 
