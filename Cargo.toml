@@ -14,11 +14,11 @@ categories = ["embedded", "no-std"]
 approx = "0.5"
 bitflags = "2.8"
 claims = "0.8"
+defmt = "0.3"
 embassy-time = { version = "0.4" }
 nom = { version = "8.0", default-features = false }
 num_enum = { version = "0.7", default-features = false }
 rstest = "0.24"
-thiserror = { version = "2.0", default-features = false }
 tokio = { version = "1.43", features = ["rt", "time"] }
 tokio-macros = "2.5"
 tokio-test = "0.4"

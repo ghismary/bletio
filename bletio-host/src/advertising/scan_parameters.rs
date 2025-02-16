@@ -77,6 +77,7 @@ impl ScanParametersBuilder {
 ///
 /// Use the [`ScanParametersBuilder`] to instantiate it.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ScanParameters {
     inner: bletio_hci::ScanParameters,
 }

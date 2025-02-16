@@ -10,6 +10,7 @@ use crate::{Command, Error, Event};
 ///
 /// See [Core Specification 6.0, Vol. 4, Part A, 2](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/uart-transport-layer.html#UUID-361053ee-862f-c591-00bd-1a941a12f949).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, TryFromPrimitive)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[num_enum(error_type(name = Error, constructor = Error::InvalidPacketType))]
 #[repr(u8)]
 #[non_exhaustive]
@@ -22,6 +23,7 @@ pub(crate) enum PacketType {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) enum Packet {
     Command(Command),
     Event(Event),

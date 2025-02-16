@@ -1,4 +1,8 @@
+#[cfg(not(feature = "defmt"))]
 use bitflags::bitflags;
+#[cfg(feature = "defmt")]
+use defmt::bitflags;
+
 use bletio_utils::EncodeToBuffer;
 
 use crate::assigned_numbers::AdType;
@@ -13,6 +17,7 @@ const FLAGS_AD_STRUCT_SIZE: usize = 2;
 ///
 /// See [`Flags`] for more information about each of the flags.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct FlagsAdStruct {
     flags: Flags,
 }
@@ -39,14 +44,12 @@ impl EncodeToBuffer for FlagsAdStruct {
     }
 }
 
-/// Flags to be used in a [FlagsAdStruct](crate::advertising::ad_struct::FlagsAdStruct)
-/// Advertising Structure, as defined in
-/// [Supplement to the Bluetooth Core Specification, Part A, 1.3](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-801bc3e0-519d-2291-8acd-d32d1fd27a4e).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Flags(u8);
-
 bitflags! {
-    impl Flags: u8 {
+    /// Flags to be used in a [FlagsAdStruct](crate::advertising::ad_struct::FlagsAdStruct)
+    /// Advertising Structure, as defined in
+    /// [Supplement to the Bluetooth Core Specification, Part A, 1.3](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-801bc3e0-519d-2291-8acd-d32d1fd27a4e).
+    #[cfg_attr(not(feature = "defmt"), derive(Debug, Clone, Copy, PartialEq, Eq))]
+    pub struct Flags: u8 {
         /// Low-Energy Limited Discoverable Mode.
         const LE_LIMITED_DISCOVERABLE_MODE = 1 << 0;
         /// Low-Energy General Discoverable Mode.

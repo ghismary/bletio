@@ -3,6 +3,7 @@ use core::ops::{BitAnd, BitOr, BitXor, Not};
 use bitflags::Bits;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct BitFlagsArray<const CAP: usize>(pub [u8; CAP]);
 
 impl<const CAP: usize> BitFlagsArray<CAP> {

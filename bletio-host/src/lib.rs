@@ -22,20 +22,29 @@ pub(crate) use device_information::DeviceInformation;
 use advertising::AdvertisingError;
 
 /// Errors that can happen during the BLE stack usage.
-#[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Error {
     /// Advertising related error.
-    #[error(transparent)]
-    Advertising(#[from] AdvertisingError),
+    Advertising(AdvertisingError),
     /// HCI related error.
-    #[error(transparent)]
-    Hci(#[from] HciError),
+    Hci(HciError),
     /// The Bluetooth controller is not LE capable.
-    #[error("The Bluetooth controller is not LE capable")]
     NonLeCapableController,
     /// The Random Static Device Address has already been created.
-    #[error("The Random Static Device Address has already been created")]
     RandomAddressAlreadyCreated,
+}
+
+impl From<AdvertisingError> for Error {
+    fn from(value: AdvertisingError) -> Self {
+        Self::Advertising(value)
+    }
+}
+
+impl From<HciError> for Error {
+    fn from(value: HciError) -> Self {
+        Self::Hci(value)
+    }
 }
 
 impl From<HciDriverError> for Error {

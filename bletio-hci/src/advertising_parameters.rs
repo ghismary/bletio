@@ -2,7 +2,11 @@
 //!
 //! These Advertising Parameters need to be defined to start advertising.
 
+#[cfg(not(feature = "defmt"))]
 use bitflags::bitflags;
+#[cfg(feature = "defmt")]
+use defmt::bitflags;
+
 use bletio_utils::{BufferOps, EncodeToBuffer, Error as UtilsError};
 use core::ops::RangeInclusive;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
@@ -21,6 +25,7 @@ use crate::{DeviceAddress, Error, OwnAddressType};
 ///
 /// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct AdvertisingInterval {
     value: u16,
 }
@@ -75,6 +80,7 @@ impl EncodeToBuffer for AdvertisingInterval {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct AdvertisingIntervalRange {
     value: RangeInclusive<AdvertisingInterval>,
 }
@@ -204,6 +210,7 @@ pub use __advertising_interval_range__ as advertising_interval_range;
 ///
 /// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, IntoPrimitive, TryFromPrimitive)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[num_enum(error_type(name = Error, constructor = Error::InvalidAdvertisingType))]
 #[repr(u8)]
 #[non_exhaustive]
@@ -265,16 +272,14 @@ impl EncodeToBuffer for PeerAddressType {
     }
 }
 
-/// Channel map of the channels to use for advertising.
-///
-/// Defaults to all the 3 channels (37, 38 & 39).
-///
-/// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct AdvertisingChannelMap(u8);
-
 bitflags! {
-    impl AdvertisingChannelMap: u8 {
+    /// Channel map of the channels to use for advertising.
+    ///
+    /// Defaults to all the 3 channels (37, 38 & 39).
+    ///
+    /// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
+    #[cfg_attr(not(feature = "defmt"), derive(Debug, Clone, Copy, PartialEq, Eq))]
+    pub struct AdvertisingChannelMap: u8 {
         /// Channel 37 shall be used.
         const CHANNEL37 = 1 << 0;
         /// Channel 38 shall be used.
@@ -310,6 +315,7 @@ impl EncodeToBuffer for AdvertisingChannelMap {
 ///
 /// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, IntoPrimitive, TryFromPrimitive)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[num_enum(error_type(name = Error, constructor = Error::InvalidAdvertisingFilterPolicy))]
 #[repr(u8)]
 #[non_exhaustive]
@@ -348,6 +354,7 @@ impl EncodeToBuffer for AdvertisingFilterPolicy {
 ///
 /// See [Core Specification 6.0, Vol.4, Part E, 7.8.5](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3142c154-1bdd-37b2-cc6e-006aa755f5f7).
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct AdvertisingParameters {
     interval: AdvertisingIntervalRange,
     r#type: AdvertisingType,
@@ -488,7 +495,7 @@ pub(crate) mod parser {
     }
 
     fn channel_map(input: &[u8]) -> IResult<&[u8], AdvertisingChannelMap> {
-        map(le_u8(), AdvertisingChannelMap::from_bits_retain).parse(input)
+        map(le_u8(), AdvertisingChannelMap::from_bits_truncate).parse(input)
     }
 
     fn filter_policy(input: &[u8]) -> IResult<&[u8], AdvertisingFilterPolicy> {

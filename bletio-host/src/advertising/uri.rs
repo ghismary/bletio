@@ -6,6 +6,7 @@ const EMPTY_SCHEME_NAME_VALUE: u16 = 0x0001;
 
 /// An URI to be included in the Universal Resource Identifier Advertising Structure.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Uri {
     scheme: UriScheme,
     hier_part: &'static str,
@@ -155,6 +156,7 @@ pub const fn check_custom_uri_scheme_has_alphanumeric_last_char(scheme: &str) ->
 ///
 /// Use [`custom_uri_scheme`] to create it.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct CustomUriScheme {
     scheme: &'static str,
 }
@@ -216,6 +218,7 @@ pub use __custom_uri_scheme__ as custom_uri_scheme;
 
 /// An URI scheme, either provisioned or custom.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum UriScheme {
     /// A provisioned URI scheme.
     Provisioned(ProvisionedUriScheme),

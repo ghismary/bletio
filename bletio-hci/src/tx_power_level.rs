@@ -4,6 +4,7 @@ use crate::Error;
 ///
 /// The value ranges from -127 to 20 dBm.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct TxPowerLevel {
     value: i8,
 }

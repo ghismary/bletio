@@ -6,9 +6,8 @@ mod buffer;
 pub use bit_flags_array::BitFlagsArray;
 pub use buffer::{Buffer, BufferOps, EncodeToBuffer};
 
-#[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
-    #[error("Buffer too small")]
     BufferTooSmall,
 }
 

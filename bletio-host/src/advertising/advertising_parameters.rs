@@ -91,6 +91,7 @@ impl AdvertisingParametersBuilder {
 ///
 /// Use the [`AdvertisingParametersBuilder`] to instantiate it.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct AdvertisingParameters {
     inner: bletio_hci::AdvertisingParameters,
 }

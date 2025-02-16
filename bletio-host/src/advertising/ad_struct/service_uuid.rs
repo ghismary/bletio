@@ -18,6 +18,7 @@ pub enum ServiceListComplete {
 /// This list can be complete or incomplete. If the list is empty, it shall be marked as complete,
 /// as defined in [Supplement to the Bluetooth Core Specification, Part A, 1.1](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-b1d0edbc-fc9e-507a-efe4-3fd4b4817a52).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct ServiceUuid16AdStruct<'a> {
     uuids: &'a [ServiceUuid],
     ad_type: AdType,
@@ -68,6 +69,7 @@ impl EncodeToBuffer for ServiceUuid16AdStruct<'_> {
 /// This list can be complete or incomplete. If the list is empty, it shall be marked as complete,
 /// as defined in [Supplement to the Bluetooth Core Specification, Part A, 1.1](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-b1d0edbc-fc9e-507a-efe4-3fd4b4817a52).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct ServiceUuid32AdStruct<'a> {
     uuids: &'a [Uuid32],
     ad_type: AdType,
@@ -118,6 +120,7 @@ impl EncodeToBuffer for ServiceUuid32AdStruct<'_> {
 /// This list can be complete or incomplete. If the list is empty, it shall be marked as complete,
 /// as defined in [Supplement to the Bluetooth Core Specification, Part A, 1.1](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-b1d0edbc-fc9e-507a-efe4-3fd4b4817a52).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct ServiceUuid128AdStruct<'a> {
     uuids: &'a [Uuid128],
     ad_type: AdType,

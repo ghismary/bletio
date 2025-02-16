@@ -12,14 +12,15 @@ categories.workspace = true
 default = ["tokio"]
 embassy = ["dep:embassy-time"]
 tokio = ["dep:tokio"]
+defmt = ["dep:defmt", "bletio-utils/defmt"]
 
 [dependencies]
 bitflags = { workspace = true }
 bletio-utils = { path = "../bletio-utils" }
+defmt = { workspace = true, optional = true }
 embassy-time = { workspace = true, optional = true }
 nom = { workspace = true }
 num_enum = { workspace = true }
-thiserror = { workspace = true }
 tokio = { workspace = true, optional = true }
 
 [dev-dependencies]

@@ -12,6 +12,7 @@ use crate::uuid::{Uuid128, Uuid32};
 ///
 /// See [Supplement to the Bluetooth Core Specification, Part A, 1.10](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-302574d9-585b-209a-c32f-c5b6278f3377).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct ServiceSolicitationUuid16AdStruct<'a> {
     uuids: &'a [ServiceUuid],
 }
@@ -49,6 +50,7 @@ impl EncodeToBuffer for ServiceSolicitationUuid16AdStruct<'_> {
 ///
 /// See [Supplement to the Bluetooth Core Specification, Part A, 1.10](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-302574d9-585b-209a-c32f-c5b6278f3377).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct ServiceSolicitationUuid32AdStruct<'a> {
     uuids: &'a [Uuid32],
 }
@@ -86,6 +88,7 @@ impl EncodeToBuffer for ServiceSolicitationUuid32AdStruct<'_> {
 ///
 /// See [Supplement to the Bluetooth Core Specification, Part A, 1.10](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-302574d9-585b-209a-c32f-c5b6278f3377).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct ServiceSolicitationUuid128AdStruct<'a> {
     uuids: &'a [Uuid128],
 }

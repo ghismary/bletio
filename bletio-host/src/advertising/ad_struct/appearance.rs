@@ -11,6 +11,7 @@ const APPEARANCE_AD_STRUCT_SIZE: usize = 3;
 /// and
 /// [Core Specification 6.0, Vol. 3, Part C, 12.2](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/generic-access-profile.html#UUID-ec0b9e4b-8d14-7280-a0ae-68c61f6f00eb).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct AppearanceAdStruct {
     appearance: AppearanceValue,
 }

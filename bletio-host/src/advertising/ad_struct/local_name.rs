@@ -6,6 +6,7 @@ use crate::assigned_numbers::AdType;
 ///
 /// Used when creating a Local Name Advertising Structures.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum LocalNameComplete {
     Complete,
     Shortened(usize),
@@ -16,6 +17,7 @@ pub enum LocalNameComplete {
 /// The local name of the device is defined in
 /// [Supplement to the Bluetooth Core Specification, Part A, 1.2](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-351cc997-6a3c-8980-31cb-21b2ffcb103f).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct LocalNameAdStruct<'a> {
     local_name: &'a str,
     pub(crate) complete: LocalNameComplete,

@@ -17,6 +17,7 @@ const fn opcode(ogf: u16, ocf: u16) -> u16 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, IntoPrimitive, FromPrimitive)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[repr(u16)]
 pub(crate) enum CommandOpCode {
     Nop = opcode(NOP_OGF, 0x0000),
@@ -49,6 +50,7 @@ pub(crate) enum CommandOpCode {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) enum Command {
     // LeAddDeviceToFilterAcceptList(AddressType, Address),
     // LeClearFilterAcceptList,
@@ -165,6 +167,7 @@ const HCI_COMMAND_PACKET_LENGTH_OFFSET: usize = 3;
 const HCI_COMMAND_PACKET_DATA_OFFSET: usize = 4;
 
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct CommandPacket {
     buffer: Buffer<HCI_COMMAND_MAX_SIZE>,
 }

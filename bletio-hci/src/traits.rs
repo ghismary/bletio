@@ -1,13 +1,11 @@
 use core::future::Future;
 use core::time::Duration;
 
-#[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum HciDriverError {
-    #[error("HCI driver write failure")]
     WriteFailure,
-    #[error("HCI driver read failure")]
     ReadFailure,
-    #[error("HCI driver timeout")]
     Timeout,
 }
 

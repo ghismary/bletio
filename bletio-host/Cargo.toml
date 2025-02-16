@@ -12,12 +12,13 @@ categories.workspace = true
 default = ["tokio"]
 embassy = ["bletio-hci/embassy"]
 tokio = ["bletio-hci/tokio"]
+defmt = ["dep:defmt", "bletio-hci/defmt", "bletio-utils/defmt"]
 
 [dependencies]
 bitflags = { workspace = true }
 bletio-hci = { path = "../bletio-hci", default-features = false }
 bletio-utils = { path = "../bletio-utils" }
-thiserror = { workspace = true }
+defmt = { workspace = true, optional = true }
 
 [dev-dependencies]
 rstest = { workspace = true }

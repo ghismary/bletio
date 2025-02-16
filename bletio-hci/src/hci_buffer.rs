@@ -5,6 +5,7 @@ use crate::{HciDriver, HciDriverError};
 const HCI_MAX_READ_BUFFER_SIZE: usize = 259;
 
 #[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct HciBuffer {
     buffer: Buffer<HCI_MAX_READ_BUFFER_SIZE>,
 }

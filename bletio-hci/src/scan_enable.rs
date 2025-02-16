@@ -7,6 +7,7 @@ use crate::Error;
 ///
 /// See [Core Specification 6.0, Vol.4, Part E, 7.8.11](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-bf0262b2-c9d0-b457-8405-5cf531a0bff1).
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, IntoPrimitive, TryFromPrimitive)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[num_enum(error_type(name = Error, constructor = Error::InvalidScanEnableValue))]
 #[repr(u8)]
 #[non_exhaustive]
@@ -32,6 +33,7 @@ impl EncodeToBuffer for ScanEnable {
 ///
 /// See [Core Specification 6.0, Vol.4, Part E, 7.8.11](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-bf0262b2-c9d0-b457-8405-5cf531a0bff1).
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, IntoPrimitive, TryFromPrimitive)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[num_enum(error_type(name = Error, constructor = Error::InvalidFilterDuplicatesValue))]
 #[repr(u8)]
 #[non_exhaustive]

@@ -2,6 +2,7 @@
 const BLUETOOTH_BASE_UUID: u128 = 0x00000000_0000_1000_8000_00805F9B34FB;
 
 #[derive(Debug, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Uuid {
     Uuid16(Uuid16),
     Uuid32(Uuid32),
@@ -25,6 +26,7 @@ impl PartialEq for Uuid {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Uuid16(pub u16);
 
 impl From<u16> for Uuid16 {
@@ -46,6 +48,7 @@ impl PartialEq<Uuid128> for Uuid16 {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Uuid32(pub u32);
 
 impl From<u32> for Uuid32 {
@@ -73,6 +76,7 @@ impl PartialEq<Uuid128> for Uuid32 {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Uuid128(pub u128);
 
 impl From<u128> for Uuid128 {
