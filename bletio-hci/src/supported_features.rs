@@ -1,11 +1,15 @@
+#[cfg(not(feature = "defmt"))]
 use bitflags::bitflags;
+#[cfg(feature = "defmt")]
+use defmt::bitflags;
 
 bitflags! {
     /// Features supported by the Link Manager.
     ///
     /// These features are defined in
     /// [Core Specification 6.0, Vol. 2, Part C, 3](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/br-edr-controller/link-manager-protocol-specification.html#UUID-248645a8-42ca-a871-78ce-4487981382d8).
-    #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+    #[cfg_attr(not(feature = "defmt"), derive(Debug, Default, Clone, Copy, PartialEq, Eq))]
+    #[cfg_attr(feature = "defmt", derive(Default))]
     pub struct SupportedFeatures: u64 {
         /// This feature indicates whether the Controller supports LE.
         /// The local Host uses this feature bit to determine whether the Controller supports LE.

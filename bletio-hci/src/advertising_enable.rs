@@ -7,6 +7,7 @@ use crate::Error;
 ///
 /// See [Core Specification 6.0, Vol.4, Part E, 7.8.9](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-e58c6816-c25e-367a-0023-9da1700a3794).
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, IntoPrimitive, TryFromPrimitive)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[num_enum(error_type(name = Error, constructor = Error::InvalidAdvertisingEnableValue))]
 #[repr(u8)]
 #[non_exhaustive]

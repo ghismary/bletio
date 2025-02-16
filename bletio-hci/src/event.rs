@@ -6,12 +6,14 @@ use crate::{
 };
 
 #[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) enum Event {
     CommandComplete(CommandCompleteEvent),
     Unsupported(u8),
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[repr(u8)]
 pub(crate) enum EventCode {
     CommandComplete = 0x0E,
@@ -28,6 +30,7 @@ impl From<u8> for EventCode {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct CommandCompleteEvent {
     pub(crate) num_hci_command_packets: u8,
     pub(crate) opcode: CommandOpCode,
@@ -49,6 +52,7 @@ impl CommandCompleteEvent {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) enum EventParameter {
     Empty,
     Status(StatusEventParameter),
@@ -64,6 +68,7 @@ pub(crate) enum EventParameter {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct StatusEventParameter {
     pub(crate) status: ErrorCode,
 }
@@ -75,6 +80,7 @@ impl From<StatusEventParameter> for EventParameter {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct StatusAndBdAddrEventParameter {
     pub(crate) status: ErrorCode,
     pub(crate) bd_addr: PublicDeviceAddress,
@@ -87,6 +93,7 @@ impl From<StatusAndBdAddrEventParameter> for EventParameter {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct StatusAndBufferSizeEventParameter {
     pub(crate) status: ErrorCode,
     pub(crate) acl_data_packet_length: NonZeroU16,
@@ -102,6 +109,7 @@ impl From<StatusAndBufferSizeEventParameter> for EventParameter {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct StatusAndLeBufferSizeEventParameter {
     pub(crate) status: ErrorCode,
     pub(crate) le_acl_data_packet_length: u16,
@@ -115,6 +123,7 @@ impl From<StatusAndLeBufferSizeEventParameter> for EventParameter {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct StatusAndRandomNumberEventParameter {
     pub(crate) status: ErrorCode,
     pub(crate) random_number: [u8; 8],
@@ -127,6 +136,7 @@ impl From<StatusAndRandomNumberEventParameter> for EventParameter {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct StatusAndSupportedCommandsEventParameter {
     pub(crate) status: ErrorCode,
     pub(crate) supported_commands: SupportedCommands,
@@ -139,6 +149,7 @@ impl From<StatusAndSupportedCommandsEventParameter> for EventParameter {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct StatusAndSupportedFeaturesEventParameter {
     pub(crate) status: ErrorCode,
     pub(crate) supported_features: SupportedFeatures,
@@ -151,6 +162,7 @@ impl From<StatusAndSupportedFeaturesEventParameter> for EventParameter {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct StatusAndSupportedLeFeaturesEventParameter {
     pub(crate) status: ErrorCode,
     pub(crate) supported_le_features: SupportedLeFeatures,
@@ -163,6 +175,7 @@ impl From<StatusAndSupportedLeFeaturesEventParameter> for EventParameter {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct StatusAndSupportedLeStatesEventParameter {
     pub(crate) status: ErrorCode,
     pub(crate) supported_le_states: SupportedLeStates,
@@ -175,6 +188,7 @@ impl From<StatusAndSupportedLeStatesEventParameter> for EventParameter {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct StatusAndTxPowerLevelEventParameter {
     pub(crate) status: ErrorCode,
     pub(crate) tx_power_level: TxPowerLevel,
@@ -229,7 +243,7 @@ pub(crate) mod parser {
     }
 
     fn supported_features(input: &[u8]) -> IResult<&[u8], SupportedFeatures> {
-        map(le_u64(), SupportedFeatures::from_bits_retain).parse(input)
+        map(le_u64(), SupportedFeatures::from_bits_truncate).parse(input)
     }
 
     fn bd_addr(input: &[u8]) -> IResult<&[u8], PublicDeviceAddress> {

@@ -1,6 +1,7 @@
 use crate::{LeCombinedState, LeSingleState, LeState};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct SupportedLeStates {
     value: u64,
 }

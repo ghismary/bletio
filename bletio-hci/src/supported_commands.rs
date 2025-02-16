@@ -7,6 +7,7 @@ bitflags_array! {
     /// These commands are defined in
     /// [Core Specification 6.0, Vol. 4, Part E, 6.27](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-d5f3af07-8495-3fe6-8afe-c6e6db371233).
     #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+    #[cfg_attr(feature = "defmt", derive(defmt::Format))]
     pub struct SupportedCommands: 64 {
         const READ_BUFFER_SIZE = (14, 7);
         const READ_BD_ADDR = (15, 1);

@@ -5,6 +5,7 @@ use crate::Error;
 /// HCI error codes as defined in
 /// [Core Specification 6.0, Vol.1, Part F](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/architecture,-change-history,-and-conventions/controller-error-codes.html).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, TryFromPrimitive)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[num_enum(error_type(name = Error, constructor = Error::InvalidErrorCode))]
 #[repr(u8)]
 #[non_exhaustive]

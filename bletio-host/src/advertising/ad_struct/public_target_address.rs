@@ -12,6 +12,7 @@ use crate::{advertising::AdvertisingError, assigned_numbers::AdType};
 ///
 /// See [Supplement to the Bluetooth Core Specification, Part A, 1.13](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-d42b32b3-1877-b82c-fd79-5d755328de9f).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct PublicTargetAddressAdStruct<'a> {
     addresses: &'a [PublicDeviceAddress],
 }

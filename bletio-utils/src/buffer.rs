@@ -24,6 +24,7 @@ pub trait EncodeToBuffer {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Buffer<const CAP: usize> {
     pub data: [u8; CAP],
     pub offset: usize,

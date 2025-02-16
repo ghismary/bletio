@@ -8,6 +8,7 @@ use crate::Error;
 ///  - Time = N × 1.25 ms
 ///  - Time Range: 7.5 ms to 4 s
 #[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ConnectionInterval {
     value: ConnectionIntervalType,
 }
@@ -64,6 +65,7 @@ impl From<ConnectionInterval> for u16 {
 }
 
 #[derive(Debug, Copy, Clone, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 enum ConnectionIntervalType {
     Defined(u16),
     Undefined,

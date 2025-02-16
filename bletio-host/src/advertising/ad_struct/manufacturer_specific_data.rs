@@ -11,6 +11,7 @@ use crate::assigned_numbers::CompanyIdentifier;
 ///
 /// This is used for example for iBeacons and Eddystone beacons.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct ManufacturerSpecificDataAdStruct<'a> {
     manufacturer: CompanyIdentifier,
     data: &'a [u8],

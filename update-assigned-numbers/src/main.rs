@@ -114,6 +114,7 @@ fn generate_ad_types(
 //! FILE GENERATED FROM REVISION {} OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[repr(u8)]
 #[allow(dead_code)]
 #[non_exhaustive]
@@ -258,6 +259,7 @@ fn generate_appearance_values(
 //! FILE GENERATED FROM REVISION {} OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[repr(u16)]
 #[allow(dead_code)]
 #[non_exhaustive]
@@ -373,6 +375,7 @@ fn generate_company_identifiers(
 //! FILE GENERATED FROM REVISION {} OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[repr(u16)]
 #[non_exhaustive]
 /// Assigned numbers for company identifiers defined in
@@ -443,6 +446,7 @@ fn generate_service_uuids(
 //! FILE GENERATED FROM REVISION {} OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[repr(u16)]
 #[non_exhaustive]
 /// Assigned numbers for Bluetooth GATT services defined in
@@ -513,6 +517,7 @@ fn generate_uri_schemes(
 //! FILE GENERATED FROM REVISION {} OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[repr(u16)]
 #[non_exhaustive]
 /// Assigned numbers for Bluetooth URI schemes defined in

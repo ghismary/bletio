@@ -12,6 +12,7 @@ use crate::{advertising::AdvertisingError, assigned_numbers::AdType};
 ///
 /// See [Supplement to the Bluetooth Core Specification, Part A, 1.14](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-9c825fe7-7092-a219-ecb4-2294c2c12d9a).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct RandomTargetAddressAdStruct<'a> {
     addresses: &'a [RandomAddress],
 }

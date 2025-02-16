@@ -8,6 +8,10 @@ license.workspace = true
 keywords.workspace = true
 categories.workspace = true
 
+[features]
+default = []
+defmt = ["dep:defmt"]
+
 [dependencies]
 bitflags = { workspace = true }
-thiserror = { workspace = true }
+defmt = { workspace = true, optional = true }

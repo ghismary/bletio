@@ -7,6 +7,7 @@ bitflags_array! {
     /// These features are defined in
     /// [Core Specification 6.0, Vol. 6, Part B, 4.6](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/low-energy-controller/link-layer-specification.html#UUID-25d414b5-8c50-cd46-fd17-80f0f816f354).
     #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+    #[cfg_attr(feature = "defmt", derive(defmt::Format))]
     pub struct SupportedLeFeatures: 9 {
         /// The controller supports encryption on all the logical transports and:
         ///  - LL_ENC_REQ

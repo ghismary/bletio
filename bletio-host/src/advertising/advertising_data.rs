@@ -20,6 +20,7 @@ use crate::uuid::{Uuid128, Uuid32};
 use crate::{DeviceInformation, Error};
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct FullAdvertisingData<'a> {
     pub(crate) adv_data: AdvertisingData<'a>,
     pub(crate) scanresp_data: Option<ScanResponseData<'a>>,
@@ -314,6 +315,7 @@ impl<'a> AdvertisingDataBuilder<'a> {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct AdvertisingDataBase<'a> {
     advertising_interval: Option<AdvertisingIntervalAdStruct>,
     appearance: Option<AppearanceAdStruct>,
@@ -494,6 +496,7 @@ impl EncodeToBuffer for AdvertisingDataBase<'_> {
 ///
 /// Use the [`AdvertisingDataBuilder`] to instantiate it.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct AdvertisingData<'a> {
     base: AdvertisingDataBase<'a>,
     flags: Option<FlagsAdStruct>,
@@ -797,6 +800,7 @@ impl<'a> ScanResponseDataBuilder<'a> {
 ///
 /// Use the [`ScanResponseDataBuilder`] to instantiate it.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ScanResponseData<'a> {
     base: AdvertisingDataBase<'a>,
 }

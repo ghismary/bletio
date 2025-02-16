@@ -1,4 +1,8 @@
+#[cfg(not(feature = "defmt"))]
 use bitflags::bitflags;
+#[cfg(feature = "defmt")]
+use defmt::bitflags;
+
 use bletio_utils::EncodeToBuffer;
 
 bitflags! {
@@ -6,7 +10,7 @@ bitflags! {
     ///
     /// The values are defined in
     /// [Core Specification 6.0, Vol. 4, Part E, 7.8.1](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-cefc532c-3752-3f40-b5c1-91070b4dfef8).
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[cfg_attr(not(feature = "defmt"), derive(Debug, Clone, Copy, PartialEq, Eq))]
     pub struct LeEventMask: u64 {
         /// Indicates to both of the Hosts forming the connection that a new connection has been created.
         const LE_CONNECTION_COMPLETE = 1 << 0;
@@ -102,7 +106,7 @@ bitflags! {
         /// Indicates to both of the Hosts forming the connection that a new connection has been created.
         const LE_ENHANCED_CONNECTION_COMPLETE_V2 = 1 << 40;
         /// Indicates that a CIS has been established, was considered lost before being established, or (on the Central) was rejected by the Peripheral.
-        const LE_CIS_ESTABLISHED_v2 = 1 << 41;
+        const LE_CIS_ESTABLISHED_V2 = 1 << 41;
         /// Indicates the completion of the process of the Controller obtaining the features supported by a remote Bluetooth device.
         const LE_READ_ALL_REMOTE_FEATURES_COMPLETE = 1 << 42;
         /// Generated when a locally initiated CS Capabilities Exchange procedure has completed or when the local Controller
@@ -150,7 +154,7 @@ impl EncodeToBuffer for LeEventMask {
 
 impl Default for LeEventMask {
     fn default() -> Self {
-        Self::from_bits_retain(0x0000_0000_0000_001F)
+        Self::from_bits_truncate(0x0000_0000_0000_001F)
     }
 }
 
@@ -164,7 +168,7 @@ pub(crate) mod parser {
     use super::*;
 
     pub(crate) fn le_event_mask(input: &[u8]) -> IResult<&[u8], LeEventMask> {
-        all_consuming(map(le_u64(), LeEventMask::from_bits_retain)).parse(input)
+        all_consuming(map(le_u64(), LeEventMask::from_bits_truncate)).parse(input)
     }
 }
 

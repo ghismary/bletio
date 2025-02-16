@@ -12,6 +12,7 @@ const ADVERTISING_INTERVAL_AD_STRUCT_SIZE: usize = 3;
 /// and
 /// [Core Specification 6.0, Vol. 6, Part B, 4.4.2.2](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/low-energy-controller/link-layer-specification.html#UUID-f6cd1541-800c-c516-b32b-95dd0479840b).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct AdvertisingIntervalAdStruct {
     interval: AdvertisingInterval,
 }

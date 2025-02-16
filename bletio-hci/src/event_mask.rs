@@ -1,4 +1,8 @@
+#[cfg(not(feature = "defmt"))]
 use bitflags::bitflags;
+#[cfg(feature = "defmt")]
+use defmt::bitflags;
+
 use bletio_utils::EncodeToBuffer;
 
 bitflags! {
@@ -6,7 +10,7 @@ bitflags! {
     ///
     /// The values are defined in
     /// [Core Specification 6.0, Vol. 4, Part E, 7.3.1](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-f65458cb-06cf-778a-868e-845078cc8817).
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[cfg_attr(not(feature = "defmt"), derive(Debug, Clone, Copy, PartialEq, Eq))]
     pub struct EventMask: u64 {
         /// This event occurs when a connection is terminated.
         const DISCONNECTION_COMPLETE = 1 << 4;
@@ -40,7 +44,7 @@ impl EncodeToBuffer for EventMask {
 
 impl Default for EventMask {
     fn default() -> Self {
-        Self::from_bits_retain(0x0000_1FFF_FFFF_FFFF)
+        Self::from_bits_truncate(0x0000_1FFF_FFFF_FFFF)
     }
 }
 
@@ -54,7 +58,7 @@ pub(crate) mod parser {
     use super::EventMask;
 
     pub(crate) fn event_mask(input: &[u8]) -> IResult<&[u8], EventMask> {
-        all_consuming(map(le_u64(), EventMask::from_bits_retain)).parse(input)
+        all_consuming(map(le_u64(), EventMask::from_bits_truncate)).parse(input)
     }
 }
 
@@ -68,7 +72,14 @@ mod test {
     #[test]
     fn test_eventmask_default() {
         let value = EventMask::default();
-        assert_eq!(value.bits(), 0x0000_1FFF_FFFF_FFFF);
+        assert_eq!(
+            value,
+            EventMask::DISCONNECTION_COMPLETE
+                | EventMask::ENCRYPTION_CHANGE
+                | EventMask::READ_REMOTE_VERSION_INFORMATION_COMLETE
+                | EventMask::HARDWARE_ERROR
+                | EventMask::DATA_BUFFER_OVERFLOW
+        );
     }
 
     #[rstest]

@@ -13,6 +13,7 @@ const ADVERTISING_DATA_DATA_OFFSET: usize = 1;
 /// The packet format for the Advertising Data is defined in
 /// [Core Specification 6.0, Vol.3, Part C, 11](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/generic-access-profile.html#UUID-51247611-bdce-274e-095c-afb6d879c55c).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct AdvertisingData {
     buffer: Buffer<ADVERTISING_DATA_TOTAL_SIZE>,
 }
@@ -77,6 +78,7 @@ impl bletio_utils::EncodeToBuffer for AdvertisingData {
 /// The packet format for the Scan Response Data is defined in
 /// [Core Specification 6.0, Vol.3, Part C, 11](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/generic-access-profile.html#UUID-51247611-bdce-274e-095c-afb6d879c55c).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ScanResponseData {
     buffer: Buffer<ADVERTISING_DATA_TOTAL_SIZE>,
 }

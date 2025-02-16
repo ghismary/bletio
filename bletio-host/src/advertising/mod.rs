@@ -28,27 +28,21 @@ pub use scan_parameters::{ScanParameters, ScanParametersBuilder};
 pub use uri::{custom_uri_scheme, CustomUriScheme, Uri, UriScheme};
 
 /// Error occuring in the advertising part of the BLE stack.
-#[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum AdvertisingError {
     /// The provided advertising data is too big to fit in an advertising data or scan response data packet.
-    #[error("The provided advertising data is too big to fit in an advertising data or scan response data packet")]
     AdvertisingDataWillNotFitAdvertisingPacket,
     /// The Appearance Advertising Structure is not allowed to be present in both the Advertising Data and the Scan Response Data.
-    #[error("The Appearance Advertising Structure is not allowed to be present in both the Advertising Data and the Scan Response Data")]
     AppearanceNotAllowedInBothAdvertisingDataAndScanResponseData,
     /// An empty service UUID list Advertising Structure needs to be complete.
-    #[error("An empty service UUID list Advertising Structure needs to be complete")]
     EmptyServiceUuidListShallBeComplete,
     /// The Public Target Address Advertising Structure must contain at least one address.
-    #[error("The Public Target Address Advertising Structure must contain at least one address")]
     PublicTargetAddressAdStructMustContainAtLeastOneAddress,
     /// The Random Target Address Advertising Structure must contain at least one address.
-    #[error("The Random Target Address Advertising Structure must contain at least one address")]
     RandomTargetAddressAdStructMustContainAtLeastOneAddress,
     /// The advertising parameters are not valid, probably because the advertising type is ScannableUndirected or NonConnectableUndirected, and the minimum advertising interval value is less than 0x00A0.
-    #[error("The advertising parameters are not valid, probably because the advertising type is ScannableUndirected or NonConnectableUndirected, and the minimum advertising interval value is less than 0x00A0")]
     InvalidAdvertisingParameters,
     /// The scan parameters are not valid, probably because the scan window is larger than the scan interval.
-    #[error("The scan parameters are not valid, probably because the scan window is larger than the scan interval")]
     InvalidScanParameters,
 }

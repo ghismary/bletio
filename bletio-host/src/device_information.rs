@@ -9,6 +9,7 @@ use bletio_hci::{
 use crate::assigned_numbers::AppearanceValue;
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct DeviceInformation<'a> {
     pub(crate) appearance: AppearanceValue,
     pub(crate) le_data_packet_length: NonZeroU16,

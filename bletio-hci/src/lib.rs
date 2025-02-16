@@ -5,7 +5,6 @@ pub mod scan_parameters;
 
 mod advertising_data;
 mod advertising_enable;
-mod buffer;
 mod command;
 mod connection_interval;
 mod device_address;
@@ -14,6 +13,7 @@ mod error_code;
 mod event;
 mod event_mask;
 mod hci;
+mod hci_buffer;
 mod le_event_mask;
 mod le_states;
 mod own_address_type;
@@ -34,7 +34,6 @@ mod timeout_embassy;
 #[cfg(feature = "tokio")]
 mod timeout_tokio;
 
-pub(crate) use buffer::HciBuffer;
 pub(crate) use command::{Command, CommandOpCode};
 pub(crate) use event::{
     CommandCompleteEvent, Event, EventCode, EventParameter, StatusAndBdAddrEventParameter,
@@ -44,6 +43,7 @@ pub(crate) use event::{
     StatusAndSupportedLeStatesEventParameter, StatusAndTxPowerLevelEventParameter,
     StatusEventParameter,
 };
+pub(crate) use hci_buffer::HciBuffer;
 pub(crate) use packet::{Packet, PacketType};
 
 pub use advertising_data::{AdvertisingData, ScanResponseData};

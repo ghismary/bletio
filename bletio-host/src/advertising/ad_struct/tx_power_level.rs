@@ -12,6 +12,7 @@ const TX_POWER_LEVEL_AD_STRUCT_SIZE: usize = 2;
 ///
 /// Note: When the TX Power Level Adevertising Structure is not present, the TX power level of the packet is unknown.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct TxPowerLevelAdStruct {
     tx_power_level: TxPowerLevel,
 }

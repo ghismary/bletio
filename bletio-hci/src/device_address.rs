@@ -15,6 +15,7 @@ use crate::Error;
 ///
 /// See [Core Specification 6.0, Vol.6, Part B, 1.3](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/low-energy-controller/link-layer-specification.html#UUID-a0f4480f-c97e-c6bc-58ad-6e05d3b7d3a9).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum DeviceAddress {
     Public(PublicDeviceAddress),
     Random(RandomAddress),
@@ -85,6 +86,7 @@ impl EncodeToBuffer for DeviceAddress {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct AddressBase {
     value: [u8; 6],
 }
@@ -96,6 +98,7 @@ impl From<[u8; 6]> for AddressBase {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct PublicDeviceAddress {
     base: AddressBase,
 }
@@ -143,6 +146,7 @@ impl EncodeToBuffer for PublicDeviceAddress {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum RandomAddress {
     Static(RandomStaticDeviceAddress),
     ResolvablePrivate(RandomResolvablePrivateAddress),
@@ -226,6 +230,7 @@ impl EncodeToBuffer for RandomAddress {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct RandomStaticDeviceAddress {
     base: AddressBase,
 }
@@ -305,6 +310,7 @@ impl TryFrom<[u8; 6]> for RandomStaticDeviceAddress {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct RandomResolvablePrivateAddress {
     base: AddressBase,
 }
@@ -379,6 +385,7 @@ impl EncodeToBuffer for RandomResolvablePrivateAddress {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct RandomNonResolvablePrivateAddress {
     base: AddressBase,
 }

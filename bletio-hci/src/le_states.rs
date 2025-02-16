@@ -1,6 +1,7 @@
 use core::cmp::Ordering;
 
 #[derive(Debug, Clone, Copy, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum LeState {
     Single(LeSingleState),
     Combined(LeCombinedState),
@@ -46,6 +47,7 @@ impl From<LeCombinedState> for LeState {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum LeSingleState {
     ScannableAdvertising,
     ConnectableAdvertising,
@@ -60,6 +62,7 @@ pub enum LeSingleState {
 }
 
 #[derive(Debug, Clone, Copy, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct LeCombinedState(pub LeSingleState, pub LeSingleState);
 
 impl PartialEq for LeCombinedState {
