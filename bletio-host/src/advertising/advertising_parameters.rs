@@ -112,6 +112,8 @@ impl Deref for AdvertisingParameters {
 
 #[cfg(test)]
 mod test {
+    use bletio_hci::advertising_interval_range;
+
     use super::*;
 
     #[test]
@@ -126,11 +128,7 @@ mod test {
 
     #[test]
     fn test_valid_advertising_parameters() -> Result<(), AdvertisingError> {
-        let interval = AdvertisingIntervalRange::try_new(
-            0x0100.try_into().unwrap(),
-            0x0110.try_into().unwrap(),
-        )
-        .unwrap();
+        let interval = advertising_interval_range!(0x0100, 0x0110);
         let channel_map = AdvertisingChannelMap::CHANNEL37 | AdvertisingChannelMap::CHANNEL39;
         let adv_params = AdvertisingParameters::builder()
             .with_type(AdvertisingType::ScannableUndirected)
