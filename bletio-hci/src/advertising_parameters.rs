@@ -28,11 +28,16 @@ pub struct AdvertisingInterval {
 impl AdvertisingInterval {
     /// Create a valid advertising interval.
     pub const fn try_new(value: u16) -> Result<Self, Error> {
-        if (value >= 0x0020) && (value <= 0x4000) {
+        if check_advertising_interval_value(value) {
             Ok(Self { value })
         } else {
             Err(Error::InvalidAdvertisingInterval(value))
         }
+    }
+
+    #[doc(hidden)]
+    pub const fn new_unchecked(value: u16) -> Self {
+        Self { value }
     }
 
     /// Get the value of the advertising interval in milliseconds.
@@ -76,12 +81,20 @@ pub struct AdvertisingIntervalRange {
 
 impl AdvertisingIntervalRange {
     pub fn try_new(min: u16, max: u16) -> Result<Self, Error> {
-        let min: AdvertisingInterval = min.try_into()?;
-        let max: AdvertisingInterval = max.try_into()?;
-        if min > max {
-            Err(Error::InvalidAdvertisingIntervalRange)
-        } else {
+        if check_advertising_range_order(min, max) {
+            let min: AdvertisingInterval = min.try_into()?;
+            let max: AdvertisingInterval = max.try_into()?;
             Ok(Self { value: min..=max })
+        } else {
+            Err(Error::InvalidAdvertisingIntervalRange)
+        }
+    }
+
+    #[doc(hidden)]
+    pub const fn new_unchecked(min: u16, max: u16) -> Self {
+        Self {
+            value: AdvertisingInterval::new_unchecked(min)
+                ..=AdvertisingInterval::new_unchecked(max),
         }
     }
 
@@ -112,6 +125,80 @@ impl EncodeToBuffer for AdvertisingIntervalRange {
         self.value.start().encoded_size() + self.value.end().encoded_size()
     }
 }
+
+#[diagnostic::on_unimplemented(
+    message = "the advertising interval value is invalid, it needs to be between 0x0020 and 0x4000"
+)]
+#[doc(hidden)]
+pub trait AdvertisingIntervalValueValid {}
+
+#[doc(hidden)]
+pub struct AdvertisingIntervalValueIsValid<const VALID: bool>;
+
+#[doc(hidden)]
+impl AdvertisingIntervalValueValid for AdvertisingIntervalValueIsValid<true> {}
+
+#[doc(hidden)]
+pub const fn advertising_interval_value_is_valid<T: AdvertisingIntervalValueValid>() {}
+
+#[doc(hidden)]
+pub const fn check_advertising_interval_value(value: u16) -> bool {
+    (value >= 0x0020) && (value <= 0x4000)
+}
+
+#[diagnostic::on_unimplemented(
+    message = "the advertising interval minimum value must be smaller or equal to the maximum value"
+)]
+#[doc(hidden)]
+pub trait AdvertisingIntervalRangeOrderValid {}
+
+#[doc(hidden)]
+pub struct AdvertisingIntervalRangeOrderIsValid<const VALID: bool>;
+
+#[doc(hidden)]
+impl AdvertisingIntervalRangeOrderValid for AdvertisingIntervalRangeOrderIsValid<true> {}
+
+#[doc(hidden)]
+pub const fn advertising_interval_range_order_is_valid<T: AdvertisingIntervalRangeOrderValid>() {}
+
+#[doc(hidden)]
+pub const fn check_advertising_range_order(min: u16, max: u16) -> bool {
+    min <= max
+}
+
+/// Create an [`AdvertisingIntervalRange`], checking that it is valid at compile-time.
+///
+/// # Examples
+///
+/// ```
+/// # use bletio_hci::advertising_interval_range;
+/// let range = advertising_interval_range!(0x0020, 0x0030);
+/// ```
+#[macro_export]
+#[doc(hidden)]
+macro_rules! __advertising_interval_range__ {
+    ($min:expr, $max:expr) => {{
+        const MIN_ERR: bool =
+            bletio_hci::advertising_parameters::check_advertising_interval_value($min);
+        bletio_hci::advertising_parameters::advertising_interval_value_is_valid::<
+            bletio_hci::advertising_parameters::AdvertisingIntervalValueIsValid<MIN_ERR>,
+        >();
+        const MAX_ERR: bool =
+            bletio_hci::advertising_parameters::check_advertising_interval_value($min);
+        bletio_hci::advertising_parameters::advertising_interval_value_is_valid::<
+            bletio_hci::advertising_parameters::AdvertisingIntervalValueIsValid<MAX_ERR>,
+        >();
+        const ORDER_ERR: bool =
+            bletio_hci::advertising_parameters::check_advertising_range_order($min, $max);
+        bletio_hci::advertising_parameters::advertising_interval_range_order_is_valid::<
+            bletio_hci::advertising_parameters::AdvertisingIntervalRangeOrderIsValid<ORDER_ERR>,
+        >();
+        bletio_hci::advertising_parameters::AdvertisingIntervalRange::new_unchecked($min, $max)
+    }};
+}
+
+#[doc(inline)]
+pub use __advertising_interval_range__ as advertising_interval_range;
 
 /// Advertising type.
 ///
