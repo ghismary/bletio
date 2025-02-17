@@ -231,6 +231,21 @@ where
             .await
     }
 
+    pub async fn wait_for_event(&mut self) -> Result<Event, Error> {
+        let (remaining, packet) = self.hci_read_and_parse_packet().await?;
+        match packet {
+            Packet::Command(_) => {
+                // The Host is not supposed to receive commands!
+                Err(Error::InvalidPacket)
+            }
+            Packet::Event(event) => {
+                // INVARIANT: The remaining is known to be shorter than the buffer.
+                self.read_buffer = remaining.try_into().unwrap();
+                Ok(event)
+            }
+        }
+    }
+
     async fn cmd_with_status_response(&mut self, command: Command) -> Result<(), Error> {
         let event = self.execute_command(command).await?;
         match event.parameter {
@@ -273,7 +288,7 @@ where
                         Event::CommandComplete(event) if event.opcode == command.opcode() => {
                             return Ok(event);
                         }
-                        Event::CommandComplete(_) | Event::Unsupported(_) => {
+                        Event::CommandComplete(_) | Event::LeMeta(_) | Event::Unsupported(_) => {
                             self.handle_event(event)
                         }
                     }
@@ -322,8 +337,8 @@ where
             Event::CommandComplete(_) => {
                 unreachable!("an event for an issued command should already have been handled before reaching here")
             }
-            Event::Unsupported(_event_code) => {
-                // Ignore unsupported event
+            Event::LeMeta(_) | Event::Unsupported(_) => {
+                // Ignore unsupported event & LeMeta event will be handled higher in the stack
             }
         }
     }

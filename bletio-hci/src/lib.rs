@@ -18,6 +18,7 @@ mod le_event_mask;
 mod le_states;
 mod own_address_type;
 mod packet;
+mod rssi;
 mod scan_enable;
 mod supported_commands;
 mod supported_features;
@@ -35,14 +36,7 @@ mod timeout_embassy;
 mod timeout_tokio;
 
 pub(crate) use command::{Command, CommandOpCode};
-pub(crate) use event::{
-    CommandCompleteEvent, Event, EventCode, EventParameter, StatusAndBdAddrEventParameter,
-    StatusAndBufferSizeEventParameter, StatusAndLeBufferSizeEventParameter,
-    StatusAndRandomNumberEventParameter, StatusAndSupportedCommandsEventParameter,
-    StatusAndSupportedFeaturesEventParameter, StatusAndSupportedLeFeaturesEventParameter,
-    StatusAndSupportedLeStatesEventParameter, StatusAndTxPowerLevelEventParameter,
-    StatusEventParameter,
-};
+pub(crate) use event::command_complete::EventParameter;
 pub(crate) use hci_buffer::HciBuffer;
 pub(crate) use packet::{Packet, PacketType};
 
@@ -59,11 +53,21 @@ pub use device_address::{
 };
 pub use error::Error;
 pub use error_code::ErrorCode;
+pub use event::{
+    command_complete::CommandCompleteEvent,
+    le_advertising_report::{
+        LeAdvertisingReportAddress, LeAdvertisingReportData, LeAdvertisingReportEventType,
+        LeAdvertisingReportList,
+    },
+    le_meta::LeMetaEvent,
+    Event,
+};
 pub use event_mask::EventMask;
 pub use hci::Hci;
 pub use le_event_mask::LeEventMask;
 pub use le_states::{LeCombinedState, LeSingleState, LeState};
 pub use own_address_type::OwnAddressType;
+pub use rssi::Rssi;
 pub use scan_enable::{FilterDuplicates, ScanEnable};
 pub use scan_parameters::{
     scan_interval, scan_window, ScanInterval, ScanParameters, ScanType, ScanWindow,

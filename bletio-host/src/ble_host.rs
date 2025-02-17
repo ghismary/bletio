@@ -3,9 +3,9 @@ use core::num::NonZeroU16;
 use core::ops::Deref;
 
 use bletio_hci::{
-    EventMask, FilterDuplicates, Hci, HciDriver, LeEventMask, PublicDeviceAddress,
-    RandomStaticDeviceAddress, ScanEnable, SupportedCommands, SupportedFeatures,
-    SupportedLeFeatures, SupportedLeStates,
+    Event, EventMask, FilterDuplicates, Hci, HciDriver, LeAdvertisingReportAddress,
+    LeAdvertisingReportEventType, LeEventMask, PublicDeviceAddress, RandomStaticDeviceAddress,
+    Rssi, ScanEnable, SupportedCommands, SupportedFeatures, SupportedLeFeatures, SupportedLeStates,
 };
 
 use crate::advertising::{
@@ -21,7 +21,7 @@ pub struct BleHost<'a, H, State: BleHostState = BleHostStateInitial>
 where
     H: HciDriver,
 {
-    hci: &'a mut Hci<H>,
+    hci: Hci<H>,
     device_information: DeviceInformation<'a>,
     phantom: PhantomData<State>,
 }
@@ -46,7 +46,7 @@ where
 {
     // Perform setup has described in Core specification 4.2, Vol. 6, Part D, 2.1
     pub(crate) async fn setup(
-        hci: &'a mut Hci<H>,
+        mut hci: Hci<H>,
         appearance: AppearanceValue,
         local_name: &'a str,
     ) -> Result<BleHost<'a, H, BleHostStateStandby>, Error>
@@ -177,7 +177,7 @@ where
             Ok(())
         }
         match inner(
-            self.hci,
+            &mut self.hci,
             &mut self.device_information,
             adv_params,
             full_adv_data,
@@ -194,7 +194,7 @@ where
     }
 
     pub async fn start_scanning(
-        self,
+        mut self,
         scan_params: &ScanParameters,
         filter_duplicates: FilterDuplicates,
     ) -> Result<BleHost<'a, H, BleHostStateScanning>, (Error, Self)> {
@@ -212,7 +212,7 @@ where
                 .await?;
             Ok(())
         }
-        match inner(self.hci, scan_params, filter_duplicates).await {
+        match inner(&mut self.hci, scan_params, filter_duplicates).await {
             Ok(()) => Ok(BleHost::<H, BleHostStateScanning> {
                 hci: self.hci,
                 device_information: self.device_information,
@@ -227,7 +227,7 @@ impl<'a, H> BleHost<'a, H, BleHostStateAdvertising>
 where
     H: HciDriver,
 {
-    pub async fn stop_advertising(self) -> Result<BleHost<'a, H, BleHostStateStandby>, Error> {
+    pub async fn stop_advertising(mut self) -> Result<BleHost<'a, H, BleHostStateStandby>, Error> {
         self.hci
             .cmd_le_set_advertising_enable(AdvertisingEnable::Disabled)
             .await?;
@@ -243,7 +243,7 @@ impl<'a, H> BleHost<'a, H, BleHostStateScanning>
 where
     H: HciDriver,
 {
-    pub async fn stop_scanning(self) -> Result<BleHost<'a, H, BleHostStateStandby>, Error> {
+    pub async fn stop_scanning(mut self) -> Result<BleHost<'a, H, BleHostStateStandby>, Error> {
         self.hci
             .cmd_le_set_scan_enable(ScanEnable::Disabled, FilterDuplicates::Disabled)
             .await?;
@@ -302,6 +302,22 @@ where
     Initial(BleHost<'a, H, BleHostStateInitial>),
     Standby(BleHost<'a, H, BleHostStateStandby>),
     Advertising(BleHost<'a, H, BleHostStateAdvertising>),
+    Scanning(BleHost<'a, H, BleHostStateScanning>),
+}
+
+impl<H> BleHostStates<'_, H>
+where
+    H: HciDriver,
+{
+    pub(crate) async fn wait_for_event(&mut self) -> Result<Event, Error> {
+        Ok(match self {
+            Self::Initial(_) | Self::Standby(_) => {
+                return Err(Error::CannotWaitForEventInThisState)
+            }
+            Self::Advertising(host) => host.hci.wait_for_event().await?,
+            Self::Scanning(host) => host.hci.wait_for_event().await?,
+        })
+    }
 }
 
 pub trait BleHostObserver {
@@ -313,5 +329,20 @@ pub trait BleHostObserver {
         H: HciDriver,
     {
         async { BleHostStates::Standby(host) }
+    }
+
+    #[allow(unused_variables)]
+    fn advertising_report_received<'a, H>(
+        &self,
+        host: BleHostStates<'a, H>,
+        event_type: LeAdvertisingReportEventType,
+        address: &LeAdvertisingReportAddress,
+        rssi: Option<Rssi>,
+        data: FullAdvertisingData<'_>,
+    ) -> impl core::future::Future<Output = BleHostStates<'a, H>>
+    where
+        H: HciDriver,
+    {
+        async { host }
     }
 }

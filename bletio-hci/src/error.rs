@@ -31,6 +31,12 @@ pub enum Error {
     InvalidEventPacket,
     /// The provided filter duplicates value is invalid.
     InvalidFilterDuplicatesValue(u8),
+    /// The provided LE advertising report address type is invalid.
+    InvalidLeAdvertisingReportAddressType(u8),
+    /// The provided LE advertising report event type is invalid.
+    InvalidLeAdvertisingReportEventType(u8),
+    /// The provided LE advertising report num reports is invalid.
+    InvalidLeAdvertisingReportNumReports(u8),
     /// The provided own address type is invalid.
     InvalidOwnAddressType(u8),
     /// Invalid HCI packet, either malformed or not expected (eg. Command received by the Host).
@@ -49,6 +55,8 @@ pub enum Error {
     InvalidRandomResolvablePrivateAddress,
     /// The provided random static device address is invalid.
     InvalidRandomStaticDeviceAddress,
+    /// The provided RSSI value is invalid.
+    InvalidRssiValue(i8),
     /// The provided scan enable value is invalid.
     InvalidScanEnableValue(u8),
     /// The provided scan interval is invalid, it needs to be between 0x0004 and 0x4000.

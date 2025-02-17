@@ -27,6 +27,8 @@ use advertising::AdvertisingError;
 pub enum Error {
     /// Advertising related error.
     Advertising(AdvertisingError),
+    /// The host is in a state where it cannot wait for an event.
+    CannotWaitForEventInThisState,
     /// HCI related error.
     Hci(HciError),
     /// The Bluetooth controller is not LE capable.

@@ -91,6 +91,12 @@ pub(crate) struct AddressBase {
     value: [u8; 6],
 }
 
+impl AddressBase {
+    pub(crate) const fn value(&self) -> &[u8; 6] {
+        &self.value
+    }
+}
+
 impl From<[u8; 6]> for AddressBase {
     fn from(value: [u8; 6]) -> Self {
         Self { value }
@@ -112,7 +118,7 @@ impl PublicDeviceAddress {
     }
 
     pub const fn value(&self) -> &[u8; 6] {
-        &self.base.value
+        self.base.value()
     }
 }
 
@@ -137,7 +143,7 @@ impl EncodeToBuffer for PublicDeviceAddress {
         &self,
         buffer: &mut B,
     ) -> Result<usize, bletio_utils::Error> {
-        buffer.copy_from_slice(&self.base.value)
+        buffer.copy_from_slice(self.base.value())
     }
 
     fn encoded_size(&self) -> usize {
@@ -252,7 +258,7 @@ impl RandomStaticDeviceAddress {
     }
 
     pub const fn value(&self) -> &[u8; 6] {
-        &self.base.value
+        self.base.value()
     }
 
     const fn is_random_static_device_address(address: &[u8; 6]) -> bool {
@@ -293,7 +299,7 @@ impl EncodeToBuffer for RandomStaticDeviceAddress {
         &self,
         buffer: &mut B,
     ) -> Result<usize, bletio_utils::Error> {
-        buffer.copy_from_slice(&self.base.value)
+        buffer.copy_from_slice(self.base.value())
     }
 
     fn encoded_size(&self) -> usize {
@@ -327,7 +333,7 @@ impl RandomResolvablePrivateAddress {
     }
 
     pub const fn value(&self) -> &[u8; 6] {
-        &self.base.value
+        self.base.value()
     }
 
     const fn is_random_resolvable_private_address(address: &[u8; 6]) -> bool {
@@ -376,7 +382,7 @@ impl EncodeToBuffer for RandomResolvablePrivateAddress {
         &self,
         buffer: &mut B,
     ) -> Result<usize, bletio_utils::Error> {
-        buffer.copy_from_slice(&self.base.value)
+        buffer.copy_from_slice(self.base.value())
     }
 
     fn encoded_size(&self) -> usize {
@@ -402,7 +408,7 @@ impl RandomNonResolvablePrivateAddress {
     }
 
     pub const fn value(&self) -> &[u8; 6] {
-        &self.base.value
+        self.base.value()
     }
 
     const fn is_random_non_resolvable_private_address(address: &[u8; 6]) -> bool {
@@ -451,7 +457,7 @@ impl EncodeToBuffer for RandomNonResolvablePrivateAddress {
         &self,
         buffer: &mut B,
     ) -> Result<usize, bletio_utils::Error> {
-        buffer.copy_from_slice(&self.base.value)
+        buffer.copy_from_slice(self.base.value())
     }
 
     fn encoded_size(&self) -> usize {
@@ -488,7 +494,7 @@ pub(crate) mod parser {
         tag(":").parse(input)
     }
 
-    fn address(input: &str) -> IResult<&str, [u8; 6]> {
+    fn address_str(input: &str) -> IResult<&str, [u8; 6]> {
         all_consuming(map(
             (
                 hex_byte, separator, hex_byte, separator, hex_byte, separator, hex_byte, separator,
@@ -502,19 +508,19 @@ pub(crate) mod parser {
     }
 
     pub(crate) fn public_address_str(input: &str) -> IResult<&str, PublicDeviceAddress> {
-        map(address, Into::into).parse(input)
+        map(address_str, Into::into).parse(input)
     }
 
     pub(crate) fn random_address_str(input: &str) -> IResult<&str, RandomAddress> {
-        map_res(address, TryInto::try_into).parse(input)
+        map_res(address_str, TryInto::try_into).parse(input)
     }
 
     pub(crate) fn random_address(input: &[u8]) -> IResult<&[u8], RandomStaticDeviceAddress> {
-        all_consuming(map_res(
-            map_res(take(6u8), TryInto::try_into),
-            |v: [u8; 6]| v.try_into(),
-        ))
-        .parse(input)
+        all_consuming(map_res(address, TryInto::try_into)).parse(input)
+    }
+
+    pub(crate) fn address(input: &[u8]) -> IResult<&[u8], [u8; 6]> {
+        map_res(take(6u8), TryInto::try_into).parse(input)
     }
 }
 

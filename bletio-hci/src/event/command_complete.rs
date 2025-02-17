@@ -7,31 +7,7 @@ use crate::{
 
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) enum Event {
-    CommandComplete(CommandCompleteEvent),
-    Unsupported(u8),
-}
-
-#[derive(Debug)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[repr(u8)]
-pub(crate) enum EventCode {
-    CommandComplete = 0x0E,
-    Unsupported(u8),
-}
-
-impl From<u8> for EventCode {
-    fn from(value: u8) -> Self {
-        match value {
-            0x0E => Self::CommandComplete,
-            _ => Self::Unsupported(value),
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct CommandCompleteEvent {
+pub struct CommandCompleteEvent {
     pub(crate) num_hci_command_packets: u8,
     pub(crate) opcode: CommandOpCode,
     pub(crate) parameter: EventParameter,
@@ -201,8 +177,6 @@ impl From<StatusAndTxPowerLevelEventParameter> for EventParameter {
 }
 
 pub(crate) mod parser {
-    use core::num::{NonZeroU16, NonZeroU8};
-
     use bitflags::Flags;
     use nom::{
         bytes::take,
@@ -212,20 +186,9 @@ pub(crate) mod parser {
         IResult, Parser,
     };
 
-    use crate::{
-        command::parser::command_opcode, packet::parser::parameter_total_length,
-        CommandCompleteEvent, CommandOpCode, ErrorCode, Event, EventCode, EventParameter, Packet,
-        PublicDeviceAddress, StatusAndBdAddrEventParameter, StatusAndBufferSizeEventParameter,
-        StatusAndLeBufferSizeEventParameter, StatusAndRandomNumberEventParameter,
-        StatusAndSupportedCommandsEventParameter, StatusAndSupportedFeaturesEventParameter,
-        StatusAndSupportedLeFeaturesEventParameter, StatusAndSupportedLeStatesEventParameter,
-        StatusAndTxPowerLevelEventParameter, StatusEventParameter, SupportedCommands,
-        SupportedFeatures, SupportedLeFeatures, SupportedLeStates, TxPowerLevel,
-    };
+    use crate::command::parser::command_opcode;
 
-    fn event_code(input: &[u8]) -> IResult<&[u8], EventCode> {
-        map_res(le_u8(), EventCode::try_from).parse(input)
-    }
+    use super::*;
 
     fn num_hci_command_packets(input: &[u8]) -> IResult<&[u8], u8> {
         le_u8().parse(input)
@@ -284,7 +247,7 @@ pub(crate) mod parser {
         map_res(take(8u8), TryInto::try_into).parse(input)
     }
 
-    fn command_complete_event(input: &[u8]) -> IResult<&[u8], CommandCompleteEvent> {
+    pub(crate) fn command_complete_event(input: &[u8]) -> IResult<&[u8], CommandCompleteEvent> {
         let (return_parameters, (num_hci_command_packets, command_opcode)) =
             pair(num_hci_command_packets, command_opcode).parse(input)?;
         let event_parameter = match command_opcode {
@@ -450,35 +413,5 @@ pub(crate) mod parser {
             &[],
             CommandCompleteEvent::new(num_hci_command_packets, command_opcode, event_parameter),
         ))
-    }
-
-    pub(crate) fn event(input: &[u8]) -> IResult<&[u8], Packet> {
-        let (input, (event_code, parameter_total_length)) =
-            pair(event_code, parameter_total_length).parse(input)?;
-        let (input, parameters) = take(parameter_total_length).parse(input)?;
-        Ok((
-            input,
-            Packet::Event(match event_code {
-                EventCode::CommandComplete => {
-                    let (_, event) = command_complete_event(parameters)?;
-                    Event::CommandComplete(event)
-                }
-                EventCode::Unsupported(event_code) => Event::Unsupported(event_code),
-            }),
-        ))
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_event_code() {
-        let event_code: EventCode = 0x0Eu8.into();
-        assert!(matches!(event_code, EventCode::CommandComplete));
-
-        let event_code: EventCode = 0xFFu8.into();
-        assert!(matches!(event_code, EventCode::Unsupported(0xFF)));
     }
 }

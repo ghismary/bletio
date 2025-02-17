@@ -24,6 +24,7 @@ pub(crate) enum PacketType {
 
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[allow(clippy::large_enum_variant)]
 pub(crate) enum Packet {
     Command(Command),
     Event(Event),
@@ -58,17 +59,19 @@ mod test {
 
     use super::*;
     use crate::{
+        event::command_complete::{
+            StatusAndBdAddrEventParameter, StatusAndBufferSizeEventParameter,
+            StatusAndLeBufferSizeEventParameter, StatusAndRandomNumberEventParameter,
+            StatusAndSupportedCommandsEventParameter, StatusAndSupportedFeaturesEventParameter,
+            StatusAndSupportedLeFeaturesEventParameter, StatusAndSupportedLeStatesEventParameter,
+            StatusAndTxPowerLevelEventParameter, StatusEventParameter,
+        },
         AdvertisingChannelMap, AdvertisingData, AdvertisingEnable, AdvertisingFilterPolicy,
         AdvertisingIntervalRange, AdvertisingParameters, AdvertisingType, CommandCompleteEvent,
         CommandOpCode, DeviceAddress, ErrorCode, EventMask, EventParameter, FilterDuplicates,
         LeEventMask, OwnAddressType, PublicDeviceAddress, RandomAddress, RandomStaticDeviceAddress,
-        ScanEnable, ScanParameters, ScanResponseData, StatusAndBdAddrEventParameter,
-        StatusAndBufferSizeEventParameter, StatusAndLeBufferSizeEventParameter,
-        StatusAndRandomNumberEventParameter, StatusAndSupportedCommandsEventParameter,
-        StatusAndSupportedFeaturesEventParameter, StatusAndSupportedLeFeaturesEventParameter,
-        StatusAndSupportedLeStatesEventParameter, StatusAndTxPowerLevelEventParameter,
-        StatusEventParameter, SupportedCommands, SupportedFeatures, SupportedLeFeatures,
-        TxPowerLevel,
+        ScanEnable, ScanParameters, ScanResponseData, SupportedCommands, SupportedFeatures,
+        SupportedLeFeatures, TxPowerLevel,
     };
 
     #[test]
