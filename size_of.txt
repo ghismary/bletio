@@ -1,0 +1,25 @@
+WARN  sizeof Packet: 1208
+WARN  sizeof Event: 1208
+WARN  sizeof CommandCompleteEvent: 80
+WARN  sizeof LeMetaEvent: 1208
+WARN  sizeof LeAdvertisingReportList: 1204
+
+WARN  sizeof FullAdvertisingData: 408
+WARN  sizeof AdvertisingData: 208
+WARN  sizeof ScanResponseData: 200
+
+
+
+
+
+
+
+WARN  sizeof Packet: 264
+WARN  sizeof Event: 264
+WARN  sizeof CommandCompleteEvent: 80
+WARN  sizeof LeMetaEvent: 264
+WARN  sizeof LeAdvertisingReportList: 260
+
+WARN  sizeof FullAdvertisingData: 76
+WARN  sizeof AdvertisingData: 36
+WARN  sizeof ScanResponseData: 36

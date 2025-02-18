@@ -39,18 +39,18 @@ mod test {
     use bletio_utils::{Buffer, BufferOps};
     use rstest::rstest;
 
-    use crate::advertising::custom_uri_scheme;
+    use crate::advertising::{custom_uri_scheme, AdvertisingError};
     use crate::assigned_numbers::ProvisionedUriScheme;
 
     use super::*;
 
     #[rstest]
     #[case(
-        Uri::new(ProvisionedUriScheme::Http, "//example.org/"),
+        Uri::try_new(ProvisionedUriScheme::Http, "//example.org/").unwrap(),
         &[0x11, 0x24, 0x16, 0x00, b'/', b'/', b'e', b'x', b'a', b'm', b'p', b'l', b'e', b'.', b'o', b'r', b'g', b'/']
     )]
     #[case(
-        Uri::new(custom_uri_scheme!("custom"), "uri"),
+        Uri::try_new(custom_uri_scheme!("custom"), "uri").unwrap(),
         &[0x0D, 0x24, 0x01, 0x00, b'c', b'u', b's', b't', b'o', b'm', b':', b'u', b'r', b'i']
     )]
     fn test_uri_ad_struct_success(
@@ -66,12 +66,12 @@ mod test {
     }
 
     #[rstest]
-    #[case(Uri::new(ProvisionedUriScheme::Http, "//example.org/a-path-that-is-too-long"))]
-    #[case(Uri::new(custom_uri_scheme!("very-very-very-long-custom-scheme"), "rest"))]
-    fn test_uri_ad_struct_failure(#[case] uri: Uri) {
-        let mut buffer = Buffer::<24>::default();
-        let value = UriAdStruct::new(uri);
-        let err = value.encode(&mut buffer);
-        assert_eq!(err, Err(bletio_utils::Error::BufferTooSmall));
+    #[case(Uri::try_new(ProvisionedUriScheme::Http, "//example.org/a-path-that-is-too-long"))]
+    #[case(Uri::try_new(custom_uri_scheme!("very-long-custom-scheme"), "the-uri-hier-part-that-is-too-long"))]
+    fn test_uri_ad_struct_failure(#[case] err: Result<Uri, AdvertisingError>) {
+        assert_eq!(
+            err,
+            Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)
+        );
     }
 }

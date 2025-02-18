@@ -1,7 +1,10 @@
 use bletio_hci::RandomAddress;
 use bletio_utils::EncodeToBuffer;
+use heapless::Vec;
 
 use crate::{advertising::AdvertisingError, assigned_numbers::AdType};
+
+const RANDOM_TARGET_ADDRESS_NB_MAX_ADDRESSES: usize = 4;
 
 /// Random Target Address list.
 ///
@@ -13,29 +16,33 @@ use crate::{advertising::AdvertisingError, assigned_numbers::AdType};
 /// See [Supplement to the Bluetooth Core Specification, Part A, 1.14](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-9c825fe7-7092-a219-ecb4-2294c2c12d9a).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct RandomTargetAddressAdStruct<'a> {
-    addresses: &'a [RandomAddress],
+pub(crate) struct RandomTargetAddressAdStruct {
+    addresses: Vec<RandomAddress, RANDOM_TARGET_ADDRESS_NB_MAX_ADDRESSES>,
 }
 
-impl<'a> RandomTargetAddressAdStruct<'a> {
+impl RandomTargetAddressAdStruct {
     // TODO: Limit to random static and random resolvable addresses
-    pub(crate) const fn try_new(addresses: &'a [RandomAddress]) -> Result<Self, AdvertisingError> {
+    pub(crate) fn try_new(addresses: &[RandomAddress]) -> Result<Self, AdvertisingError> {
         if addresses.is_empty() {
             Err(AdvertisingError::RandomTargetAddressAdStructMustContainAtLeastOneAddress)
         } else {
-            Ok(Self { addresses })
+            Ok(Self {
+                addresses: addresses
+                    .try_into()
+                    .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?,
+            })
         }
     }
 }
 
-impl EncodeToBuffer for RandomTargetAddressAdStruct<'_> {
+impl EncodeToBuffer for RandomTargetAddressAdStruct {
     fn encode<B: bletio_utils::BufferOps>(
         &self,
         buffer: &mut B,
     ) -> Result<usize, bletio_utils::Error> {
         buffer.try_push((self.encoded_size() - 1) as u8)?;
         buffer.try_push(AdType::RandomTargetAddress as u8)?;
-        for address in self.addresses {
+        for address in self.addresses.iter() {
             address.encode(buffer)?;
         }
         Ok(self.encoded_size())
@@ -105,9 +112,10 @@ mod test {
                 .unwrap()
                 .into(),
         ];
-        let mut buffer = Buffer::<31>::default();
-        let value = RandomTargetAddressAdStruct::try_new(&addresses).unwrap();
-        let err = value.encode(&mut buffer);
-        assert_eq!(err, Err(bletio_utils::Error::BufferTooSmall));
+        let err = RandomTargetAddressAdStruct::try_new(&addresses);
+        assert_eq!(
+            err,
+            Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)
+        );
     }
 }

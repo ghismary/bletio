@@ -147,13 +147,13 @@ where
     pub async fn start_advertising(
         mut self,
         adv_params: &AdvertisingParameters,
-        full_adv_data: &FullAdvertisingData<'_>,
+        full_adv_data: &FullAdvertisingData,
     ) -> Result<BleHost<'a, H, BleHostStateAdvertising>, (Error, Self)> {
         async fn inner<H>(
             hci: &mut Hci<H>,
             device_information: &mut DeviceInformation<'_>,
             adv_params: &AdvertisingParameters,
-            full_adv_data: &FullAdvertisingData<'_>,
+            full_adv_data: &FullAdvertisingData,
         ) -> Result<(), Error>
         where
             H: HciDriver,
@@ -163,11 +163,11 @@ where
             device_information.tx_power_level =
                 hci.cmd_le_read_advertising_channel_tx_power().await?;
 
-            let full_adv_data = full_adv_data.fill_automatic_data(device_information);
+            // let full_adv_data = full_adv_data.fill_automatic_data(device_information);
             let mut scanresp_data = bletio_hci::ScanResponseData::default();
-            let adv_data = (&full_adv_data.adv_data).try_into()?;
-            if let Some(data) = &full_adv_data.scanresp_data {
-                scanresp_data = data.try_into()?;
+            let adv_data = (&full_adv_data.adv_data).into();
+            if let Some(data) = &(full_adv_data.scanresp_data) {
+                scanresp_data = data.into();
             }
 
             hci.cmd_le_set_advertising_data(adv_data).await?;
@@ -338,7 +338,7 @@ pub trait BleHostObserver {
         event_type: LeAdvertisingReportEventType,
         address: &LeAdvertisingReportAddress,
         rssi: Option<Rssi>,
-        data: FullAdvertisingData<'_>,
+        data: FullAdvertisingData,
     ) -> impl core::future::Future<Output = BleHostStates<'a, H>>
     where
         H: HciDriver,

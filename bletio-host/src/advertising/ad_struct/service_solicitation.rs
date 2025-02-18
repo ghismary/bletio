@@ -1,7 +1,13 @@
 use bletio_utils::EncodeToBuffer;
+use heapless::Vec;
 
+use crate::advertising::AdvertisingError;
 use crate::assigned_numbers::{AdType, ServiceUuid};
 use crate::uuid::{Uuid128, Uuid32};
+
+const SERVICE_SOLICITATION_UUID16_NB_MAX: usize = 14;
+const SERVICE_SOLICITATION_UUID32_NB_MAX: usize = 7;
+const SERVICE_SOLICITATION_UUID128_NB_MAX: usize = 1;
 
 /// List of 16-bit Service Solicitation UUIDs.
 ///
@@ -13,24 +19,28 @@ use crate::uuid::{Uuid128, Uuid32};
 /// See [Supplement to the Bluetooth Core Specification, Part A, 1.10](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-302574d9-585b-209a-c32f-c5b6278f3377).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct ServiceSolicitationUuid16AdStruct<'a> {
-    uuids: &'a [ServiceUuid],
+pub(crate) struct ServiceSolicitationUuid16AdStruct {
+    uuids: Vec<ServiceUuid, SERVICE_SOLICITATION_UUID16_NB_MAX>,
 }
 
-impl<'a> ServiceSolicitationUuid16AdStruct<'a> {
-    pub(crate) const fn new(uuids: &'a [ServiceUuid]) -> Self {
-        Self { uuids }
+impl ServiceSolicitationUuid16AdStruct {
+    pub(crate) fn try_new(uuids: &[ServiceUuid]) -> Result<Self, AdvertisingError> {
+        Ok(Self {
+            uuids: uuids
+                .try_into()
+                .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?,
+        })
     }
 }
 
-impl EncodeToBuffer for ServiceSolicitationUuid16AdStruct<'_> {
+impl EncodeToBuffer for ServiceSolicitationUuid16AdStruct {
     fn encode<B: bletio_utils::BufferOps>(
         &self,
         buffer: &mut B,
     ) -> Result<usize, bletio_utils::Error> {
         buffer.try_push((self.encoded_size() - 1) as u8)?;
         buffer.try_push(AdType::ListOfSolicitationServiceUuid16 as u8)?;
-        for uuid in self.uuids {
+        for uuid in self.uuids.iter() {
             buffer.encode_le_u16(*uuid as u16)?;
         }
         Ok(self.encoded_size())
@@ -51,24 +61,28 @@ impl EncodeToBuffer for ServiceSolicitationUuid16AdStruct<'_> {
 /// See [Supplement to the Bluetooth Core Specification, Part A, 1.10](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-302574d9-585b-209a-c32f-c5b6278f3377).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct ServiceSolicitationUuid32AdStruct<'a> {
-    uuids: &'a [Uuid32],
+pub(crate) struct ServiceSolicitationUuid32AdStruct {
+    uuids: Vec<Uuid32, SERVICE_SOLICITATION_UUID32_NB_MAX>,
 }
 
-impl<'a> ServiceSolicitationUuid32AdStruct<'a> {
-    pub(crate) const fn new(uuids: &'a [Uuid32]) -> Self {
-        Self { uuids }
+impl ServiceSolicitationUuid32AdStruct {
+    pub(crate) fn try_new(uuids: &[Uuid32]) -> Result<Self, AdvertisingError> {
+        Ok(Self {
+            uuids: uuids
+                .try_into()
+                .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?,
+        })
     }
 }
 
-impl EncodeToBuffer for ServiceSolicitationUuid32AdStruct<'_> {
+impl EncodeToBuffer for ServiceSolicitationUuid32AdStruct {
     fn encode<B: bletio_utils::BufferOps>(
         &self,
         buffer: &mut B,
     ) -> Result<usize, bletio_utils::Error> {
         buffer.try_push((self.encoded_size() - 1) as u8)?;
         buffer.try_push(AdType::ListOfSolicitationServiceUuid32 as u8)?;
-        for uuid in self.uuids {
+        for uuid in self.uuids.iter() {
             buffer.encode_le_u32(uuid.0)?;
         }
         Ok(self.encoded_size())
@@ -89,24 +103,28 @@ impl EncodeToBuffer for ServiceSolicitationUuid32AdStruct<'_> {
 /// See [Supplement to the Bluetooth Core Specification, Part A, 1.10](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-302574d9-585b-209a-c32f-c5b6278f3377).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct ServiceSolicitationUuid128AdStruct<'a> {
-    uuids: &'a [Uuid128],
+pub(crate) struct ServiceSolicitationUuid128AdStruct {
+    uuids: Vec<Uuid128, SERVICE_SOLICITATION_UUID128_NB_MAX>,
 }
 
-impl<'a> ServiceSolicitationUuid128AdStruct<'a> {
-    pub(crate) const fn new(uuids: &'a [Uuid128]) -> Self {
-        Self { uuids }
+impl ServiceSolicitationUuid128AdStruct {
+    pub(crate) fn try_new(uuids: &[Uuid128]) -> Result<Self, AdvertisingError> {
+        Ok(Self {
+            uuids: uuids
+                .try_into()
+                .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?,
+        })
     }
 }
 
-impl EncodeToBuffer for ServiceSolicitationUuid128AdStruct<'_> {
+impl EncodeToBuffer for ServiceSolicitationUuid128AdStruct {
     fn encode<B: bletio_utils::BufferOps>(
         &self,
         buffer: &mut B,
     ) -> Result<usize, bletio_utils::Error> {
         buffer.try_push((self.encoded_size() - 1) as u8)?;
         buffer.try_push(AdType::ListOfSolicitationServiceUuid128 as u8)?;
-        for uuid in self.uuids {
+        for uuid in self.uuids.iter() {
             buffer.encode_le_u128(uuid.0)?;
         }
         Ok(self.encoded_size())
@@ -136,7 +154,7 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<31>::default();
-        let value = ServiceSolicitationUuid16AdStruct::new(uuids);
+        let value = ServiceSolicitationUuid16AdStruct::try_new(uuids).unwrap();
         value.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
         Ok(())
@@ -144,8 +162,7 @@ mod test {
 
     #[test]
     fn test_service_solicitation_uuid16_ad_struct_failure() {
-        let mut buffer = Buffer::<31>::default();
-        let value = ServiceSolicitationUuid16AdStruct::new(&[
+        let err = ServiceSolicitationUuid16AdStruct::try_new(&[
             ServiceUuid::ImmediateAlert,
             ServiceUuid::LinkLoss,
             ServiceUuid::TxPower,
@@ -162,8 +179,10 @@ mod test {
             ServiceUuid::AlertNotification,
             ServiceUuid::HumanInterfaceDevice,
         ]);
-        let err = value.encode(&mut buffer);
-        assert_eq!(err, Err(bletio_utils::Error::BufferTooSmall));
+        assert_eq!(
+            err,
+            Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)
+        );
     }
 
     #[rstest]
@@ -178,7 +197,7 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<31>::default();
-        let value = ServiceSolicitationUuid32AdStruct::new(uuids);
+        let value = ServiceSolicitationUuid32AdStruct::try_new(uuids).unwrap();
         value.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
         Ok(())
@@ -186,8 +205,7 @@ mod test {
 
     #[test]
     fn test_service_solicitation_uuid32_ad_struct_failure() {
-        let mut buffer = Buffer::<31>::default();
-        let value = ServiceSolicitationUuid32AdStruct::new(&[
+        let err = ServiceSolicitationUuid32AdStruct::try_new(&[
             Uuid32(0x0000_1802),
             Uuid32(0x0000_1803),
             Uuid32(0x0000_1804),
@@ -197,8 +215,10 @@ mod test {
             Uuid32(0x0000_1808),
             Uuid32(0x0000_1809),
         ]);
-        let err = value.encode(&mut buffer);
-        assert_eq!(err, Err(bletio_utils::Error::BufferTooSmall));
+        assert_eq!(
+            err,
+            Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)
+        );
     }
 
     #[rstest]
@@ -212,7 +232,7 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<31>::default();
-        let value = ServiceSolicitationUuid128AdStruct::new(uuids);
+        let value = ServiceSolicitationUuid128AdStruct::try_new(uuids).unwrap();
         value.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
         Ok(())
@@ -220,12 +240,13 @@ mod test {
 
     #[test]
     fn test_service_solicitation_uuid128_ad_struct_failure() {
-        let mut buffer = Buffer::<31>::default();
-        let value = ServiceSolicitationUuid128AdStruct::new(&[
+        let err = ServiceSolicitationUuid128AdStruct::try_new(&[
             Uuid128(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640),
             Uuid128(0xA624BAC7_A46C_4EC8_B3D6_4C82E5A56D96),
         ]);
-        let err = value.encode(&mut buffer);
-        assert_eq!(err, Err(bletio_utils::Error::BufferTooSmall));
+        assert_eq!(
+            err,
+            Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)
+        );
     }
 }

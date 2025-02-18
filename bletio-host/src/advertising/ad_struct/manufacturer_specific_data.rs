@@ -1,7 +1,11 @@
 use bletio_utils::EncodeToBuffer;
+use heapless::Vec;
 
+use crate::advertising::AdvertisingError;
 use crate::assigned_numbers::AdType;
 use crate::assigned_numbers::CompanyIdentifier;
+
+const MANUFACTURER_SPECIFIC_DATA_MAX_LENGTH: usize = 27;
 
 /// Manufacturer specific data.
 ///
@@ -12,18 +16,26 @@ use crate::assigned_numbers::CompanyIdentifier;
 /// This is used for example for iBeacons and Eddystone beacons.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct ManufacturerSpecificDataAdStruct<'a> {
+pub(crate) struct ManufacturerSpecificDataAdStruct {
     manufacturer: CompanyIdentifier,
-    data: &'a [u8],
+    data: Vec<u8, MANUFACTURER_SPECIFIC_DATA_MAX_LENGTH>,
 }
 
-impl<'a> ManufacturerSpecificDataAdStruct<'a> {
-    pub(crate) const fn new(manufacturer: CompanyIdentifier, data: &'a [u8]) -> Self {
-        Self { manufacturer, data }
+impl ManufacturerSpecificDataAdStruct {
+    pub(crate) fn try_new(
+        manufacturer: CompanyIdentifier,
+        data: &[u8],
+    ) -> Result<Self, AdvertisingError> {
+        Ok(Self {
+            manufacturer,
+            data: data
+                .try_into()
+                .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?,
+        })
     }
 }
 
-impl EncodeToBuffer for ManufacturerSpecificDataAdStruct<'_> {
+impl EncodeToBuffer for ManufacturerSpecificDataAdStruct {
     fn encode<B: bletio_utils::BufferOps>(
         &self,
         buffer: &mut B,
@@ -31,7 +43,7 @@ impl EncodeToBuffer for ManufacturerSpecificDataAdStruct<'_> {
         buffer.try_push((self.encoded_size() - 1) as u8)?;
         buffer.try_push(AdType::ManufacturerSpecificData as u8)?;
         buffer.encode_le_u16(self.manufacturer as u16)?;
-        buffer.copy_from_slice(self.data)?;
+        buffer.copy_from_slice(self.data.as_slice())?;
         Ok(self.encoded_size())
     }
 
@@ -66,7 +78,7 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<31>::default();
-        let value = ManufacturerSpecificDataAdStruct::new(manufacturer, data);
+        let value = ManufacturerSpecificDataAdStruct::try_new(manufacturer, data).unwrap();
         value.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
         Ok(())
@@ -74,8 +86,7 @@ mod test {
 
     #[test]
     fn test_manufacturer_specific_data_ad_struct_failure() {
-        let mut buffer = Buffer::<31>::default();
-        let value = ManufacturerSpecificDataAdStruct::new(
+        let err = ManufacturerSpecificDataAdStruct::try_new(
             CompanyIdentifier::Withings,
             &[
                 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D,
@@ -83,7 +94,9 @@ mod test {
                 0x1C, 0x1D, 0x1E, 0x1F,
             ],
         );
-        let err = value.encode(&mut buffer);
-        assert_eq!(err, Err(bletio_utils::Error::BufferTooSmall));
+        assert_eq!(
+            err,
+            Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)
+        );
     }
 }

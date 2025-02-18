@@ -1,6 +1,9 @@
 use bletio_utils::EncodeToBuffer;
+use heapless::String;
 
-use crate::assigned_numbers::AdType;
+use crate::{advertising::AdvertisingError, assigned_numbers::AdType};
+
+const LOCAL_NAME_MAX_LENGTH: usize = 29;
 
 /// Whether the local name is complete or shortened.
 ///
@@ -18,34 +21,40 @@ pub enum LocalNameComplete {
 /// [Supplement to the Bluetooth Core Specification, Part A, 1.2](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-351cc997-6a3c-8980-31cb-21b2ffcb103f).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct LocalNameAdStruct<'a> {
-    local_name: &'a str,
+pub struct LocalNameAdStruct {
+    local_name: String<LOCAL_NAME_MAX_LENGTH>,
     pub(crate) complete: LocalNameComplete,
 }
 
-impl<'a> LocalNameAdStruct<'a> {
-    pub(crate) const fn new(local_name: &'a str, complete: LocalNameComplete) -> Self {
-        Self {
-            local_name,
-            complete,
-        }
-    }
-
-    const fn len(&self) -> usize {
-        match self.complete {
-            LocalNameComplete::Complete => self.local_name.len(),
+impl LocalNameAdStruct {
+    pub(crate) fn try_new(
+        local_name: &str,
+        complete: LocalNameComplete,
+    ) -> Result<Self, AdvertisingError> {
+        let len = match complete {
+            LocalNameComplete::Complete => local_name.len(),
             LocalNameComplete::Shortened(len) => {
-                if len > self.local_name.len() {
-                    self.local_name.len()
+                if len > local_name.len() {
+                    local_name.len()
                 } else {
                     len
                 }
             }
-        }
+        };
+        Ok(Self {
+            local_name: (&local_name[..len])
+                .try_into()
+                .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?,
+            complete,
+        })
+    }
+
+    fn len(&self) -> usize {
+        self.local_name.len()
     }
 }
 
-impl EncodeToBuffer for LocalNameAdStruct<'_> {
+impl EncodeToBuffer for LocalNameAdStruct {
     fn encode<B: bletio_utils::BufferOps>(
         &self,
         buffer: &mut B,
@@ -56,7 +65,7 @@ impl EncodeToBuffer for LocalNameAdStruct<'_> {
         };
         buffer.try_push((self.encoded_size() - 1) as u8)?;
         buffer.try_push(ad_type as u8)?;
-        buffer.copy_from_slice(self.local_name[..self.len()].as_bytes())?;
+        buffer.copy_from_slice(self.local_name.as_bytes())?;
         Ok(self.encoded_size())
     }
 
@@ -85,7 +94,7 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<8>::default();
-        let value = LocalNameAdStruct::new(local_name, complete);
+        let value = LocalNameAdStruct::try_new(local_name, complete).unwrap();
         value.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
         Ok(())

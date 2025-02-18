@@ -86,6 +86,18 @@ where
     where
         H: HciDriver,
     {
+        // defmt::warn!(
+        //     "sizeof FullAdvertisingData: {}",
+        //     size_of::<FullAdvertisingData>()
+        // );
+        // defmt::warn!(
+        //     "sizeof AdvertisingData: {}",
+        //     size_of::<crate::advertising::AdvertisingData>()
+        // );
+        // defmt::warn!(
+        //     "sizeof ScanResponseData: {}",
+        //     size_of::<crate::advertising::ScanResponseData>()
+        // );
         for report in reports.iter() {
             host = self
                 .observer
