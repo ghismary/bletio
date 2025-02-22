@@ -1,13 +1,13 @@
 #![no_std]
 
 pub mod advertising_parameters;
+pub mod device_address;
 pub mod scan_parameters;
 
 mod advertising_data;
 mod advertising_enable;
 mod command;
 mod connection_interval;
-mod device_address;
 mod error;
 mod error_code;
 mod event;

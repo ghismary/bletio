@@ -13,7 +13,7 @@ const PERIPHERAL_CONNECTION_INTERVAL_RANGE_AD_STRUCT_SIZE: usize = 5;
 /// [Core Specification 6.0, Vol.3, Part C, 12.3](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/generic-access-profile.html#UUID-7ef0bdcb-4c81-1aea-5f65-4a69eab5c899).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct PeripheralConnectionIntervalRangeAdStruct {
+pub struct PeripheralConnectionIntervalRangeAdStruct {
     range: RangeInclusive<ConnectionInterval>,
 }
 
@@ -37,6 +37,41 @@ impl EncodeToBuffer for PeripheralConnectionIntervalRangeAdStruct {
 
     fn encoded_size(&self) -> usize {
         PERIPHERAL_CONNECTION_INTERVAL_RANGE_AD_STRUCT_SIZE + 1
+    }
+}
+
+pub(crate) mod parser {
+    use core::ops::RangeInclusive;
+
+    use nom::{
+        combinator::{map, map_res},
+        number::le_u16,
+        IResult, Parser,
+    };
+
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::*;
+
+    fn connection_interval(input: &[u8]) -> IResult<&[u8], ConnectionInterval> {
+        map_res(le_u16(), TryInto::try_into).parse(input)
+    }
+
+    pub(crate) fn peripheral_connection_interval_range_ad_struct(
+        input: &[u8],
+    ) -> IResult<&[u8], AdStruct> {
+        map(
+            map(
+                (connection_interval, connection_interval),
+                |(start, end)| RangeInclusive::new(start, end),
+            ),
+            |range| {
+                AdStruct::PeripheralConnectionIntervalRange(
+                    PeripheralConnectionIntervalRangeAdStruct::new(range),
+                )
+            },
+        )
+        .parse(input)
     }
 }
 

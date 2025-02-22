@@ -9,6 +9,7 @@ pub use buffer::{Buffer, BufferOps, EncodeToBuffer};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     BufferTooSmall,
+    CannotEncode,
 }
 
 pub(crate) const fn encode_le_u128(buffer: &mut [u8], data: u128) -> Result<usize, Error> {

@@ -8,7 +8,7 @@ use crate::{advertising::Uri, assigned_numbers::AdType};
 /// [Supplement to the Bluetooth Core Specification, Part A, 1.18](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-64bd7c4c-daf3-7a73-143a-b3dba8faac95).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct UriAdStruct {
+pub struct UriAdStruct {
     uri: Uri,
 }
 
@@ -31,6 +31,18 @@ impl EncodeToBuffer for UriAdStruct {
 
     fn encoded_size(&self) -> usize {
         2 + self.uri.encoded_size()
+    }
+}
+
+pub(crate) mod parser {
+    use nom::{combinator::map, IResult, Parser};
+
+    use crate::advertising::{ad_struct::AdStruct, uri::parser::uri};
+
+    use super::*;
+
+    pub(crate) fn uri_ad_struct(input: &[u8]) -> IResult<&[u8], AdStruct> {
+        map(uri, |uri| AdStruct::Uri(UriAdStruct::new(uri))).parse(input)
     }
 }
 

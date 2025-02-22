@@ -19,7 +19,7 @@ const SERVICE_SOLICITATION_UUID128_NB_MAX: usize = 1;
 /// See [Supplement to the Bluetooth Core Specification, Part A, 1.10](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-302574d9-585b-209a-c32f-c5b6278f3377).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct ServiceSolicitationUuid16AdStruct {
+pub struct ServiceSolicitationUuid16AdStruct {
     uuids: Vec<ServiceUuid, SERVICE_SOLICITATION_UUID16_NB_MAX>,
 }
 
@@ -61,7 +61,7 @@ impl EncodeToBuffer for ServiceSolicitationUuid16AdStruct {
 /// See [Supplement to the Bluetooth Core Specification, Part A, 1.10](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-302574d9-585b-209a-c32f-c5b6278f3377).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct ServiceSolicitationUuid32AdStruct {
+pub struct ServiceSolicitationUuid32AdStruct {
     uuids: Vec<Uuid32, SERVICE_SOLICITATION_UUID32_NB_MAX>,
 }
 
@@ -103,7 +103,7 @@ impl EncodeToBuffer for ServiceSolicitationUuid32AdStruct {
 /// See [Supplement to the Bluetooth Core Specification, Part A, 1.10](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-302574d9-585b-209a-c32f-c5b6278f3377).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct ServiceSolicitationUuid128AdStruct {
+pub struct ServiceSolicitationUuid128AdStruct {
     uuids: Vec<Uuid128, SERVICE_SOLICITATION_UUID128_NB_MAX>,
 }
 
@@ -132,6 +132,78 @@ impl EncodeToBuffer for ServiceSolicitationUuid128AdStruct {
 
     fn encoded_size(&self) -> usize {
         (self.uuids.len() * 16) + 2
+    }
+}
+
+pub(crate) mod parser {
+    use nom::{
+        combinator::{fail, map_res},
+        IResult, Parser,
+    };
+
+    use crate::advertising::{
+        ad_struct::AdStruct,
+        advertising_data::parser::{service_uuid, uuid128, uuid32},
+    };
+
+    use super::*;
+
+    pub(crate) fn list_of_solicitation_service_uuid16_ad_struct(
+        mut input: &[u8],
+    ) -> IResult<&[u8], AdStruct> {
+        let len = input.len() / 2;
+        if len > SERVICE_SOLICITATION_UUID16_NB_MAX {
+            fail::<_, &[u8], _>().parse(input)?;
+        }
+        let mut ad_struct = ServiceSolicitationUuid16AdStruct {
+            uuids: Default::default(),
+        };
+        let mut index = 0;
+        while index < len {
+            let (rest, _) =
+                map_res(service_uuid, |uuid| ad_struct.uuids.push(uuid)).parse(input)?;
+            input = rest;
+            index += 1;
+        }
+        Ok((&[], AdStruct::ServiceSolicitationUuid16(ad_struct)))
+    }
+
+    pub(crate) fn list_of_solicitation_service_uuid32_ad_struct(
+        mut input: &[u8],
+    ) -> IResult<&[u8], AdStruct> {
+        let len = input.len() / 4;
+        if len > SERVICE_SOLICITATION_UUID32_NB_MAX {
+            fail::<_, &[u8], _>().parse(input)?;
+        }
+        let mut ad_struct = ServiceSolicitationUuid32AdStruct {
+            uuids: Default::default(),
+        };
+        let mut index = 0;
+        while index < len {
+            let (rest, _) = map_res(uuid32, |uuid| ad_struct.uuids.push(uuid)).parse(input)?;
+            input = rest;
+            index += 1;
+        }
+        Ok((&[], AdStruct::ServiceSolicitationUuid32(ad_struct)))
+    }
+
+    pub(crate) fn list_of_solicitation_service_uuid128_ad_struct(
+        mut input: &[u8],
+    ) -> IResult<&[u8], AdStruct> {
+        let len = input.len() / 16;
+        if len > SERVICE_SOLICITATION_UUID128_NB_MAX {
+            fail::<_, &[u8], _>().parse(input)?;
+        }
+        let mut ad_struct = ServiceSolicitationUuid128AdStruct {
+            uuids: Default::default(),
+        };
+        let mut index = 0;
+        while index < len {
+            let (rest, _) = map_res(uuid128, |uuid| ad_struct.uuids.push(uuid)).parse(input)?;
+            input = rest;
+            index += 1;
+        }
+        Ok((&[], AdStruct::ServiceSolicitationUuid128(ad_struct)))
     }
 }
 

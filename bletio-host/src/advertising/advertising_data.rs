@@ -1,16 +1,17 @@
 use core::ops::RangeInclusive;
 
 use bletio_hci::{
-    AdvertisingInterval, ConnectionInterval, PublicDeviceAddress, RandomAddress,
-    SupportedLeFeatures, TxPowerLevel,
+    AdvertisingInterval, ConnectionInterval, LeAdvertisingReportData, PublicDeviceAddress,
+    RandomAddress, SupportedLeFeatures, TxPowerLevel,
 };
 use bletio_utils::{BufferOps, EncodeToBuffer};
 
 use crate::advertising::ad_struct::{
-    AdvertisingIntervalAdStruct, AppearanceAdStruct, FlagsAdStruct, LeSupportedFeaturesAdStruct,
-    LocalNameAdStruct, ManufacturerSpecificDataAdStruct, PeripheralConnectionIntervalRangeAdStruct,
-    PublicTargetAddressAdStruct, RandomTargetAddressAdStruct, ServiceDataUuid128AdStruct,
-    ServiceDataUuid16AdStruct, ServiceDataUuid32AdStruct, ServiceSolicitationUuid128AdStruct,
+    AdStruct, AdvertisingIntervalAdStruct, AppearanceAdStruct, FlagsAdStruct,
+    LeSupportedFeaturesAdStruct, LocalNameAdStruct, ManufacturerSpecificDataAdStruct,
+    PeripheralConnectionIntervalRangeAdStruct, PublicTargetAddressAdStruct,
+    RandomTargetAddressAdStruct, ServiceDataUuid128AdStruct, ServiceDataUuid16AdStruct,
+    ServiceDataUuid32AdStruct, ServiceSolicitationUuid128AdStruct,
     ServiceSolicitationUuid16AdStruct, ServiceSolicitationUuid32AdStruct, ServiceUuid128AdStruct,
     ServiceUuid16AdStruct, ServiceUuid32AdStruct, TxPowerLevelAdStruct, UriAdStruct,
 };
@@ -18,6 +19,11 @@ use crate::advertising::{AdvertisingError, Flags, LocalNameComplete, ServiceList
 use crate::assigned_numbers::{AppearanceValue, CompanyIdentifier, ServiceUuid};
 use crate::uuid::{Uuid128, Uuid32};
 use crate::{DeviceInformation, Error};
+
+const EMPTY_ADVERTISING_DATA_ITERATOR: AdvertisingDataIterator = AdvertisingDataIterator {
+    data: &[],
+    next_index: 0,
+};
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -32,29 +38,102 @@ impl FullAdvertisingData {
         scanresp_data: impl Into<Option<ScanResponseData>>,
     ) -> Result<Self, Error> {
         let scanresp_data = scanresp_data.into();
-        // if let Some(scanresp_data) = &scanresp_data {
-        //     if let (Some(_), Some(_)) = (
-        //         adv_data.base.appearance.as_ref(),
-        //         scanresp_data.base.appearance.as_ref(),
-        //     ) {
-        //         return Err(
-        //             AdvertisingError::AppearanceNotAllowedInBothAdvertisingDataAndScanResponseData,
-        //         )?;
-        //     }
-        // }
+        if let Some(scanresp_data) = &scanresp_data {
+            if adv_data
+                .iter()
+                .any(|ad_struct| matches!(ad_struct, AdStruct::Appearance(_)))
+                && scanresp_data
+                    .iter()
+                    .any(|ad_struct| matches!(ad_struct, AdStruct::Appearance(_)))
+            {
+                return Err(
+                    AdvertisingError::AppearanceNotAllowedInBothAdvertisingDataAndScanResponseData,
+                )?;
+            }
+        }
         Ok(Self {
             adv_data,
             scanresp_data,
         })
     }
 
-    pub(crate) fn fill_automatic_data(&self, device_information: &DeviceInformation) -> Self {
-        let mut filled = self.clone();
-        // filled.adv_data.base.fill_automatic_data(device_information);
-        // if let Some(scanresp_data) = filled.scanresp_data.as_mut() {
-        //     scanresp_data.base.fill_automatic_data(device_information);
-        // }
-        filled
+    pub fn advertising_data(&self) -> &AdvertisingData {
+        &self.adv_data
+    }
+
+    pub fn iter(
+        &self,
+    ) -> core::iter::Chain<AdvertisingDataIterator<'_>, AdvertisingDataIterator<'_>> {
+        if let Some(scanresp_data) = self.scanresp_data.as_ref() {
+            self.adv_data.iter().chain(scanresp_data.iter())
+        } else {
+            self.adv_data.iter().chain(EMPTY_ADVERTISING_DATA_ITERATOR)
+        }
+    }
+
+    pub fn scan_response_data(&self) -> Option<&ScanResponseData> {
+        self.scanresp_data.as_ref()
+    }
+
+    pub(crate) fn fill_automatic_data(
+        &self,
+        device_information: &DeviceInformation,
+    ) -> Result<Self, Error> {
+        let mut adv_data_builder = AdvertisingData::builder();
+        for ad_struct in self.adv_data.iter() {
+            if matches!(ad_struct, AdStruct::Appearance(_)) {
+                adv_data_builder = adv_data_builder
+                    .add_ad_struct(AppearanceAdStruct::new(device_information.appearance))?;
+            } else if matches!(ad_struct, AdStruct::LeSupportedFeatures(_)) {
+                adv_data_builder = adv_data_builder.add_ad_struct(
+                    LeSupportedFeaturesAdStruct::new(device_information.supported_le_features),
+                )?;
+            } else if matches!(ad_struct, AdStruct::TxPowerLevel(_)) {
+                adv_data_builder = adv_data_builder
+                    .add_ad_struct(TxPowerLevelAdStruct::new(device_information.tx_power_level))?;
+            } else if let AdStruct::LocalName(local_name) = ad_struct {
+                adv_data_builder = adv_data_builder.add_ad_struct(LocalNameAdStruct::try_new(
+                    device_information.local_name,
+                    local_name.complete,
+                )?)?;
+            } else {
+                adv_data_builder = adv_data_builder.add_ad_struct(ad_struct)?;
+            }
+        }
+
+        let adv_data = adv_data_builder.build();
+
+        let scanresp_data = if let Some(scanresp_data) = self.scanresp_data.as_ref() {
+            let mut scanresp_data_builder = ScanResponseData::builder();
+            for ad_struct in scanresp_data.iter() {
+                if matches!(ad_struct, AdStruct::Appearance(_)) {
+                    scanresp_data_builder = scanresp_data_builder
+                        .add_ad_struct(AppearanceAdStruct::new(device_information.appearance))?;
+                } else if matches!(ad_struct, AdStruct::LeSupportedFeatures(_)) {
+                    scanresp_data_builder = scanresp_data_builder.add_ad_struct(
+                        LeSupportedFeaturesAdStruct::new(device_information.supported_le_features),
+                    )?;
+                } else if matches!(ad_struct, AdStruct::TxPowerLevel(_)) {
+                    scanresp_data_builder = scanresp_data_builder.add_ad_struct(
+                        TxPowerLevelAdStruct::new(device_information.tx_power_level),
+                    )?;
+                } else if let AdStruct::LocalName(local_name) = ad_struct {
+                    scanresp_data_builder =
+                        scanresp_data_builder.add_ad_struct(LocalNameAdStruct::try_new(
+                            device_information.local_name,
+                            local_name.complete,
+                        )?)?;
+                } else {
+                    scanresp_data_builder = scanresp_data_builder.add_ad_struct(ad_struct)?;
+                }
+            }
+
+            Some(scanresp_data_builder.build())
+        } else {
+            None
+        };
+
+        FullAdvertisingData::try_new(adv_data, scanresp_data)
     }
 }
 
@@ -84,14 +163,20 @@ impl AdvertisingDataBuilder {
         self,
         interval: AdvertisingInterval,
     ) -> Result<Self, AdvertisingError> {
-        // TODO: Check that it is not already present
-        self.add_ad_struct(AdvertisingIntervalAdStruct::new(interval))
+        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::AdvertisingInterval(_))) {
+            Err(AdvertisingError::OnlyOneAdvertisingIntervalAllowedInAdvertisingDataOrScanResponseData)
+        } else {
+            self.add_ad_struct(AdvertisingIntervalAdStruct::new(interval))
+        }
     }
 
     /// Add an Appearance Advertising Structure to the `AdvertisingData`.
     pub fn with_appearance(self) -> Result<Self, AdvertisingError> {
-        // TODO: Check that it is not already present
-        self.add_ad_struct(AppearanceAdStruct::new(AppearanceValue::GenericUnknown))
+        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::Appearance(_))) {
+            Err(AdvertisingError::OnlyOneAppearanceAllowedInAdvertisingDataOrScanResponseData)
+        } else {
+            self.add_ad_struct(AppearanceAdStruct::new(AppearanceValue::GenericUnknown))
+        }
     }
 
     /// Add a Flags Advertising Structure to the `AdvertisingData`.
@@ -100,16 +185,22 @@ impl AdvertisingDataBuilder {
     ///
     /// * `flags` — The Flags value to put in the added Flags Advertising Structure.
     pub fn with_flags(self, flags: Flags) -> Result<Self, AdvertisingError> {
-        // TODO: Check that it is not already present
-        self.add_ad_struct(FlagsAdStruct::new(flags))
+        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::Flags(_))) {
+            Err(AdvertisingError::OnlyOneFlagsAllowedInAdvertisingData)
+        } else {
+            self.add_ad_struct(FlagsAdStruct::new(flags))
+        }
     }
 
     /// Add a LE Supported Features Advertising Structure to the `AdvertisingData`.
     pub fn with_le_supported_features(self) -> Result<Self, AdvertisingError> {
-        // TODO: Check that it is not already present
-        self.add_ad_struct(LeSupportedFeaturesAdStruct::new(
-            SupportedLeFeatures::default(),
-        ))
+        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::LeSupportedFeatures(_))) {
+            Err(AdvertisingError::OnlyOneLeSupportedFeaturesAllowedInAdvertisingDataOrScanResponseData)
+        } else {
+            self.add_ad_struct(LeSupportedFeaturesAdStruct::new(
+                SupportedLeFeatures::default(),
+            ))
+        }
     }
 
     /// Add a Local Name Advertising Structure to the `AdvertisingData`.
@@ -118,8 +209,11 @@ impl AdvertisingDataBuilder {
     ///
     /// * `complete` — Whether the local name should be put complete or shortened in the added Local Name Advertising Structure.
     pub fn with_local_name(self, complete: LocalNameComplete) -> Result<Self, AdvertisingError> {
-        // TODO: Check that it is not already present
-        self.add_ad_struct(LocalNameAdStruct::try_new("", complete)?)
+        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::LocalName(_))) {
+            Err(AdvertisingError::OnlyOneLocalNameAllowedInAdvertisingDataOrScanResponseData)
+        } else {
+            self.add_ad_struct(LocalNameAdStruct::try_new("", complete)?)
+        }
     }
 
     /// Add a Manufacturer Specific Data Advertising Structure to the `AdvertisingData`.
@@ -160,8 +254,11 @@ impl AdvertisingDataBuilder {
         self,
         addresses: &[PublicDeviceAddress],
     ) -> Result<Self, AdvertisingError> {
-        // TODO: Check that it is not already present
-        self.add_ad_struct(PublicTargetAddressAdStruct::try_new(addresses)?)
+        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::PublicTargetAddress(_))) {
+            Err(AdvertisingError::OnlyOnePublicTargetAddressAllowedInAdvertisingDataOrScanResponseData)
+        } else {
+            self.add_ad_struct(PublicTargetAddressAdStruct::try_new(addresses)?)
+        }
     }
 
     /// Add a Random Target Address Advertising Structure to the `AdvertisingData`.
@@ -173,8 +270,11 @@ impl AdvertisingDataBuilder {
         self,
         addresses: &[RandomAddress],
     ) -> Result<Self, AdvertisingError> {
-        // TODO: Check that it is not already present
-        self.add_ad_struct(RandomTargetAddressAdStruct::try_new(addresses)?)
+        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::RandomTargetAddress(_))) {
+            Err(AdvertisingError::OnlyOneRandomTargetAddressAllowedInAdvertisingDataOrScanResponseData)
+        } else {
+            self.add_ad_struct(RandomTargetAddressAdStruct::try_new(addresses)?)
+        }
     }
 
     /// Add a Service Data for a 16-bit Service UUID Advertising Structure to the `AdvertisingData`.
@@ -318,30 +418,11 @@ impl AdvertisingDataBuilder {
             .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
         Ok(self)
     }
-}
 
-// impl<'a> AdvertisingDataBase<'a> {
-//     fn fill_automatic_data(&mut self, device_information: &'a DeviceInformation) {
-//         if self.appearance.is_some() {
-//             self.appearance = Some(AppearanceAdStruct::new(device_information.appearance));
-//         }
-//         if self.le_supported_features.is_some() {
-//             self.le_supported_features = Some(LeSupportedFeaturesAdStruct::new(
-//                 device_information.supported_le_features,
-//             ));
-//         }
-//         if let Some(local_name) = self.local_name.clone() {
-//             self.local_name = Some(LocalNameAdStruct::new(
-//                 device_information.local_name,
-//                 local_name.complete,
-//             ));
-//         }
-//         if self.tx_power_level.is_some() {
-//             self.tx_power_level =
-//                 Some(TxPowerLevelAdStruct::new(device_information.tx_power_level));
-//         }
-//     }
-// }
+    fn has_ad_struct(&self, func: impl FnMut(AdStruct) -> bool) -> bool {
+        self.data.iter().any(func)
+    }
+}
 
 /// Advertising Data sent when advertising.
 ///
@@ -363,6 +444,13 @@ impl AdvertisingData {
     pub fn builder() -> AdvertisingDataBuilder {
         AdvertisingDataBuilder::new()
     }
+
+    pub fn iter(&self) -> AdvertisingDataIterator {
+        AdvertisingDataIterator {
+            data: self.data.data(),
+            next_index: 0,
+        }
+    }
 }
 
 impl EncodeToBuffer for AdvertisingData {
@@ -378,6 +466,12 @@ impl EncodeToBuffer for AdvertisingData {
 impl From<&AdvertisingData> for bletio_hci::AdvertisingData {
     fn from(value: &AdvertisingData) -> Self {
         value.data.clone()
+    }
+}
+
+impl From<&LeAdvertisingReportData> for AdvertisingData {
+    fn from(value: &LeAdvertisingReportData) -> Self {
+        Self { data: value.into() }
     }
 }
 
@@ -407,22 +501,31 @@ impl ScanResponseDataBuilder {
         self,
         interval: AdvertisingInterval,
     ) -> Result<Self, AdvertisingError> {
-        // TODO: Check that it is not already present
-        self.add_ad_struct(AdvertisingIntervalAdStruct::new(interval))
+        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::AdvertisingInterval(_))) {
+            Err(AdvertisingError::OnlyOneAdvertisingIntervalAllowedInAdvertisingDataOrScanResponseData)
+        } else {
+            self.add_ad_struct(AdvertisingIntervalAdStruct::new(interval))
+        }
     }
 
     /// Add an Appearance Advertising Structure to the `ScanResponseData`.
     pub fn with_appearance(self) -> Result<Self, AdvertisingError> {
-        // TODO: Check that it is not already present
-        self.add_ad_struct(AppearanceAdStruct::new(AppearanceValue::GenericUnknown))
+        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::Appearance(_))) {
+            Err(AdvertisingError::OnlyOneAppearanceAllowedInAdvertisingDataOrScanResponseData)
+        } else {
+            self.add_ad_struct(AppearanceAdStruct::new(AppearanceValue::GenericUnknown))
+        }
     }
 
     /// Add a LE Supported Features Advertising Structure to the `ScanResponseData`.
     pub fn with_le_supported_features(self) -> Result<Self, AdvertisingError> {
-        // TODO: Check that it is not already present
-        self.add_ad_struct(LeSupportedFeaturesAdStruct::new(
-            SupportedLeFeatures::default(),
-        ))
+        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::LeSupportedFeatures(_))) {
+            Err(AdvertisingError::OnlyOneLeSupportedFeaturesAllowedInAdvertisingDataOrScanResponseData)
+        } else {
+            self.add_ad_struct(LeSupportedFeaturesAdStruct::new(
+                SupportedLeFeatures::default(),
+            ))
+        }
     }
 
     /// Add a Local Name Advertising Structure to the `ScanResponseData`.
@@ -431,8 +534,11 @@ impl ScanResponseDataBuilder {
     ///
     /// * `complete` — Whether the local name should be put complete or shortened in the added Local Name Advertising Structure.
     pub fn with_local_name(self, complete: LocalNameComplete) -> Result<Self, AdvertisingError> {
-        // TODO: Check that it is not already present
-        self.add_ad_struct(LocalNameAdStruct::try_new("", complete)?)
+        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::LocalName(_))) {
+            Err(AdvertisingError::OnlyOneLocalNameAllowedInAdvertisingDataOrScanResponseData)
+        } else {
+            self.add_ad_struct(LocalNameAdStruct::try_new("", complete)?)
+        }
     }
 
     /// Add a Manufacturer Specific Data Advertising Structure to the `ScanResponseData`.
@@ -473,8 +579,11 @@ impl ScanResponseDataBuilder {
         self,
         addresses: &[PublicDeviceAddress],
     ) -> Result<Self, AdvertisingError> {
-        // TODO: Check that it is not already present
-        self.add_ad_struct(PublicTargetAddressAdStruct::try_new(addresses)?)
+        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::PublicTargetAddress(_))) {
+            Err(AdvertisingError::OnlyOnePublicTargetAddressAllowedInAdvertisingDataOrScanResponseData)
+        } else {
+            self.add_ad_struct(PublicTargetAddressAdStruct::try_new(addresses)?)
+        }
     }
 
     /// Add a Random Target Address Advertising Structure to the `ScanResponseData`.
@@ -486,8 +595,11 @@ impl ScanResponseDataBuilder {
         self,
         addresses: &[RandomAddress],
     ) -> Result<Self, AdvertisingError> {
-        // TODO: Check that it is not already present
-        self.add_ad_struct(RandomTargetAddressAdStruct::try_new(addresses)?)
+        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::RandomTargetAddress(_))) {
+            Err(AdvertisingError::OnlyOneRandomTargetAddressAllowedInAdvertisingDataOrScanResponseData)
+        } else {
+            self.add_ad_struct(RandomTargetAddressAdStruct::try_new(addresses)?)
+        }
     }
 
     /// Add a Service Data for a 16-bit Service UUID Advertising Structure to the `ScanResponseData`.
@@ -631,6 +743,10 @@ impl ScanResponseDataBuilder {
             .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
         Ok(self)
     }
+
+    fn has_ad_struct(&self, func: impl FnMut(AdStruct) -> bool) -> bool {
+        self.data.iter().any(func)
+    }
 }
 
 /// Scan Response Data that can be sent when the advertising is scannable.
@@ -653,6 +769,13 @@ impl ScanResponseData {
     pub fn builder() -> ScanResponseDataBuilder {
         ScanResponseDataBuilder::new()
     }
+
+    pub fn iter(&self) -> AdvertisingDataIterator {
+        AdvertisingDataIterator {
+            data: self.data.data(),
+            next_index: 0,
+        }
+    }
 }
 
 impl EncodeToBuffer for ScanResponseData {
@@ -668,6 +791,175 @@ impl EncodeToBuffer for ScanResponseData {
 impl From<&ScanResponseData> for bletio_hci::ScanResponseData {
     fn from(value: &ScanResponseData) -> Self {
         value.data.clone()
+    }
+}
+
+impl From<&LeAdvertisingReportData> for ScanResponseData {
+    fn from(value: &LeAdvertisingReportData) -> Self {
+        Self { data: value.into() }
+    }
+}
+
+pub struct AdvertisingDataIterator<'a> {
+    data: &'a [u8],
+    next_index: usize,
+}
+
+impl Iterator for AdvertisingDataIterator<'_> {
+    type Item = AdStruct;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if self.next_index >= self.data.len() {
+                return None;
+            }
+            if self.next_index == 0 {
+                match parser::advertising_data_length(self.data) {
+                    Ok(_) => self.next_index += 1,
+                    Err(_) => return None,
+                }
+            }
+
+            match parser::ad_struct(&self.data[self.next_index..]) {
+                Ok((_, (len, ad_struct))) => {
+                    self.next_index += len;
+                    return Some(ad_struct);
+                }
+                Err(_) => match parser::ad_struct_length(&self.data[self.next_index..]) {
+                    Ok((_, len)) => {
+                        self.next_index += len + 1;
+                    }
+                    Err(_) => return None,
+                },
+            }
+        }
+    }
+}
+
+pub(crate) mod parser {
+    use nom::{
+        combinator::{map, map_res},
+        number::{le_u128, le_u16, le_u32, le_u8},
+        IResult, Parser,
+    };
+
+    use crate::{
+        advertising::ad_struct::{
+            advertising_interval::parser::advertising_interval_ad_struct,
+            appearance::parser::appearance_ad_struct,
+            flags::parser::flags_ad_struct,
+            le_supported_features::parser::le_supported_features_ad_struct,
+            local_name::parser::{complete_local_name_ad_struct, shortened_local_name_ad_struct},
+            manufacturer_specific_data::parser::manufacturer_specific_data_ad_struct,
+            peripheral_connection_interval_range::parser::peripheral_connection_interval_range_ad_struct,
+            public_target_address::parser::public_target_address_ad_struct,
+            random_target_address::parser::random_target_address_ad_struct,
+            service_data::parser::{
+                service_data_uuid128_ad_struct, service_data_uuid16_ad_struct,
+                service_data_uuid32_ad_struct,
+            },
+            service_solicitation::parser::{
+                list_of_solicitation_service_uuid128_ad_struct,
+                list_of_solicitation_service_uuid16_ad_struct,
+                list_of_solicitation_service_uuid32_ad_struct,
+            },
+            service_uuid::parser::{
+                complete_list_of_service_uuid128_ad_struct,
+                complete_list_of_service_uuid16_ad_struct,
+                complete_list_of_service_uuid32_ad_struct,
+                incomplete_list_of_service_uuid128_ad_struct,
+                incomplete_list_of_service_uuid16_ad_struct,
+                incomplete_list_of_service_uuid32_ad_struct,
+            },
+            tx_power_level::parser::tx_power_level_ad_struct,
+            uri::parser::uri_ad_struct,
+            AdStruct,
+        },
+        assigned_numbers::{AdType, ServiceUuid},
+        uuid::{Uuid128, Uuid32},
+    };
+
+    pub(crate) fn advertising_data_length(input: &[u8]) -> IResult<&[u8], u8> {
+        le_u8().parse(input)
+    }
+
+    pub(crate) fn ad_struct_length(input: &[u8]) -> IResult<&[u8], usize> {
+        map(le_u8(), |v| v as usize).parse(input)
+    }
+
+    fn ad_type(input: &[u8]) -> IResult<&[u8], AdType> {
+        map_res(le_u8(), TryInto::try_into).parse(input)
+    }
+
+    pub(crate) fn service_uuid(input: &[u8]) -> IResult<&[u8], ServiceUuid> {
+        map_res(le_u16(), TryFrom::try_from).parse(input)
+    }
+
+    pub(crate) fn uuid32(input: &[u8]) -> IResult<&[u8], Uuid32> {
+        map(le_u32(), Into::into).parse(input)
+    }
+
+    pub(crate) fn uuid128(input: &[u8]) -> IResult<&[u8], Uuid128> {
+        map(le_u128(), Into::into).parse(input)
+    }
+
+    pub(crate) fn ad_struct(input: &[u8]) -> IResult<&[u8], (usize, AdStruct)> {
+        let (rest, (ad_struct_length, ad_type)) = (ad_struct_length, ad_type).parse(input)?;
+        let len = ad_struct_length - 1;
+        let parameters = &rest[..len];
+        let (_rest, ad_struct) = match ad_type {
+            AdType::Flags => flags_ad_struct.parse(parameters),
+            AdType::IncompleteListOfServiceUuid16 => {
+                incomplete_list_of_service_uuid16_ad_struct.parse(parameters)
+            }
+            AdType::CompleteListOfServiceUuid16 => {
+                complete_list_of_service_uuid16_ad_struct.parse(parameters)
+            }
+            AdType::IncompleteListOfServiceUuid32 => {
+                incomplete_list_of_service_uuid32_ad_struct.parse(parameters)
+            }
+            AdType::CompleteListOfServiceUuid32 => {
+                complete_list_of_service_uuid32_ad_struct.parse(parameters)
+            }
+            AdType::IncompleteListOfServiceUuid128 => {
+                incomplete_list_of_service_uuid128_ad_struct.parse(parameters)
+            }
+            AdType::CompleteListOfServiceUuid128 => {
+                complete_list_of_service_uuid128_ad_struct.parse(parameters)
+            }
+            AdType::ShortenedLocalName => shortened_local_name_ad_struct.parse(parameters),
+            AdType::CompleteLocalName => complete_local_name_ad_struct.parse(parameters),
+            AdType::TxPowerLevel => tx_power_level_ad_struct.parse(parameters),
+            AdType::PeripheralConnectionIntervalRange => {
+                peripheral_connection_interval_range_ad_struct.parse(parameters)
+            }
+            AdType::ListOfSolicitationServiceUuid16 => {
+                list_of_solicitation_service_uuid16_ad_struct.parse(parameters)
+            }
+            AdType::ListOfSolicitationServiceUuid128 => {
+                list_of_solicitation_service_uuid128_ad_struct.parse(parameters)
+            }
+            AdType::ServiceDataUuid16 => service_data_uuid16_ad_struct.parse(parameters),
+            AdType::PublicTargetAddress => public_target_address_ad_struct.parse(parameters),
+            AdType::RandomTargetAddress => random_target_address_ad_struct.parse(parameters),
+            AdType::Appearance => appearance_ad_struct.parse(parameters),
+            AdType::AdvertisingInterval => advertising_interval_ad_struct.parse(parameters),
+            AdType::ListOfSolicitationServiceUuid32 => {
+                list_of_solicitation_service_uuid32_ad_struct.parse(parameters)
+            }
+            AdType::ServiceDataUuid32 => service_data_uuid32_ad_struct.parse(parameters),
+            AdType::ServiceDataUuid128 => service_data_uuid128_ad_struct.parse(parameters),
+            AdType::Uri => uri_ad_struct.parse(parameters),
+            AdType::LeSupportedFeatures => le_supported_features_ad_struct.parse(parameters),
+            AdType::ManufacturerSpecificData => {
+                manufacturer_specific_data_ad_struct.parse(parameters)
+            }
+            _ => {
+                const EMPTY_SLICE: &[u8] = &[];
+                Ok((EMPTY_SLICE, AdStruct::Unhandled(ad_type.into())))
+            }
+        }?;
+        Ok((&rest[len..], (ad_struct_length + 1, ad_struct)))
     }
 }
 
@@ -717,7 +1009,7 @@ mod test {
             .unwrap()
             .with_le_supported_features()
             .unwrap()
-            .with_local_name(LocalNameComplete::Shortened(9))
+            .with_local_name(LocalNameComplete::Shortened(3))
             .unwrap()
             .with_public_target_address(ADDRESSES)
             .unwrap()
@@ -811,8 +1103,8 @@ mod test {
     )]
     #[case::service_uuid32(
         advertising_data_builder_service_uuid32(),
-        &[0x19, 0x02, 0x01, 0x06, 0x01, 0x27, 0x01, 0x08, 0x07, 0x17, 0xF4, 0x23, 0x14, 0xC3, 0xDC, 0x24,
-            0x09, 0x04, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        &[0x1C, 0x02, 0x01, 0x06, 0x01, 0x27, 0x04, 0x08, b' ', b' ', b' ', 0x07, 0x17, 0xF4, 0x23, 0x14,
+            0xC3, 0xDC, 0x24, 0x09, 0x04, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00]
     )]
     #[case::service_uuid128(
         advertising_data_builder_service_uuid128(),
@@ -884,7 +1176,7 @@ mod test {
         ScanResponseData::builder()
             .with_le_supported_features()
             .unwrap()
-            .with_local_name(LocalNameComplete::Shortened(7))
+            .with_local_name(LocalNameComplete::Shortened(5))
             .unwrap()
             .with_public_target_address(ADDRESSES)
             .unwrap()
@@ -978,8 +1270,8 @@ mod test {
     )]
     #[case::service_uuid32(
         scan_response_data_builder_service_uuid32(),
-        &[0x16, 0x01, 0x27, 0x01, 0x08, 0x07, 0x17, 0xF4, 0x23, 0x14, 0xC3, 0xDC, 0x24, 0x09, 0x04, 0x03,
-            0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        &[0x1B, 0x01, 0x27, 0x06, 0x08, b' ', b' ', b' ', b' ', b' ', 0x07, 0x17, 0xF4, 0x23, 0x14, 0xC3,
+            0xDC, 0x24, 0x09, 0x04, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
     )]
     #[case::service_uuid128(
         scan_response_data_builder_service_uuid128(),
@@ -1017,104 +1309,123 @@ mod test {
         Ok(())
     }
 
-    // #[test]
-    // fn test_full_advertising_data_success() -> Result<(), Error> {
-    //     let local_name = "bletio";
-    //     let adv_data = AdvertisingData::builder()
-    //         .with_appearance()
-    //         .with_tx_power_level()
-    //         .with_le_supported_features()
-    //         .with_local_name(LocalNameComplete::Shortened(3))
-    //         .build();
-    //     let scanresp_data = ScanResponseData::builder()
-    //         .with_local_name(LocalNameComplete::Complete)
-    //         .build();
-    //     let full_adv_data = FullAdvertisingData::try_new(adv_data.clone(), scanresp_data.clone())?;
-    //     assert_eq!(
-    //         full_adv_data.adv_data.base.appearance,
-    //         Some(AppearanceAdStruct::new(AppearanceValue::GenericUnknown))
-    //     );
-    //     assert_eq!(
-    //         full_adv_data.adv_data.base.local_name,
-    //         Some(LocalNameAdStruct::new("", LocalNameComplete::Shortened(3)))
-    //     );
-    //     assert_eq!(
-    //         full_adv_data.adv_data.base.tx_power_level,
-    //         Some(TxPowerLevelAdStruct::new(TxPowerLevel::default()))
-    //     );
-    //     assert_eq!(
-    //         full_adv_data.adv_data.base.le_supported_features,
-    //         Some(LeSupportedFeaturesAdStruct::new(
-    //             SupportedLeFeatures::default()
-    //         ))
-    //     );
-    //     assert_eq!(
-    //         full_adv_data
-    //             .scanresp_data
-    //             .as_ref()
-    //             .unwrap()
-    //             .base
-    //             .local_name,
-    //         Some(LocalNameAdStruct::new("", LocalNameComplete::Complete))
-    //     );
-    //     assert_eq!(full_adv_data.adv_data, adv_data);
-    //     assert_eq!(full_adv_data.scanresp_data, Some(scanresp_data));
+    #[test]
+    fn test_full_advertising_data_success() -> Result<(), Error> {
+        let local_name = "bletio";
+        let adv_data = AdvertisingData::builder()
+            .with_appearance()
+            .unwrap()
+            .with_tx_power_level()
+            .unwrap()
+            .with_le_supported_features()
+            .unwrap()
+            .with_local_name(LocalNameComplete::Shortened(3))
+            .unwrap()
+            .build();
+        let scanresp_data = ScanResponseData::builder()
+            .with_local_name(LocalNameComplete::Complete)
+            .unwrap()
+            .build();
+        let full_adv_data = FullAdvertisingData::try_new(adv_data.clone(), scanresp_data.clone())?;
+        assert_eq!(full_adv_data.iter().count(), 5);
+        assert_eq!(full_adv_data.advertising_data().iter().count(), 4);
+        assert_eq!(full_adv_data.scan_response_data().iter().count(), 1);
+        let mut it = full_adv_data.iter();
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::Appearance(AppearanceAdStruct::new(
+                AppearanceValue::GenericUnknown
+            )))
+        );
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::TxPowerLevel(TxPowerLevelAdStruct::new(
+                TxPowerLevel::default()
+            )))
+        );
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::LeSupportedFeatures(
+                LeSupportedFeaturesAdStruct::new(SupportedLeFeatures::default())
+            ))
+        );
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::LocalName(
+                LocalNameAdStruct::try_new("", LocalNameComplete::Shortened(3)).unwrap()
+            ))
+        );
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::LocalName(
+                LocalNameAdStruct::try_new("", LocalNameComplete::Complete).unwrap()
+            ))
+        );
+        assert_eq!(it.next(), None);
 
-    //     let appearance = AppearanceValue::Thermostat;
-    //     let tx_power_level = TxPowerLevel::try_new(-8).unwrap();
-    //     let supported_le_features =
-    //         SupportedLeFeatures::LE_2M_PHY | SupportedLeFeatures::LE_CODED_PHY;
-    //     let mut device_information = DeviceInformation::default();
-    //     device_information.appearance = appearance;
-    //     device_information.local_name = "bletio";
-    //     device_information.tx_power_level = tx_power_level;
-    //     device_information.supported_le_features = supported_le_features;
-    //     let filled_full_adv_data = full_adv_data.fill_automatic_data(&device_information);
-    //     assert_eq!(
-    //         filled_full_adv_data.adv_data.base.appearance,
-    //         Some(AppearanceAdStruct::new(appearance))
-    //     );
-    //     assert_eq!(
-    //         filled_full_adv_data.adv_data.base.local_name,
-    //         Some(LocalNameAdStruct::new(
-    //             local_name,
-    //             LocalNameComplete::Shortened(3)
-    //         ))
-    //     );
-    //     assert_eq!(
-    //         filled_full_adv_data.adv_data.base.tx_power_level,
-    //         Some(TxPowerLevelAdStruct::new(tx_power_level))
-    //     );
-    //     assert_eq!(
-    //         filled_full_adv_data.adv_data.base.le_supported_features,
-    //         Some(LeSupportedFeaturesAdStruct::new(supported_le_features))
-    //     );
-    //     assert_eq!(
-    //         filled_full_adv_data
-    //             .scanresp_data
-    //             .as_ref()
-    //             .unwrap()
-    //             .base
-    //             .local_name,
-    //         Some(LocalNameAdStruct::new(
-    //             local_name,
-    //             LocalNameComplete::Complete
-    //         ))
-    //     );
+        let appearance = AppearanceValue::Thermostat;
+        let tx_power_level = TxPowerLevel::try_new(-8).unwrap();
+        let supported_le_features =
+            SupportedLeFeatures::LE_2M_PHY | SupportedLeFeatures::LE_CODED_PHY;
+        let mut device_information = DeviceInformation::default();
+        device_information.appearance = appearance;
+        device_information.local_name = "bletio";
+        device_information.tx_power_level = tx_power_level;
+        device_information.supported_le_features = supported_le_features;
+        let filled_full_adv_data = full_adv_data.fill_automatic_data(&device_information)?;
+        assert_eq!(filled_full_adv_data.iter().count(), 5);
+        assert_eq!(filled_full_adv_data.advertising_data().iter().count(), 4);
+        assert_eq!(filled_full_adv_data.scan_response_data().iter().count(), 1);
+        let mut it = filled_full_adv_data.iter();
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::Appearance(AppearanceAdStruct::new(appearance)))
+        );
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::TxPowerLevel(TxPowerLevelAdStruct::new(
+                tx_power_level
+            )))
+        );
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::LeSupportedFeatures(
+                LeSupportedFeaturesAdStruct::new(supported_le_features)
+            ))
+        );
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::LocalName(
+                LocalNameAdStruct::try_new(local_name, LocalNameComplete::Shortened(3)).unwrap()
+            ))
+        );
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::LocalName(
+                LocalNameAdStruct::try_new(local_name, LocalNameComplete::Complete).unwrap()
+            ))
+        );
+        assert_eq!(it.next(), None);
 
-    //     Ok(())
-    // }
+        Ok(())
+    }
 
-    // #[test]
-    // fn test_full_advertising_data_failure() {
-    //     let adv_data = AdvertisingData::builder().with_appearance().build();
-    //     let scanresp_data = ScanResponseData::builder().with_appearance().build();
-    //     let err = FullAdvertisingData::try_new(adv_data, scanresp_data);
-    //     assert_eq!(
-    //         err,
-    //         Err(Error::Advertising(
-    //             AdvertisingError::AppearanceNotAllowedInBothAdvertisingDataAndScanResponseData
-    //         ))
-    //     );
-    // }
+    #[test]
+    fn test_full_advertising_data_failure() {
+        let adv_data = AdvertisingData::builder()
+            .with_appearance()
+            .unwrap()
+            .build();
+        let scanresp_data = ScanResponseData::builder()
+            .with_appearance()
+            .unwrap()
+            .build();
+        let err = FullAdvertisingData::try_new(adv_data, scanresp_data);
+        assert_eq!(
+            err,
+            Err(Error::Advertising(
+                AdvertisingError::AppearanceNotAllowedInBothAdvertisingDataAndScanResponseData
+            ))
+        );
+    }
 }

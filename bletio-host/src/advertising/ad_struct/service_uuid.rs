@@ -24,7 +24,7 @@ pub enum ServiceListComplete {
 /// as defined in [Supplement to the Bluetooth Core Specification, Part A, 1.1](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-b1d0edbc-fc9e-507a-efe4-3fd4b4817a52).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct ServiceUuid16AdStruct {
+pub struct ServiceUuid16AdStruct {
     uuids: Vec<ServiceUuid, SERVICE_UUID16_NB_MAX>,
     ad_type: AdType,
 }
@@ -77,7 +77,7 @@ impl EncodeToBuffer for ServiceUuid16AdStruct {
 /// as defined in [Supplement to the Bluetooth Core Specification, Part A, 1.1](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-b1d0edbc-fc9e-507a-efe4-3fd4b4817a52).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct ServiceUuid32AdStruct {
+pub struct ServiceUuid32AdStruct {
     uuids: Vec<Uuid32, SERVICE_UUID32_NB_MAX>,
     ad_type: AdType,
 }
@@ -130,7 +130,7 @@ impl EncodeToBuffer for ServiceUuid32AdStruct {
 /// as defined in [Supplement to the Bluetooth Core Specification, Part A, 1.1](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-b1d0edbc-fc9e-507a-efe4-3fd4b4817a52).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct ServiceUuid128AdStruct {
+pub struct ServiceUuid128AdStruct {
     uuids: Vec<Uuid128, SERVICE_UUID128_NB_MAX>,
     ad_type: AdType,
 }
@@ -174,6 +174,138 @@ impl EncodeToBuffer for ServiceUuid128AdStruct {
 
     fn encoded_size(&self) -> usize {
         (self.uuids.len() * 16) + 2
+    }
+}
+
+pub(crate) mod parser {
+    use nom::combinator::{fail, map_res};
+    use nom::{IResult, Parser};
+
+    use crate::advertising::ad_struct::{AdStruct, ServiceUuid16AdStruct};
+    use crate::advertising::advertising_data::parser::{service_uuid, uuid128, uuid32};
+
+    use super::*;
+
+    pub(crate) fn complete_list_of_service_uuid16_ad_struct(
+        mut input: &[u8],
+    ) -> IResult<&[u8], AdStruct> {
+        let len = input.len() / 2;
+        if len > SERVICE_UUID16_NB_MAX {
+            fail::<_, &[u8], _>().parse(input)?;
+        }
+        let mut ad_struct = ServiceUuid16AdStruct {
+            uuids: Default::default(),
+            ad_type: AdType::CompleteListOfServiceUuid16,
+        };
+        let mut index = 0;
+        while index < len {
+            let (rest, _) =
+                map_res(service_uuid, |uuid| ad_struct.uuids.push(uuid)).parse(input)?;
+            input = rest;
+            index += 1;
+        }
+        Ok((&[], AdStruct::ServiceUuid16(ad_struct)))
+    }
+
+    pub(crate) fn incomplete_list_of_service_uuid16_ad_struct(
+        mut input: &[u8],
+    ) -> IResult<&[u8], AdStruct> {
+        let len = input.len() / 2;
+        if !(1..=SERVICE_UUID16_NB_MAX).contains(&len) {
+            fail::<_, &[u8], _>().parse(input)?;
+        }
+        let mut ad_struct = ServiceUuid16AdStruct {
+            uuids: Default::default(),
+            ad_type: AdType::IncompleteListOfServiceUuid16,
+        };
+        let mut index = 0;
+        while index < len {
+            let (rest, _) =
+                map_res(service_uuid, |uuid| ad_struct.uuids.push(uuid)).parse(input)?;
+            input = rest;
+            index += 1;
+        }
+        Ok((&[], AdStruct::ServiceUuid16(ad_struct)))
+    }
+
+    pub(crate) fn complete_list_of_service_uuid32_ad_struct(
+        mut input: &[u8],
+    ) -> IResult<&[u8], AdStruct> {
+        let len = input.len() / 4;
+        if len > SERVICE_UUID32_NB_MAX {
+            fail::<_, &[u8], _>().parse(input)?;
+        }
+        let mut ad_struct = ServiceUuid32AdStruct {
+            uuids: Default::default(),
+            ad_type: AdType::CompleteListOfServiceUuid32,
+        };
+        let mut index = 0;
+        while index < len {
+            let (rest, _) = map_res(uuid32, |uuid| ad_struct.uuids.push(uuid)).parse(input)?;
+            input = rest;
+            index += 1;
+        }
+        Ok((&[], AdStruct::ServiceUuid32(ad_struct)))
+    }
+
+    pub(crate) fn incomplete_list_of_service_uuid32_ad_struct(
+        mut input: &[u8],
+    ) -> IResult<&[u8], AdStruct> {
+        let len = input.len() / 4;
+        if !(1..=SERVICE_UUID32_NB_MAX).contains(&len) {
+            fail::<_, &[u8], _>().parse(input)?;
+        }
+        let mut ad_struct = ServiceUuid32AdStruct {
+            uuids: Default::default(),
+            ad_type: AdType::IncompleteListOfServiceUuid32,
+        };
+        let mut index = 0;
+        while index < len {
+            let (rest, _) = map_res(uuid32, |uuid| ad_struct.uuids.push(uuid)).parse(input)?;
+            input = rest;
+            index += 1;
+        }
+        Ok((&[], AdStruct::ServiceUuid32(ad_struct)))
+    }
+
+    pub(crate) fn complete_list_of_service_uuid128_ad_struct(
+        mut input: &[u8],
+    ) -> IResult<&[u8], AdStruct> {
+        let len = input.len() / 16;
+        if len > SERVICE_UUID128_NB_MAX {
+            fail::<_, &[u8], _>().parse(input)?;
+        }
+        let mut ad_struct = ServiceUuid128AdStruct {
+            uuids: Default::default(),
+            ad_type: AdType::CompleteListOfServiceUuid128,
+        };
+        let mut index = 0;
+        while index < len {
+            let (rest, _) = map_res(uuid128, |uuid| ad_struct.uuids.push(uuid)).parse(input)?;
+            input = rest;
+            index += 1;
+        }
+        Ok((&[], AdStruct::ServiceUuid128(ad_struct)))
+    }
+
+    pub(crate) fn incomplete_list_of_service_uuid128_ad_struct(
+        mut input: &[u8],
+    ) -> IResult<&[u8], AdStruct> {
+        let len = input.len() / 16;
+        if !(1..=SERVICE_UUID128_NB_MAX).contains(&len) {
+            fail::<_, &[u8], _>().parse(input)?;
+        }
+        let mut ad_struct = ServiceUuid128AdStruct {
+            uuids: Default::default(),
+            ad_type: AdType::IncompleteListOfServiceUuid128,
+        };
+        let mut index = 0;
+        while index < len {
+            let (rest, _) = map_res(uuid128, |uuid| ad_struct.uuids.push(uuid)).parse(input)?;
+            input = rest;
+            index += 1;
+        }
+        Ok((&[], AdStruct::ServiceUuid128(ad_struct)))
     }
 }
 

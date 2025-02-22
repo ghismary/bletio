@@ -14,7 +14,7 @@ const SERVICE_DATA_UUID128_MAX_LENGTH: usize = 13;
 /// See [Supplement to the Bluetooth Core Specification, Part A, 1.11](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-dea15cd4-bc0f-91f0-82c1-3bbe596f7bf6).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct ServiceDataUuid16AdStruct {
+pub struct ServiceDataUuid16AdStruct {
     uuid: ServiceUuid,
     data: Vec<u8, SERVICE_DATA_UUID16_MAX_LENGTH>,
 }
@@ -52,7 +52,7 @@ impl EncodeToBuffer for ServiceDataUuid16AdStruct {
 /// See [Supplement to the Bluetooth Core Specification, Part A, 1.11](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-dea15cd4-bc0f-91f0-82c1-3bbe596f7bf6).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct ServiceDataUuid32AdStruct {
+pub struct ServiceDataUuid32AdStruct {
     uuid: Uuid32,
     data: Vec<u8, SERVICE_DATA_UUID32_MAX_LENGTH>,
 }
@@ -90,7 +90,7 @@ impl EncodeToBuffer for ServiceDataUuid32AdStruct {
 /// See [Supplement to the Bluetooth Core Specification, Part A, 1.11](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-dea15cd4-bc0f-91f0-82c1-3bbe596f7bf6).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct ServiceDataUuid128AdStruct {
+pub struct ServiceDataUuid128AdStruct {
     uuid: Uuid128,
     data: Vec<u8, SERVICE_DATA_UUID128_MAX_LENGTH>,
 }
@@ -120,6 +120,63 @@ impl EncodeToBuffer for ServiceDataUuid128AdStruct {
 
     fn encoded_size(&self) -> usize {
         self.data.len() + 18
+    }
+}
+
+pub(crate) mod parser {
+    use nom::{
+        bytes::take,
+        combinator::{fail, map_res},
+        IResult, Parser,
+    };
+
+    use crate::advertising::{
+        ad_struct::AdStruct,
+        advertising_data::parser::{service_uuid, uuid128, uuid32},
+    };
+
+    use super::*;
+
+    pub(crate) fn service_data_uuid16_ad_struct(input: &[u8]) -> IResult<&[u8], AdStruct> {
+        let (rest, uuid) = service_uuid.parse(input)?;
+        let len = rest.len();
+        if len > SERVICE_DATA_UUID16_MAX_LENGTH {
+            fail::<_, &[u8], _>().parse(input)?;
+        }
+        let mut ad_struct = ServiceDataUuid16AdStruct {
+            uuid,
+            data: Default::default(),
+        };
+        map_res(take(len), |data| ad_struct.data.extend_from_slice(data)).parse(rest)?;
+        Ok((&[], AdStruct::ServiceDataUuid16(ad_struct)))
+    }
+
+    pub(crate) fn service_data_uuid32_ad_struct(input: &[u8]) -> IResult<&[u8], AdStruct> {
+        let (rest, uuid) = uuid32.parse(input)?;
+        let len = rest.len();
+        if len > SERVICE_DATA_UUID32_MAX_LENGTH {
+            fail::<_, &[u8], _>().parse(input)?;
+        }
+        let mut ad_struct = ServiceDataUuid32AdStruct {
+            uuid,
+            data: Default::default(),
+        };
+        map_res(take(len), |data| ad_struct.data.extend_from_slice(data)).parse(rest)?;
+        Ok((&[], AdStruct::ServiceDataUuid32(ad_struct)))
+    }
+
+    pub(crate) fn service_data_uuid128_ad_struct(input: &[u8]) -> IResult<&[u8], AdStruct> {
+        let (rest, uuid) = uuid128.parse(input)?;
+        let len = rest.len();
+        if len > SERVICE_DATA_UUID128_MAX_LENGTH {
+            fail::<_, &[u8], _>().parse(input)?;
+        }
+        let mut ad_struct = ServiceDataUuid128AdStruct {
+            uuid,
+            data: Default::default(),
+        };
+        map_res(take(len), |data| ad_struct.data.extend_from_slice(data)).parse(rest)?;
+        Ok((&[], AdStruct::ServiceDataUuid128(ad_struct)))
     }
 }
 

@@ -1,7 +1,10 @@
 use bletio_utils::{Buffer, BufferOps};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
-use crate::{Error, PublicDeviceAddress, RandomStaticDeviceAddress, Rssi};
+use crate::{
+    advertising_data::ADVERTISING_DATA_SIZE, Error, PublicDeviceAddress, RandomStaticDeviceAddress,
+    Rssi,
+};
 
 const LE_ADVERTISING_REPORT_EVENT_MAX_SIZE: usize = 251;
 
@@ -106,7 +109,7 @@ impl LeAdvertisingReportAddress {
 /// Data contained in a LE Advertising Report event.
 ///
 /// See [Core Specification 6.0, Vol.4, Part E, 7.7.65.2](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-bacd71f4-fabc-238d-72ee-f9aaaf5cbf22).
-pub type LeAdvertisingReportData = Buffer<31>;
+pub type LeAdvertisingReportData = Buffer<ADVERTISING_DATA_SIZE>;
 
 /// A single report contained in a LE Advertising Report Event.
 ///

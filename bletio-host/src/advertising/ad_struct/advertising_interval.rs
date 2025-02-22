@@ -13,7 +13,7 @@ const ADVERTISING_INTERVAL_AD_STRUCT_SIZE: usize = 3;
 /// [Core Specification 6.0, Vol. 6, Part B, 4.4.2.2](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/low-energy-controller/link-layer-specification.html#UUID-f6cd1541-800c-c516-b32b-95dd0479840b).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct AdvertisingIntervalAdStruct {
+pub struct AdvertisingIntervalAdStruct {
     interval: AdvertisingInterval,
 }
 
@@ -36,6 +36,25 @@ impl EncodeToBuffer for AdvertisingIntervalAdStruct {
 
     fn encoded_size(&self) -> usize {
         ADVERTISING_INTERVAL_AD_STRUCT_SIZE + 1
+    }
+}
+
+pub(crate) mod parser {
+    use nom::{
+        combinator::{map, map_res},
+        number::le_u16,
+        IResult, Parser,
+    };
+
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::*;
+
+    pub(crate) fn advertising_interval_ad_struct(input: &[u8]) -> IResult<&[u8], AdStruct> {
+        map(map_res(le_u16(), TryInto::try_into), |interval| {
+            AdStruct::AdvertisingInterval(AdvertisingIntervalAdStruct::new(interval))
+        })
+        .parse(input)
     }
 }
 

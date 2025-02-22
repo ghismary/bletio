@@ -465,7 +465,7 @@ impl EncodeToBuffer for RandomNonResolvablePrivateAddress {
     }
 }
 
-pub(crate) mod parser {
+pub mod parser {
     use nom::{
         bytes::{tag, take},
         character::complete::hex_digit1,
@@ -519,7 +519,7 @@ pub(crate) mod parser {
         all_consuming(map_res(address, TryInto::try_into)).parse(input)
     }
 
-    pub(crate) fn address(input: &[u8]) -> IResult<&[u8], [u8; 6]> {
+    pub fn address(input: &[u8]) -> IResult<&[u8], [u8; 6]> {
         map_res(take(6u8), TryInto::try_into).parse(input)
     }
 }

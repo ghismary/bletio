@@ -16,7 +16,7 @@ const MANUFACTURER_SPECIFIC_DATA_MAX_LENGTH: usize = 27;
 /// This is used for example for iBeacons and Eddystone beacons.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct ManufacturerSpecificDataAdStruct {
+pub struct ManufacturerSpecificDataAdStruct {
     manufacturer: CompanyIdentifier,
     data: Vec<u8, MANUFACTURER_SPECIFIC_DATA_MAX_LENGTH>,
 }
@@ -49,6 +49,37 @@ impl EncodeToBuffer for ManufacturerSpecificDataAdStruct {
 
     fn encoded_size(&self) -> usize {
         4 + self.data.len()
+    }
+}
+
+pub(crate) mod parser {
+    use nom::{
+        bytes::take,
+        combinator::{fail, map_res},
+        number::le_u16,
+        IResult, Parser,
+    };
+
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::*;
+
+    fn company_identifier(input: &[u8]) -> IResult<&[u8], CompanyIdentifier> {
+        map_res(le_u16(), TryFrom::try_from).parse(input)
+    }
+
+    pub(crate) fn manufacturer_specific_data_ad_struct(input: &[u8]) -> IResult<&[u8], AdStruct> {
+        let (rest, manufacturer) = company_identifier.parse(input)?;
+        let len = rest.len();
+        if len > MANUFACTURER_SPECIFIC_DATA_MAX_LENGTH {
+            fail::<_, &[u8], _>().parse(input)?;
+        }
+        let mut ad_struct = ManufacturerSpecificDataAdStruct {
+            manufacturer,
+            data: Default::default(),
+        };
+        map_res(take(len), |data| ad_struct.data.extend_from_slice(data)).parse(rest)?;
+        Ok((&[], AdStruct::ManufacturerSpecificData(ad_struct)))
     }
 }
 

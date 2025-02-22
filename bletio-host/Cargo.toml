@@ -20,6 +20,8 @@ bletio-hci = { path = "../bletio-hci", default-features = false }
 bletio-utils = { path = "../bletio-utils" }
 defmt = { workspace = true, optional = true }
 heapless = { workspace = true }
+nom = { workspace = true }
+num_enum = { workspace = true }
 
 [dev-dependencies]
 rstest = { workspace = true }

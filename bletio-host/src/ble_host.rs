@@ -163,7 +163,7 @@ where
             device_information.tx_power_level =
                 hci.cmd_le_read_advertising_channel_tx_power().await?;
 
-            // let full_adv_data = full_adv_data.fill_automatic_data(device_information);
+            let full_adv_data = full_adv_data.fill_automatic_data(device_information)?;
             let mut scanresp_data = bletio_hci::ScanResponseData::default();
             let adv_data = (&full_adv_data.adv_data).into();
             if let Some(data) = &(full_adv_data.scanresp_data) {

@@ -1,4 +1,6 @@
-use bletio_hci::{Event, Hci, HciDriver, LeAdvertisingReportList, LeMetaEvent};
+use bletio_hci::{
+    Event, Hci, HciDriver, LeAdvertisingReportEventType, LeAdvertisingReportList, LeMetaEvent,
+};
 
 use crate::advertising::FullAdvertisingData;
 use crate::assigned_numbers::AppearanceValue;
@@ -98,7 +100,21 @@ where
         //     "sizeof ScanResponseData: {}",
         //     size_of::<crate::advertising::ScanResponseData>()
         // );
-        for report in reports.iter() {
+        for report in reports
+            .iter()
+            .filter(|r| r.event_type() != LeAdvertisingReportEventType::ScanResponse)
+        {
+            let adv_data = report.data().into();
+            // TODO: Not necessarily take the first scan response report, there may be several...
+            let scanresp_report = reports
+                .iter()
+                .filter(|r| {
+                    (r.event_type() == LeAdvertisingReportEventType::ScanResponse)
+                        && (r.address() == report.address())
+                })
+                .nth(0);
+            let scanresp_data = scanresp_report.map(|r| r.data().into());
+            let full_adv_data = FullAdvertisingData::try_new(adv_data, scanresp_data).unwrap();
             host = self
                 .observer
                 .advertising_report_received(
@@ -106,7 +122,7 @@ where
                     report.event_type(),
                     report.address(),
                     report.rssi(),
-                    FullAdvertisingData::default(),
+                    full_adv_data,
                 )
                 .await;
         }

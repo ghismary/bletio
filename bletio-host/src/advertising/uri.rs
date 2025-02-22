@@ -247,7 +247,7 @@ pub struct CustomUriScheme {
 
 impl CustomUriScheme {
     #[doc(hidden)]
-    pub fn try_new(scheme: &'static str) -> Result<Self, AdvertisingError> {
+    pub fn try_new(scheme: &str) -> Result<Self, AdvertisingError> {
         Ok(Self {
             scheme: scheme
                 .try_into()
@@ -305,6 +305,61 @@ impl From<ProvisionedUriScheme> for UriScheme {
 impl From<CustomUriScheme> for UriScheme {
     fn from(value: CustomUriScheme) -> Self {
         Self::Custom(value)
+    }
+}
+
+pub(crate) mod parser {
+    use nom::{
+        branch::alt,
+        bytes::{take, take_till1},
+        combinator::{map, map_res, recognize, verify},
+        number::le_u16,
+        IResult, Parser,
+    };
+
+    use super::*;
+
+    fn custom_uri_scheme(input: &[u8]) -> IResult<&[u8], UriScheme> {
+        map(
+            map_res(
+                (
+                    verify(le_u16(), |value| *value == EMPTY_SCHEME_NAME_VALUE),
+                    map_res(
+                        recognize((take_till1(|b| b == b':'), take(1u8))),
+                        core::str::from_utf8,
+                    ),
+                ),
+                |(_, scheme)| CustomUriScheme::try_new(scheme),
+            ),
+            Into::into,
+        )
+        .parse(input)
+    }
+
+    fn provisioned_uri_scheme(input: &[u8]) -> IResult<&[u8], UriScheme> {
+        map(
+            map_res(le_u16(), TryFrom::try_from),
+            |scheme: ProvisionedUriScheme| scheme.into(),
+        )
+        .parse(input)
+    }
+
+    fn uri_scheme(input: &[u8]) -> IResult<&[u8], UriScheme> {
+        alt((provisioned_uri_scheme, custom_uri_scheme)).parse(input)
+    }
+
+    pub(crate) fn uri(input: &[u8]) -> IResult<&[u8], Uri> {
+        let (rest, scheme) = uri_scheme.parse(input)?;
+        let len = rest.len();
+        let mut uri = Uri {
+            scheme,
+            hier_part: Default::default(),
+        };
+        map_res(map_res(take(len), core::str::from_utf8), |v| {
+            uri.hier_part.push_str(v)
+        })
+        .parse(rest)?;
+        Ok((&[], uri))
     }
 }
 

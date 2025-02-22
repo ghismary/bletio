@@ -12,7 +12,7 @@ use crate::assigned_numbers::AdType;
 /// [Core Specification 6.0, Vol. 6, Part B, 4.6](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/low-energy-controller/link-layer-specification.html#UUID-25d414b5-8c50-cd46-fd17-80f0f816f354).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct LeSupportedFeaturesAdStruct {
+pub struct LeSupportedFeaturesAdStruct {
     features: SupportedLeFeatures,
 }
 
@@ -48,6 +48,21 @@ impl EncodeToBuffer for LeSupportedFeaturesAdStruct {
 
     fn encoded_size(&self) -> usize {
         self.minimum_size() + 2
+    }
+}
+
+pub(crate) mod parser {
+    use nom::{bytes::take, combinator::map, IResult, Parser};
+
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::*;
+
+    pub(crate) fn le_supported_features_ad_struct(input: &[u8]) -> IResult<&[u8], AdStruct> {
+        map(map(take(input.len()), Into::into), |features| {
+            AdStruct::LeSupportedFeatures(LeSupportedFeaturesAdStruct::new(features))
+        })
+        .parse(input)
     }
 }
 

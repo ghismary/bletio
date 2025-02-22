@@ -38,6 +38,25 @@ impl EncodeToBuffer for AppearanceAdStruct {
     }
 }
 
+pub(crate) mod parser {
+    use nom::{
+        combinator::{map, map_res},
+        number::le_u16,
+        IResult, Parser,
+    };
+
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::*;
+
+    pub(crate) fn appearance_ad_struct(input: &[u8]) -> IResult<&[u8], AdStruct> {
+        map(map_res(le_u16(), TryFrom::try_from), |appearance| {
+            AdStruct::Appearance(AppearanceAdStruct::new(appearance))
+        })
+        .parse(input)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use bletio_utils::{Buffer, BufferOps};

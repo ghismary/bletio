@@ -16,7 +16,7 @@ const PUBLIC_TARGET_ADDRESS_NB_MAX_ADDRESSES: usize = 4;
 /// See [Supplement to the Bluetooth Core Specification, Part A, 1.13](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-d42b32b3-1877-b82c-fd79-5d755328de9f).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct PublicTargetAddressAdStruct {
+pub struct PublicTargetAddressAdStruct {
     addresses: Vec<PublicDeviceAddress, PUBLIC_TARGET_ADDRESS_NB_MAX_ADDRESSES>,
 }
 
@@ -49,6 +49,38 @@ impl EncodeToBuffer for PublicTargetAddressAdStruct {
 
     fn encoded_size(&self) -> usize {
         (self.addresses.len() * self.addresses[0].encoded_size()) + 2
+    }
+}
+
+pub(crate) mod parser {
+    use bletio_hci::device_address::parser::address;
+    use nom::{
+        combinator::{fail, map, map_res},
+        IResult, Parser,
+    };
+
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::*;
+
+    pub(crate) fn public_target_address_ad_struct(mut input: &[u8]) -> IResult<&[u8], AdStruct> {
+        let len = input.len() / 6;
+        if len > PUBLIC_TARGET_ADDRESS_NB_MAX_ADDRESSES {
+            fail::<_, &[u8], _>().parse(input)?;
+        }
+        let mut ad_struct = PublicTargetAddressAdStruct {
+            addresses: Default::default(),
+        };
+        let mut index = 0;
+        while index < len {
+            let (rest, _) = map_res(map(address, PublicDeviceAddress::new), |address| {
+                ad_struct.addresses.push(address)
+            })
+            .parse(input)?;
+            input = rest;
+            index += 1;
+        }
+        Ok((&[], AdStruct::PublicTargetAddress(ad_struct)))
     }
 }
 

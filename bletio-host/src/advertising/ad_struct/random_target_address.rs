@@ -16,7 +16,7 @@ const RANDOM_TARGET_ADDRESS_NB_MAX_ADDRESSES: usize = 4;
 /// See [Supplement to the Bluetooth Core Specification, Part A, 1.14](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-9c825fe7-7092-a219-ecb4-2294c2c12d9a).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct RandomTargetAddressAdStruct {
+pub struct RandomTargetAddressAdStruct {
     addresses: Vec<RandomAddress, RANDOM_TARGET_ADDRESS_NB_MAX_ADDRESSES>,
 }
 
@@ -50,6 +50,38 @@ impl EncodeToBuffer for RandomTargetAddressAdStruct {
 
     fn encoded_size(&self) -> usize {
         (self.addresses.len() * self.addresses[0].encoded_size()) + 2
+    }
+}
+
+pub(crate) mod parser {
+    use bletio_hci::device_address::parser::address;
+    use nom::{
+        combinator::{fail, map_res},
+        IResult, Parser,
+    };
+
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::*;
+
+    pub(crate) fn random_target_address_ad_struct(mut input: &[u8]) -> IResult<&[u8], AdStruct> {
+        let len = input.len() / 6;
+        if len > RANDOM_TARGET_ADDRESS_NB_MAX_ADDRESSES {
+            fail::<_, &[u8], _>().parse(input)?;
+        }
+        let mut ad_struct = RandomTargetAddressAdStruct {
+            addresses: Default::default(),
+        };
+        let mut index = 0;
+        while index < len {
+            let (rest, _) = map_res(map_res(address, TryInto::try_into), |address| {
+                ad_struct.addresses.push(address)
+            })
+            .parse(input)?;
+            input = rest;
+            index += 1;
+        }
+        Ok((&[], AdStruct::RandomTargetAddress(ad_struct)))
     }
 }
 

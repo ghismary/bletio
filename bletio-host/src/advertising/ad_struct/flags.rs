@@ -18,7 +18,7 @@ const FLAGS_AD_STRUCT_SIZE: usize = 2;
 /// See [`Flags`] for more information about each of the flags.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct FlagsAdStruct {
+pub struct FlagsAdStruct {
     flags: Flags,
 }
 
@@ -64,6 +64,24 @@ bitflags! {
 impl Default for Flags {
     fn default() -> Self {
         Self::BREDR_NOT_SUPPORTED
+    }
+}
+
+impl From<u8> for Flags {
+    fn from(value: u8) -> Self {
+        Self::from_bits_truncate(value)
+    }
+}
+
+pub(crate) mod parser {
+    use nom::{combinator::map, number::le_u8, IResult, Parser};
+
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::*;
+
+    pub(crate) fn flags_ad_struct(input: &[u8]) -> IResult<&[u8], AdStruct> {
+        map(le_u8(), |v| AdStruct::Flags(FlagsAdStruct::new(v.into()))).parse(input)
     }
 }
 
