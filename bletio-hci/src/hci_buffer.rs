@@ -11,8 +11,16 @@ pub(crate) struct HciBuffer {
 }
 
 impl HciBuffer {
+    pub(crate) fn clear(&mut self) {
+        self.buffer.clear();
+    }
+
     pub(crate) fn data(&self) -> &[u8] {
         self.buffer.data()
+    }
+
+    pub(crate) fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     pub(crate) fn len(&self) -> usize {

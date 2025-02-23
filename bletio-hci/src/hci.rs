@@ -232,16 +232,23 @@ where
     }
 
     pub async fn wait_for_event(&mut self) -> Result<Event, Error> {
-        let (remaining, packet) = self.hci_read_and_parse_packet().await?;
-        match packet {
-            Packet::Command(_) => {
-                // The Host is not supposed to receive commands!
-                Err(Error::InvalidPacket)
+        match self.hci_read_and_parse_packet().await {
+            Ok((remaining, packet)) => {
+                match packet {
+                    Packet::Command(_) => {
+                        // The Host is not supposed to receive commands!
+                        Err(Error::InvalidPacket)
+                    }
+                    Packet::Event(event) => {
+                        // INVARIANT: The remaining is known to be shorter than the buffer.
+                        self.read_buffer = remaining.try_into().unwrap();
+                        Ok(event)
+                    }
+                }
             }
-            Packet::Event(event) => {
-                // INVARIANT: The remaining is known to be shorter than the buffer.
-                self.read_buffer = remaining.try_into().unwrap();
-                Ok(event)
+            Err(e) => {
+                self.read_buffer.clear();
+                Err(e)
             }
         }
     }
@@ -274,54 +281,68 @@ where
         let command_packet = command.encode()?;
         self.driver.write(command_packet.data()).await?;
         loop {
-            let (remaining, packet) = self.hci_read_and_parse_packet().await?;
-            match packet {
-                Packet::Command(_) => {
-                    // The Host is not supposed to receive commands!
-                    return Err(Error::InvalidPacket);
-                }
-                Packet::Event(event) => {
-                    // INVARIANT: The remaining is known to be shorter than the buffer.
-                    self.read_buffer = remaining.try_into().unwrap();
-
-                    match event {
-                        Event::CommandComplete(event) if event.opcode == command.opcode() => {
-                            return Ok(event);
+            match self.hci_read_and_parse_packet().await {
+                Ok((remaining, packet)) => {
+                    match packet {
+                        Packet::Command(_) => {
+                            // The Host is not supposed to receive commands!
+                            return Err(Error::InvalidPacket);
                         }
-                        Event::CommandComplete(_) | Event::LeMeta(_) | Event::Unsupported(_) => {
-                            self.handle_event(event)
+                        Packet::Event(event) => {
+                            // INVARIANT: The remaining is known to be shorter than the buffer.
+                            self.read_buffer = remaining.try_into().unwrap();
+
+                            match event {
+                                Event::CommandComplete(event)
+                                    if event.opcode == command.opcode() =>
+                                {
+                                    return Ok(event);
+                                }
+                                Event::CommandComplete(_)
+                                | Event::LeMeta(_)
+                                | Event::Unsupported(_) => self.handle_event(event),
+                            }
                         }
                     }
                 }
+                Err(e) => {
+                    self.read_buffer.clear();
+                    return Err(e);
+                }
             }
-
-            // TODO: Try to parse the remaining if there are some data
         }
     }
 
     async fn wait_controller_ready(&mut self) -> Result<(), Error> {
         while self.num_hci_command_packets == 0 {
-            let (remaining, packet) = self.hci_read_and_parse_packet().await?;
-            match packet {
-                Packet::Command(_) => {
-                    // The Host is not supposed to receive commands!
-                    return Err(Error::InvalidPacket);
-                }
-                Packet::Event(event) => {
-                    // INVARIANT: The remaining is known to be shorter than the buffer.
-                    self.read_buffer = remaining.try_into().unwrap();
+            match self.hci_read_and_parse_packet().await {
+                Ok((remaining, packet)) => {
+                    match packet {
+                        Packet::Command(_) => {
+                            // The Host is not supposed to receive commands!
+                            return Err(Error::InvalidPacket);
+                        }
+                        Packet::Event(event) => {
+                            // INVARIANT: The remaining is known to be shorter than the buffer.
+                            self.read_buffer = remaining.try_into().unwrap();
 
-                    self.handle_event(event)
+                            self.handle_event(event)
+                        }
+                    }
+                }
+                Err(e) => {
+                    self.read_buffer.clear();
+                    return Err(e);
                 }
             }
-
-            // TODO: Try to parse the remaining if there are some data
         }
         Ok(())
     }
 
     async fn hci_read_and_parse_packet(&mut self) -> Result<(&[u8], Packet), Error> {
-        self.read_buffer.read(&mut self.driver).await?;
+        if self.read_buffer.is_empty() {
+            self.read_buffer.read(&mut self.driver).await?;
+        }
         let (remaining, hci_packet) = crate::packet::parser::packet(self.read_buffer.data())
             .map_err(|_| Error::InvalidPacket)?;
         Ok((remaining, hci_packet))
