@@ -2,8 +2,7 @@ use bletio_utils::{Buffer, BufferOps};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 use crate::{
-    advertising_data::ADVERTISING_DATA_SIZE, Error, PublicDeviceAddress, RandomStaticDeviceAddress,
-    Rssi,
+    advertising_data::ADVERTISING_DATA_SIZE, Error, PublicDeviceAddress, RandomAddress, Rssi,
 };
 
 const LE_ADVERTISING_REPORT_EVENT_MAX_SIZE: usize = 251;
@@ -90,9 +89,9 @@ enum LeAdvertisingReportAddressType {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum LeAdvertisingReportAddress {
     PublicDevice(PublicDeviceAddress),
-    RandomDevice(RandomStaticDeviceAddress),
+    RandomDevice(RandomAddress),
     PublicIdentity(PublicDeviceAddress),
-    RandomIdentity(RandomStaticDeviceAddress),
+    RandomIdentity(RandomAddress),
 }
 
 impl LeAdvertisingReportAddress {
