@@ -21,6 +21,7 @@ where
     driver: H,
     num_hci_command_packets: u8,
     read_buffer: HciBuffer,
+    event_list: EventList,
 }
 
 impl<H> Hci<H>
@@ -32,6 +33,7 @@ where
             driver: hci_driver,
             num_hci_command_packets: 0,
             read_buffer: Default::default(),
+            event_list: Default::default(),
         }
     }
 
@@ -231,11 +233,12 @@ where
             .await
     }
 
-    pub async fn wait_for_event(&mut self) -> EventList {
-        let mut event_list = EventList::default();
+    pub async fn wait_for_event(&mut self) -> Result<EventList, Error> {
+        let mut event_list = core::mem::take(&mut self.event_list);
+
         loop {
             if (self.read_buffer.is_empty() && !event_list.is_empty()) || event_list.is_full() {
-                return event_list;
+                return Ok(event_list);
             }
 
             match self.hci_read_and_parse_packet().await {
@@ -256,10 +259,9 @@ where
                         }
                     }
                 }
-                Err(_e) => {
+                Err(e) => {
                     self.read_buffer.clear();
-                    #[cfg(feature = "defmt")]
-                    defmt::warn!("Error parsing received HCI packet: {:?}", _e);
+                    return Err(e);
                 }
             }
         }
@@ -310,9 +312,7 @@ where
                                 {
                                     return Ok(event);
                                 }
-                                Event::CommandComplete(_)
-                                | Event::LeMeta(_)
-                                | Event::Unsupported(_) => self.handle_event(event),
+                                _ => self.handle_event(event),
                             }
                         }
                     }
@@ -370,8 +370,15 @@ where
             Event::CommandComplete(_) => {
                 unreachable!("an event for an issued command should already have been handled before reaching here")
             }
-            Event::LeMeta(_) | Event::Unsupported(_) => {
-                // Ignore unsupported event & LeMeta event will be handled higher in the stack
+            Event::Unsupported(_) => {
+                // Ignore unsupported event
+            }
+            _ => {
+                // Other events will be handled higher in the stack
+                if self.event_list.push(event).is_err() {
+                    #[cfg(feature = "defmt")]
+                    defmt::warn!("HCI event list is full, cannot add more!");
+                }
             }
         }
     }
@@ -432,6 +439,7 @@ mod test {
             driver: hci_driver,
             num_hci_command_packets: 1,
             read_buffer: Default::default(),
+            event_list: Default::default(),
         };
         assert_eq!(hci.cmd_le_rand().await, expected);
     }
@@ -483,6 +491,7 @@ mod test {
             driver: hci_driver,
             num_hci_command_packets: 1,
             read_buffer: Default::default(),
+            event_list: Default::default(),
         };
         assert_eq!(
             hci.cmd_le_read_advertising_channel_tx_power().await,
@@ -537,6 +546,7 @@ mod test {
             driver: hci_driver,
             num_hci_command_packets: 1,
             read_buffer: Default::default(),
+            event_list: Default::default(),
         };
         assert_eq!(hci.cmd_le_read_buffer_size().await, expected);
     }
@@ -588,6 +598,7 @@ mod test {
             driver: hci_driver,
             num_hci_command_packets: 1,
             read_buffer: Default::default(),
+            event_list: Default::default(),
         };
         assert_eq!(
             hci.cmd_le_read_local_supported_features_page_0().await,
@@ -642,6 +653,7 @@ mod test {
             driver: hci_driver,
             num_hci_command_packets: 1,
             read_buffer: Default::default(),
+            event_list: Default::default(),
         };
         assert_eq!(hci.cmd_le_read_supported_states().await, expected);
     }
@@ -684,6 +696,7 @@ mod test {
             driver: hci_driver,
             num_hci_command_packets: 1,
             read_buffer: Default::default(),
+            event_list: Default::default(),
         };
         assert_eq!(
             hci.cmd_le_set_advertising_data(AdvertisingData::default())
@@ -724,6 +737,7 @@ mod test {
             driver: hci_driver,
             num_hci_command_packets: 1,
             read_buffer: Default::default(),
+            event_list: Default::default(),
         };
         assert_eq!(
             hci.cmd_le_set_advertising_enable(AdvertisingEnable::Enabled)
@@ -764,6 +778,7 @@ mod test {
             driver: hci_driver,
             num_hci_command_packets: 1,
             read_buffer: Default::default(),
+            event_list: Default::default(),
         };
         assert_eq!(
             hci.cmd_le_set_advertising_parameters(AdvertisingParameters::default())
@@ -801,6 +816,7 @@ mod test {
             driver: hci_driver,
             num_hci_command_packets: 1,
             read_buffer: Default::default(),
+            event_list: Default::default(),
         };
         assert_eq!(
             hci.cmd_le_set_event_mask(LeEventMask::default()).await,
@@ -855,6 +871,7 @@ mod test {
             driver: hci_driver,
             num_hci_command_packets: 1,
             read_buffer: Default::default(),
+            event_list: Default::default(),
         };
         assert_eq!(
             hci.cmd_le_set_random_address(
@@ -894,6 +911,7 @@ mod test {
             driver: hci_driver,
             num_hci_command_packets: 1,
             read_buffer: Default::default(),
+            event_list: Default::default(),
         };
         assert_eq!(
             hci.cmd_le_set_scan_enable(ScanEnable::Enabled, FilterDuplicates::Disabled)
@@ -934,6 +952,7 @@ mod test {
             driver: hci_driver,
             num_hci_command_packets: 1,
             read_buffer: Default::default(),
+            event_list: Default::default(),
         };
         assert_eq!(
             hci.cmd_le_set_scan_parameters(ScanParameters::default())
@@ -980,6 +999,7 @@ mod test {
             driver: hci_driver,
             num_hci_command_packets: 1,
             read_buffer: Default::default(),
+            event_list: Default::default(),
         };
         assert_eq!(
             hci.cmd_le_set_scan_response_data(ScanResponseData::default())
@@ -1035,6 +1055,7 @@ mod test {
             driver: hci_driver,
             num_hci_command_packets: 1,
             read_buffer: Default::default(),
+            event_list: Default::default(),
         };
         assert_eq!(hci.cmd_read_bd_addr().await, expected);
     }
@@ -1091,6 +1112,7 @@ mod test {
             driver: hci_driver,
             num_hci_command_packets: 1,
             read_buffer: Default::default(),
+            event_list: Default::default(),
         };
         assert_eq!(hci.cmd_read_buffer_size().await, expected);
     }
@@ -1146,6 +1168,7 @@ mod test {
             driver: hci_driver,
             num_hci_command_packets: 1,
             read_buffer: Default::default(),
+            event_list: Default::default(),
         };
         assert_eq!(hci.cmd_read_local_supported_commands().await, expected);
     }
@@ -1197,6 +1220,7 @@ mod test {
             driver: hci_driver,
             num_hci_command_packets: 1,
             read_buffer: Default::default(),
+            event_list: Default::default(),
         };
         assert_eq!(hci.cmd_read_local_supported_features().await, expected);
     }
@@ -1324,6 +1348,7 @@ mod test {
             driver: hci_driver,
             num_hci_command_packets: 1,
             read_buffer: Default::default(),
+            event_list: Default::default(),
         };
         assert_eq!(
             hci.cmd_set_event_mask(EventMask::HARDWARE_ERROR | EventMask::DATA_BUFFER_OVERFLOW)
