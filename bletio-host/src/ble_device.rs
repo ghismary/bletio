@@ -1,5 +1,6 @@
 use bletio_hci::{
-    Event, Hci, HciDriver, LeAdvertisingReportEventType, LeAdvertisingReportList, LeMetaEvent,
+    Event, EventList, Hci, HciDriver, LeAdvertisingReport, LeAdvertisingReportAddress,
+    LeAdvertisingReportEventType, LeMetaEvent,
 };
 
 use crate::advertising::FullAdvertisingData;
@@ -69,63 +70,77 @@ where
 
         loop {
             match host.wait_for_event().await {
-                Ok(event) => {
-                    if let Event::LeMeta(LeMetaEvent::LeAdvertisingReport(reports)) = event {
-                        host = self.notify_le_advertising_reports(host, reports).await;
+                Ok(event_list) => {
+                    if event_list
+                        .iter()
+                        .any(|e| matches!(e, Event::LeMeta(LeMetaEvent::LeAdvertisingReport(_))))
+                    {
+                        host = self.notify_le_advertising_reports(host, &event_list).await;
                     }
                 }
-                Err(Error::Hci(bletio_hci::Error::InvalidPacket)) => (), // Ignore invalid packet
+                Err(Error::Hci(bletio_hci::Error::InvalidPacket)) => {
+                    // Ignore invalid HCI packet
+                    #[cfg(feature = "defmt")]
+                    defmt::warn!("Received invalid HCI packet");
+                }
                 Err(e) => return Err(e),
             }
         }
     }
 
-    pub async fn notify_le_advertising_reports<H>(
+    pub async fn notify_le_advertising_reports<'e, H>(
         &self,
         mut host: BleHostStates<'a, H>,
-        reports: LeAdvertisingReportList,
+        event_list: &'e EventList,
     ) -> BleHostStates<'a, H>
     where
         H: HciDriver,
     {
-        // defmt::warn!(
-        //     "sizeof FullAdvertisingData: {}",
-        //     size_of::<FullAdvertisingData>()
-        // );
-        // defmt::warn!(
-        //     "sizeof AdvertisingData: {}",
-        //     size_of::<crate::advertising::AdvertisingData>()
-        // );
-        // defmt::warn!(
-        //     "sizeof ScanResponseData: {}",
-        //     size_of::<crate::advertising::ScanResponseData>()
-        // );
-        for report in reports
-            .iter()
-            .filter(|r| r.event_type() != LeAdvertisingReportEventType::ScanResponse)
-        {
-            let adv_data = report.data().into();
-            // TODO: Not necessarily take the first scan response report, there may be several...
-            let scanresp_report = reports
-                .iter()
-                .filter(|r| {
+        fn find_corresponding_scan_response(
+            event_list: &EventList,
+            address: &LeAdvertisingReportAddress,
+        ) -> Option<LeAdvertisingReport> {
+            for reports in event_list.iter().filter_map(|e| match e {
+                Event::LeMeta(LeMetaEvent::LeAdvertisingReport(reports)) => Some(reports),
+                _ => None,
+            }) {
+                if let Some(report) = reports.iter().find(|r| {
                     (r.event_type() == LeAdvertisingReportEventType::ScanResponse)
-                        && (r.address() == report.address())
-                })
-                .nth(0);
-            let scanresp_data = scanresp_report.map(|r| r.data().into());
-            let full_adv_data = FullAdvertisingData::try_new(adv_data, scanresp_data).unwrap();
-            host = self
-                .observer
-                .advertising_report_received(
-                    host,
-                    report.event_type(),
-                    report.address(),
-                    report.rssi(),
-                    full_adv_data,
-                )
-                .await;
+                        && r.address() == address
+                }) {
+                    return Some(report);
+                }
+            }
+
+            None
         }
+
+        for reports in event_list.iter().filter_map(|e| match e {
+            Event::LeMeta(LeMetaEvent::LeAdvertisingReport(reports)) => Some(reports),
+            _ => None,
+        }) {
+            for report in reports
+                .iter()
+                .filter(|r| r.event_type() != LeAdvertisingReportEventType::ScanResponse)
+            {
+                let adv_data = report.data().into();
+                let scanresp_report =
+                    find_corresponding_scan_response(event_list, report.address());
+                let scanresp_data = scanresp_report.map(|r| r.data().into());
+                let full_adv_data = FullAdvertisingData::try_new(adv_data, scanresp_data).unwrap();
+                host = self
+                    .observer
+                    .advertising_report_received(
+                        host,
+                        report.event_type(),
+                        report.address(),
+                        report.rssi(),
+                        full_adv_data,
+                    )
+                    .await;
+            }
+        }
+
         host
     }
 }

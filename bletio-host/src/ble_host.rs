@@ -3,7 +3,7 @@ use core::num::NonZeroU16;
 use core::ops::Deref;
 
 use bletio_hci::{
-    Event, EventMask, FilterDuplicates, Hci, HciDriver, LeAdvertisingReportAddress,
+    EventList, EventMask, FilterDuplicates, Hci, HciDriver, LeAdvertisingReportAddress,
     LeAdvertisingReportEventType, LeEventMask, PublicDeviceAddress, RandomStaticDeviceAddress,
     Rssi, ScanEnable, SupportedCommands, SupportedFeatures, SupportedLeFeatures, SupportedLeStates,
 };
@@ -309,14 +309,12 @@ impl<H> BleHostStates<'_, H>
 where
     H: HciDriver,
 {
-    pub(crate) async fn wait_for_event(&mut self) -> Result<Event, Error> {
-        Ok(match self {
-            Self::Initial(_) | Self::Standby(_) => {
-                return Err(Error::CannotWaitForEventInThisState)
-            }
-            Self::Advertising(host) => host.hci.wait_for_event().await?,
-            Self::Scanning(host) => host.hci.wait_for_event().await?,
-        })
+    pub(crate) async fn wait_for_event(&mut self) -> Result<EventList, Error> {
+        match self {
+            Self::Initial(_) | Self::Standby(_) => Err(Error::CannotWaitForEventInThisState),
+            Self::Advertising(host) => Ok(host.hci.wait_for_event().await?),
+            Self::Scanning(host) => Ok(host.hci.wait_for_event().await?),
+        }
     }
 }
 

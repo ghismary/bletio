@@ -5,8 +5,8 @@ use core::{
 
 use crate::{
     AdvertisingData, AdvertisingEnable, AdvertisingParameters, Command, CommandCompleteEvent,
-    CommandOpCode, Error, Event, EventMask, EventParameter, FilterDuplicates, HciBuffer, HciDriver,
-    LeEventMask, Packet, PublicDeviceAddress, RandomStaticDeviceAddress, ScanEnable,
+    CommandOpCode, Error, Event, EventList, EventMask, EventParameter, FilterDuplicates, HciBuffer,
+    HciDriver, LeEventMask, Packet, PublicDeviceAddress, RandomStaticDeviceAddress, ScanEnable,
     ScanParameters, ScanResponseData, SupportedCommands, SupportedFeatures, SupportedLeFeatures,
     SupportedLeStates, TxPowerLevel, WithTimeout,
 };
@@ -231,24 +231,36 @@ where
             .await
     }
 
-    pub async fn wait_for_event(&mut self) -> Result<Event, Error> {
-        match self.hci_read_and_parse_packet().await {
-            Ok((remaining, packet)) => {
-                match packet {
-                    Packet::Command(_) => {
-                        // The Host is not supposed to receive commands!
-                        Err(Error::InvalidPacket)
-                    }
-                    Packet::Event(event) => {
-                        // INVARIANT: The remaining is known to be shorter than the buffer.
-                        self.read_buffer = remaining.try_into().unwrap();
-                        Ok(event)
+    pub async fn wait_for_event(&mut self) -> EventList {
+        let mut event_list = EventList::default();
+        loop {
+            if (self.read_buffer.is_empty() && !event_list.is_empty()) || event_list.is_full() {
+                return event_list;
+            }
+
+            match self.hci_read_and_parse_packet().await {
+                Ok((remaining, packet)) => {
+                    match packet {
+                        Packet::Command(_) => {
+                            // The Host is not supposed to receive commands, ignore it!
+                            #[cfg(feature = "defmt")]
+                            defmt::warn!("Received command while waiting for event, ignore it!");
+                        }
+                        Packet::Event(event) => {
+                            // INVARIANT: The remaining is known to be shorter than the buffer.
+                            self.read_buffer = remaining.try_into().unwrap();
+
+                            // INVARIANT: The event list is known to be able to hold this event,
+                            // otherwise we would have returned at the beginning of the loop.
+                            event_list.push(event).unwrap();
+                        }
                     }
                 }
-            }
-            Err(e) => {
-                self.read_buffer.clear();
-                Err(e)
+                Err(_e) => {
+                    self.read_buffer.clear();
+                    #[cfg(feature = "defmt")]
+                    defmt::warn!("Error parsing received HCI packet: {:?}", _e);
+                }
             }
         }
     }

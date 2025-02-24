@@ -1,3 +1,6 @@
+use core::ops::{Deref, DerefMut};
+
+use heapless::Vec;
 use num_enum::{FromPrimitive, IntoPrimitive};
 
 use crate::{CommandCompleteEvent, LeMetaEvent};
@@ -6,6 +9,8 @@ pub(crate) mod command_complete;
 pub(crate) mod le_advertising_report;
 pub(crate) mod le_meta;
 
+const EVENT_LIST_NB_EVENTS: usize = 4;
+
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[allow(clippy::large_enum_variant)]
@@ -13,6 +18,26 @@ pub enum Event {
     CommandComplete(CommandCompleteEvent),
     LeMeta(LeMetaEvent),
     Unsupported(u8),
+}
+
+#[derive(Debug, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct EventList {
+    events: Vec<Event, EVENT_LIST_NB_EVENTS>,
+}
+
+impl Deref for EventList {
+    type Target = Vec<Event, EVENT_LIST_NB_EVENTS>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.events
+    }
+}
+
+impl DerefMut for EventList {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.events
+    }
 }
 
 #[derive(Debug, IntoPrimitive, FromPrimitive)]

@@ -56,11 +56,11 @@ pub use error_code::ErrorCode;
 pub use event::{
     command_complete::CommandCompleteEvent,
     le_advertising_report::{
-        LeAdvertisingReportAddress, LeAdvertisingReportData, LeAdvertisingReportEventType,
-        LeAdvertisingReportList,
+        LeAdvertisingReport, LeAdvertisingReportAddress, LeAdvertisingReportData,
+        LeAdvertisingReportEventType, LeAdvertisingReportList,
     },
     le_meta::LeMetaEvent,
-    Event,
+    Event, EventList,
 };
 pub use event_mask::EventMask;
 pub use hci::Hci;
