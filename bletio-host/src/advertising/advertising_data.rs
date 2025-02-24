@@ -138,7 +138,7 @@ impl FullAdvertisingData {
 }
 
 /// Builder to create `AdvertisingData` packets.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct AdvertisingDataBuilder {
     data: AdvertisingData,
 }
@@ -476,7 +476,7 @@ impl From<&LeAdvertisingReportData> for AdvertisingData {
 }
 
 /// Builder to create `ScanResponseData` packets.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct ScanResponseDataBuilder {
     data: ScanResponseData,
 }
@@ -816,7 +816,7 @@ impl Iterator for AdvertisingDataIterator<'_> {
             if self.next_index == 0 {
                 match parser::advertising_data_length(self.data) {
                     Ok(_) => self.next_index += 1,
-                    Err(_) => return None,
+                    Err(_) => unreachable!("That means data is empty and so we already returned"),
                 }
             }
 
@@ -954,10 +954,7 @@ pub(crate) mod parser {
             AdType::ManufacturerSpecificData => {
                 manufacturer_specific_data_ad_struct.parse(parameters)
             }
-            _ => {
-                const EMPTY_SLICE: &[u8] = &[];
-                Ok((EMPTY_SLICE, AdStruct::Unhandled(ad_type.into())))
-            }
+            _ => Ok((&[] as &[u8], AdStruct::Unhandled(ad_type.into()))),
         }?;
         Ok((&rest[len..], (ad_struct_length + 1, ad_struct)))
     }
@@ -969,7 +966,9 @@ mod test {
     use bletio_utils::{Buffer, BufferOps};
     use rstest::{fixture, rstest};
 
-    use crate::assigned_numbers::ProvisionedUriScheme;
+    use crate::{
+        advertising::advertising_data::parser::ad_struct, assigned_numbers::ProvisionedUriScheme,
+    };
 
     use super::*;
 
@@ -1131,7 +1130,7 @@ mod test {
         &[0x16, 0x15, 0x21, 0x40, 0xD6, 0x6E, 0xFD, 0xD0, 0x11, 0x2C, 0xAD, 0x9E, 0x4C, 0x7D, 0x22, 0x7E,
             0x28, 0xA1, 0xF5, 0x50, 0x84, 0x91, 0xAF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
     )]
-    fn test_advertising_data_builder(
+    fn test_advertising_data_builder_success(
         #[case] adv_data: AdvertisingData,
         #[case] expected_encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
@@ -1140,6 +1139,144 @@ mod test {
         assert_eq!(adv_data.encode(&mut buffer)?, 32);
         assert_eq!(buffer.data(), expected_encoded_data);
         Ok(())
+    }
+
+    #[test]
+    fn test_advertising_data_builder_failure() {
+        let builder = AdvertisingData::builder();
+        let err = builder
+            .with_service_uuid16(
+                &[
+                    ServiceUuid::AlertNotification,
+                    ServiceUuid::Battery,
+                    ServiceUuid::BloodPressure,
+                ],
+                ServiceListComplete::Complete,
+            )
+            .unwrap()
+            .with_uri(Uri::try_new(ProvisionedUriScheme::Https, "//example.org/").unwrap())
+            .unwrap()
+            .with_manufacturer_specific_data(CompanyIdentifier::Inventel, [0u8; 5].as_slice());
+        assert_eq!(
+            err,
+            Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)
+        );
+    }
+
+    #[test]
+    fn test_advertising_data_builder_unique_advertising_interval() {
+        let builder = AdvertisingData::builder();
+        let err = builder
+            .with_advertising_interval(AdvertisingInterval::default())
+            .unwrap()
+            .with_advertising_interval(AdvertisingInterval::default());
+        assert_eq!(
+            err,
+            Err(AdvertisingError::OnlyOneAdvertisingIntervalAllowedInAdvertisingDataOrScanResponseData)
+        );
+    }
+
+    #[test]
+    fn test_advertising_data_builder_unique_appearance() {
+        let builder = AdvertisingData::builder();
+        let err = builder.with_appearance().unwrap().with_appearance();
+        assert_eq!(
+            err,
+            Err(AdvertisingError::OnlyOneAppearanceAllowedInAdvertisingDataOrScanResponseData)
+        );
+    }
+
+    #[test]
+    fn test_advertising_data_builder_unique_flags() {
+        let builder = AdvertisingData::builder();
+        let err = builder
+            .with_flags(Flags::default())
+            .unwrap()
+            .with_flags(Flags::default());
+        assert_eq!(
+            err,
+            Err(AdvertisingError::OnlyOneFlagsAllowedInAdvertisingData)
+        );
+    }
+
+    #[test]
+    fn test_advertising_data_builder_unique_le_supported_features() {
+        let builder = AdvertisingData::builder();
+        let err = builder
+            .with_le_supported_features()
+            .unwrap()
+            .with_le_supported_features();
+        assert_eq!(
+            err,
+            Err(AdvertisingError::OnlyOneLeSupportedFeaturesAllowedInAdvertisingDataOrScanResponseData)
+        );
+    }
+
+    #[test]
+    fn test_advertising_data_builder_unique_local_name() {
+        let builder = AdvertisingData::builder();
+        let err = builder
+            .with_local_name(LocalNameComplete::Complete)
+            .unwrap()
+            .with_local_name(LocalNameComplete::Shortened(3));
+        assert_eq!(
+            err,
+            Err(AdvertisingError::OnlyOneLocalNameAllowedInAdvertisingDataOrScanResponseData)
+        );
+    }
+
+    #[test]
+    fn test_advertising_data_builder_unique_public_target_address() {
+        let addresses = [PublicDeviceAddress::new([
+            0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56,
+        ])];
+        let builder = AdvertisingData::builder();
+        let err = builder
+            .with_public_target_address(&addresses)
+            .unwrap()
+            .with_public_target_address(&addresses);
+        assert_eq!(
+            err,
+            Err(AdvertisingError::OnlyOnePublicTargetAddressAllowedInAdvertisingDataOrScanResponseData)
+        );
+    }
+
+    #[test]
+    fn test_advertising_data_builder_unique_random_target_address() {
+        let addresses = [
+            RandomStaticDeviceAddress::try_new([0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7])
+                .unwrap()
+                .into(),
+        ];
+        let builder = AdvertisingData::builder();
+        let err = builder
+            .with_random_target_address(&addresses)
+            .unwrap()
+            .with_random_target_address(&addresses);
+        assert_eq!(
+            err,
+            Err(AdvertisingError::OnlyOneRandomTargetAddressAllowedInAdvertisingDataOrScanResponseData)
+        );
+    }
+
+    #[test]
+    fn test_advertising_data_from_le_advertising_report_data() {
+        let data = [25; 16];
+        let mut buffer: Buffer<31> = Buffer::default();
+        buffer.copy_from_slice(&data[..]).unwrap();
+        let data = LeAdvertisingReportData::from(buffer);
+        let adv_data: AdvertisingData = (&data).into();
+        assert_eq!(
+            adv_data.data.data(),
+            &[16, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25]
+        );
+    }
+
+    #[test]
+    fn test_hci_advertising_data_from_advertising_data() {
+        let adv_data = AdvertisingData::default();
+        let hci_adv_data: bletio_hci::AdvertisingData = (&adv_data).into();
+        assert_eq!(adv_data.data, hci_adv_data);
     }
 
     #[fixture]
@@ -1298,7 +1435,7 @@ mod test {
         &[0x16, 0x15, 0x21, 0x40, 0xD6, 0x6E, 0xFD, 0xD0, 0x11, 0x2C, 0xAD, 0x9E, 0x4C, 0x7D, 0x22, 0x7E,
             0x28, 0xA1, 0xF5, 0x50, 0x84, 0x91, 0xAF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
     )]
-    fn test_scan_response_data_builder(
+    fn test_scan_response_data_builder_success(
         #[case] scanresp_data: ScanResponseData,
         #[case] expected_encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
@@ -1310,8 +1447,134 @@ mod test {
     }
 
     #[test]
+    fn test_scan_response_data_builder_failure() {
+        let builder = ScanResponseData::builder();
+        let err = builder
+            .with_service_uuid16(
+                &[
+                    ServiceUuid::AlertNotification,
+                    ServiceUuid::Battery,
+                    ServiceUuid::BloodPressure,
+                ],
+                ServiceListComplete::Complete,
+            )
+            .unwrap()
+            .with_uri(Uri::try_new(ProvisionedUriScheme::Https, "//example.org/").unwrap())
+            .unwrap()
+            .with_manufacturer_specific_data(CompanyIdentifier::Inventel, [0u8; 5].as_slice());
+        assert_eq!(
+            err,
+            Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)
+        );
+    }
+
+    #[test]
+    fn test_scan_response_data_builder_unique_advertising_interval() {
+        let builder = ScanResponseData::builder();
+        let err = builder
+            .with_advertising_interval(AdvertisingInterval::default())
+            .unwrap()
+            .with_advertising_interval(AdvertisingInterval::default());
+        assert_eq!(
+            err,
+            Err(AdvertisingError::OnlyOneAdvertisingIntervalAllowedInAdvertisingDataOrScanResponseData)
+        );
+    }
+
+    #[test]
+    fn test_scan_response_data_builder_unique_appearance() {
+        let builder = ScanResponseData::builder();
+        let err = builder.with_appearance().unwrap().with_appearance();
+        assert_eq!(
+            err,
+            Err(AdvertisingError::OnlyOneAppearanceAllowedInAdvertisingDataOrScanResponseData)
+        );
+    }
+
+    #[test]
+    fn test_scan_response_data_builder_unique_le_supported_features() {
+        let builder = ScanResponseData::builder();
+        let err = builder
+            .with_le_supported_features()
+            .unwrap()
+            .with_le_supported_features();
+        assert_eq!(
+            err,
+            Err(AdvertisingError::OnlyOneLeSupportedFeaturesAllowedInAdvertisingDataOrScanResponseData)
+        );
+    }
+
+    #[test]
+    fn test_scan_response_data_builder_unique_local_name() {
+        let builder = ScanResponseData::builder();
+        let err = builder
+            .with_local_name(LocalNameComplete::Complete)
+            .unwrap()
+            .with_local_name(LocalNameComplete::Shortened(3));
+        assert_eq!(
+            err,
+            Err(AdvertisingError::OnlyOneLocalNameAllowedInAdvertisingDataOrScanResponseData)
+        );
+    }
+
+    #[test]
+    fn test_scan_response_data_builder_unique_public_target_address() {
+        let addresses = [PublicDeviceAddress::new([
+            0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56,
+        ])];
+        let builder = ScanResponseData::builder();
+        let err = builder
+            .with_public_target_address(&addresses)
+            .unwrap()
+            .with_public_target_address(&addresses);
+        assert_eq!(
+            err,
+            Err(AdvertisingError::OnlyOnePublicTargetAddressAllowedInAdvertisingDataOrScanResponseData)
+        );
+    }
+
+    #[test]
+    fn test_scan_response_data_builder_unique_random_target_address() {
+        let addresses = [
+            RandomStaticDeviceAddress::try_new([0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7])
+                .unwrap()
+                .into(),
+        ];
+        let builder = ScanResponseData::builder();
+        let err = builder
+            .with_random_target_address(&addresses)
+            .unwrap()
+            .with_random_target_address(&addresses);
+        assert_eq!(
+            err,
+            Err(AdvertisingError::OnlyOneRandomTargetAddressAllowedInAdvertisingDataOrScanResponseData)
+        );
+    }
+
+    #[test]
+    fn test_scan_response_data_from_le_advertising_report_data() {
+        let data = [25; 16];
+        let mut buffer: Buffer<31> = Buffer::default();
+        buffer.copy_from_slice(&data[..]).unwrap();
+        let data = LeAdvertisingReportData::from(buffer);
+        let adv_data: ScanResponseData = (&data).into();
+        assert_eq!(
+            adv_data.data.data(),
+            &[16, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25]
+        );
+    }
+
+    #[test]
+    fn test_hci_scan_response_data_from_scan_response_data() {
+        let scanresp_data = ScanResponseData::default();
+        let hci_scanresp_data: bletio_hci::ScanResponseData = (&scanresp_data).into();
+        assert_eq!(scanresp_data.data, hci_scanresp_data);
+    }
+
+    #[test]
     fn test_full_advertising_data_success() -> Result<(), Error> {
         let local_name = "bletio";
+        let uri = Uri::try_new(ProvisionedUriScheme::Https, "//example.org").unwrap();
         let adv_data = AdvertisingData::builder()
             .with_appearance()
             .unwrap()
@@ -1325,11 +1588,16 @@ mod test {
         let scanresp_data = ScanResponseData::builder()
             .with_local_name(LocalNameComplete::Complete)
             .unwrap()
+            .with_uri(uri.clone())
+            .unwrap()
             .build();
         let full_adv_data = FullAdvertisingData::try_new(adv_data.clone(), scanresp_data.clone())?;
-        assert_eq!(full_adv_data.iter().count(), 5);
+        assert_eq!(full_adv_data.iter().count(), 6);
         assert_eq!(full_adv_data.advertising_data().iter().count(), 4);
-        assert_eq!(full_adv_data.scan_response_data().iter().count(), 1);
+        assert_eq!(
+            full_adv_data.scan_response_data().unwrap().iter().count(),
+            2
+        );
         let mut it = full_adv_data.iter();
         assert_eq!(
             it.next(),
@@ -1361,6 +1629,10 @@ mod test {
                 LocalNameAdStruct::try_new("", LocalNameComplete::Complete).unwrap()
             ))
         );
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::Uri(UriAdStruct::new(uri.clone())))
+        );
         assert_eq!(it.next(), None);
 
         let appearance = AppearanceValue::Thermostat;
@@ -1373,9 +1645,16 @@ mod test {
         device_information.tx_power_level = tx_power_level;
         device_information.supported_le_features = supported_le_features;
         let filled_full_adv_data = full_adv_data.fill_automatic_data(&device_information)?;
-        assert_eq!(filled_full_adv_data.iter().count(), 5);
+        assert_eq!(filled_full_adv_data.iter().count(), 6);
         assert_eq!(filled_full_adv_data.advertising_data().iter().count(), 4);
-        assert_eq!(filled_full_adv_data.scan_response_data().iter().count(), 1);
+        assert_eq!(
+            filled_full_adv_data
+                .scan_response_data()
+                .unwrap()
+                .iter()
+                .count(),
+            2
+        );
         let mut it = filled_full_adv_data.iter();
         assert_eq!(
             it.next(),
@@ -1405,6 +1684,164 @@ mod test {
                 LocalNameAdStruct::try_new(local_name, LocalNameComplete::Complete).unwrap()
             ))
         );
+        assert_eq!(it.next(), Some(AdStruct::Uri(UriAdStruct::new(uri))));
+        assert_eq!(it.next(), None);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_full_advertising_data_success_no_scan_response_data() -> Result<(), Error> {
+        let local_name = "bletio";
+        let adv_data = AdvertisingData::builder()
+            .with_appearance()
+            .unwrap()
+            .with_local_name(LocalNameComplete::Complete)
+            .unwrap()
+            .build();
+        let full_adv_data = FullAdvertisingData::try_new(adv_data.clone(), None)?;
+        assert_eq!(full_adv_data.iter().count(), 2);
+        assert_eq!(full_adv_data.advertising_data().iter().count(), 2);
+        assert_eq!(full_adv_data.scan_response_data(), None);
+        let mut it = full_adv_data.iter();
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::Appearance(AppearanceAdStruct::new(
+                AppearanceValue::GenericUnknown
+            )))
+        );
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::LocalName(
+                LocalNameAdStruct::try_new("", LocalNameComplete::Complete).unwrap()
+            ))
+        );
+        assert_eq!(it.next(), None);
+
+        let appearance = AppearanceValue::Thermostat;
+        let mut device_information = DeviceInformation::default();
+        device_information.appearance = appearance;
+        device_information.local_name = "bletio";
+        let filled_full_adv_data = full_adv_data.fill_automatic_data(&device_information)?;
+        assert_eq!(filled_full_adv_data.iter().count(), 2);
+        assert_eq!(filled_full_adv_data.advertising_data().iter().count(), 2);
+        assert_eq!(filled_full_adv_data.scan_response_data(), None);
+        let mut it = filled_full_adv_data.iter();
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::Appearance(AppearanceAdStruct::new(appearance)))
+        );
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::LocalName(
+                LocalNameAdStruct::try_new(local_name, LocalNameComplete::Complete).unwrap()
+            ))
+        );
+        assert_eq!(it.next(), None);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_full_advertising_data_success_fill_scan_response_data() -> Result<(), Error> {
+        let local_name = "bletio";
+        let uri = Uri::try_new(ProvisionedUriScheme::Https, "//example.org").unwrap();
+        let adv_data = AdvertisingData::builder()
+            .with_uri(uri.clone())
+            .unwrap()
+            .build();
+        let scanresp_data = ScanResponseData::builder()
+            .with_local_name(LocalNameComplete::Complete)
+            .unwrap()
+            .with_appearance()
+            .unwrap()
+            .with_tx_power_level()
+            .unwrap()
+            .with_le_supported_features()
+            .unwrap()
+            .build();
+        let full_adv_data = FullAdvertisingData::try_new(adv_data.clone(), scanresp_data.clone())?;
+        assert_eq!(full_adv_data.iter().count(), 5);
+        assert_eq!(full_adv_data.advertising_data().iter().count(), 1);
+        assert_eq!(
+            full_adv_data.scan_response_data().unwrap().iter().count(),
+            4
+        );
+        let mut it = full_adv_data.iter();
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::Uri(UriAdStruct::new(uri.clone())))
+        );
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::LocalName(
+                LocalNameAdStruct::try_new("", LocalNameComplete::Complete).unwrap()
+            ))
+        );
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::Appearance(AppearanceAdStruct::new(
+                AppearanceValue::GenericUnknown
+            )))
+        );
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::TxPowerLevel(TxPowerLevelAdStruct::new(
+                TxPowerLevel::default()
+            )))
+        );
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::LeSupportedFeatures(
+                LeSupportedFeaturesAdStruct::new(SupportedLeFeatures::default())
+            ))
+        );
+        assert_eq!(it.next(), None);
+
+        let appearance = AppearanceValue::Thermostat;
+        let tx_power_level = TxPowerLevel::try_new(-8).unwrap();
+        let supported_le_features =
+            SupportedLeFeatures::LE_2M_PHY | SupportedLeFeatures::LE_CODED_PHY;
+        let mut device_information = DeviceInformation::default();
+        device_information.appearance = appearance;
+        device_information.local_name = "bletio";
+        device_information.tx_power_level = tx_power_level;
+        device_information.supported_le_features = supported_le_features;
+        let filled_full_adv_data = full_adv_data.fill_automatic_data(&device_information)?;
+        assert_eq!(filled_full_adv_data.iter().count(), 5);
+        assert_eq!(filled_full_adv_data.advertising_data().iter().count(), 1);
+        assert_eq!(
+            filled_full_adv_data
+                .scan_response_data()
+                .unwrap()
+                .iter()
+                .count(),
+            4
+        );
+        let mut it = filled_full_adv_data.iter();
+        assert_eq!(it.next(), Some(AdStruct::Uri(UriAdStruct::new(uri))));
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::LocalName(
+                LocalNameAdStruct::try_new(local_name, LocalNameComplete::Complete).unwrap()
+            ))
+        );
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::Appearance(AppearanceAdStruct::new(appearance)))
+        );
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::TxPowerLevel(TxPowerLevelAdStruct::new(
+                tx_power_level
+            )))
+        );
+        assert_eq!(
+            it.next(),
+            Some(AdStruct::LeSupportedFeatures(
+                LeSupportedFeaturesAdStruct::new(supported_le_features)
+            ))
+        );
         assert_eq!(it.next(), None);
 
         Ok(())
@@ -1427,5 +1864,148 @@ mod test {
                 AdvertisingError::AppearanceNotAllowedInBothAdvertisingDataAndScanResponseData
             ))
         );
+    }
+
+    #[rstest]
+    #[case(&[0x02, 0x01, 0x06], AdStruct::Flags(FlagsAdStruct::new(Flags::LE_GENERAL_DISCOVERABLE_MODE | Flags::BREDR_NOT_SUPPORTED)))]
+    #[case(
+        &[0x07, 0x02, 0x03, 0x18, 0x0F, 0x18, 0x1A, 0x18],
+        AdStruct::ServiceUuid16(ServiceUuid16AdStruct::try_new(
+            &[ServiceUuid::LinkLoss, ServiceUuid::Battery, ServiceUuid::EnvironmentalSensing],
+            ServiceListComplete::Incomplete
+        ).unwrap())
+    )]
+    #[case(
+        &[0x07, 0x03, 0x03, 0x18, 0x0F, 0x18, 0x1A, 0x18],
+        AdStruct::ServiceUuid16(ServiceUuid16AdStruct::try_new(
+            &[ServiceUuid::LinkLoss, ServiceUuid::Battery, ServiceUuid::EnvironmentalSensing],
+            ServiceListComplete::Complete
+        ).unwrap())
+    )]
+    #[case(
+        &[0x0D, 0x04, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00, 0x1A, 0x18, 0x00, 0x00],
+        AdStruct::ServiceUuid32(ServiceUuid32AdStruct::try_new(
+            &[Uuid32(0x0000_1803), Uuid32(0x0000_180F), Uuid32(0x0000_181A)],
+            ServiceListComplete::Incomplete
+        ).unwrap())
+    )]
+    #[case(
+        &[0x0D, 0x05, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00, 0x1A, 0x18, 0x00, 0x00],
+        AdStruct::ServiceUuid32(ServiceUuid32AdStruct::try_new(
+            &[Uuid32(0x0000_1803), Uuid32(0x0000_180F), Uuid32(0x0000_181A)],
+            ServiceListComplete::Complete
+        ).unwrap())
+    )]
+    #[case(
+        &[0x11, 0x06, 0x40, 0xD6, 0x6E, 0xFD, 0xD0, 0x11, 0x2C, 0xAD, 0x9E, 0x4C, 0x7D, 0x22, 0x7E, 0x28, 0xA1, 0xF5],
+        AdStruct::ServiceUuid128(ServiceUuid128AdStruct::try_new(
+            &[Uuid128(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640)],
+            ServiceListComplete::Incomplete
+        ).unwrap())
+    )]
+    #[case(
+        &[0x11, 0x07, 0x40, 0xD6, 0x6E, 0xFD, 0xD0, 0x11, 0x2C, 0xAD, 0x9E, 0x4C, 0x7D, 0x22, 0x7E, 0x28, 0xA1, 0xF5],
+        AdStruct::ServiceUuid128(ServiceUuid128AdStruct::try_new(
+            &[Uuid128(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640)],
+            ServiceListComplete::Complete
+        ).unwrap())
+    )]
+    #[case(
+        &[0x06, 0x08, b'b', b'l', b'e', b't', b'i'],
+        AdStruct::LocalName(LocalNameAdStruct::try_new("bletio", LocalNameComplete::Shortened(5)).unwrap())
+    )]
+    #[case(
+        &[0x07, 0x09, b'b', b'l', b'e', b't', b'i', b'o'],
+        AdStruct::LocalName(LocalNameAdStruct::try_new("bletio", LocalNameComplete::Complete).unwrap())
+    )]
+    #[case(&[0x02, 0x0A, 0x14], AdStruct::TxPowerLevel(TxPowerLevelAdStruct::new(TxPowerLevel::try_new(20).unwrap())))]
+    #[case(
+        &[0x05, 0x12, 0x06, 0x00, 0x80, 0x0C],
+        AdStruct::PeripheralConnectionIntervalRange(
+            PeripheralConnectionIntervalRangeAdStruct::new(0x0006.try_into().unwrap()..=0x0C80.try_into().unwrap())
+        )
+    )]
+    #[case(
+        &[0x05, 0x14, 0x03, 0x18, 0x0F, 0x18],
+        AdStruct::ServiceSolicitationUuid16(
+            ServiceSolicitationUuid16AdStruct::try_new(&[ServiceUuid::LinkLoss, ServiceUuid::Battery]).unwrap()
+        )
+    )]
+    #[case(
+        &[0x11, 0x15, 0x40, 0xD6, 0x6E, 0xFD, 0xD0, 0x11, 0x2C, 0xAD, 0x9E, 0x4C, 0x7D, 0x22, 0x7E, 0x28, 0xA1, 0xF5],
+        AdStruct::ServiceSolicitationUuid128(
+            ServiceSolicitationUuid128AdStruct::try_new(&[Uuid128(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640)]).unwrap()
+        )
+    )]
+    #[case(
+        &[0x05, 0x16, 0x03, 0x18, 0x01, 0x14],
+        AdStruct::ServiceDataUuid16(
+            ServiceDataUuid16AdStruct::try_new(ServiceUuid::LinkLoss, &[0x01, 0x14]).unwrap()
+        )
+    )]
+    #[case(
+        &[0x07, 0x17, 0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56],
+        AdStruct::PublicTargetAddress(
+            PublicTargetAddressAdStruct::try_new(&[PublicDeviceAddress::new([0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56])]).unwrap()
+        )
+    )]
+    #[case(
+        &[0x07, 0x18, 0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7],
+        AdStruct::RandomTargetAddress(
+            RandomTargetAddressAdStruct::try_new(&[RandomStaticDeviceAddress::try_new([0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7]).unwrap().into()]).unwrap()
+        )
+    )]
+    #[case(&[0x03, 0x19, 0x44, 0x08], AdStruct::Appearance(AppearanceAdStruct::new(AppearanceValue::StandmountedSpeaker)))]
+    #[case(&[0x03, 0x1A, 0x00, 0x08], AdStruct::AdvertisingInterval(AdvertisingIntervalAdStruct::new(AdvertisingInterval::default())))]
+    #[case(
+        &[0x09, 0x1F, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00],
+        AdStruct::ServiceSolicitationUuid32(
+            ServiceSolicitationUuid32AdStruct::try_new(&[Uuid32(0x0000_1803), Uuid32(0x0000_180F)]).unwrap()
+        )
+    )]
+    #[case(
+        &[0x0F, 0x20, 0x03, 0x18, 0x00, 0x00, 0x09, 0x1F, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00],
+        AdStruct::ServiceDataUuid32(
+            ServiceDataUuid32AdStruct::try_new(Uuid32(0x0000_1803), &[0x09, 0x1F, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00]).unwrap()
+        )
+    )]
+    #[case(
+        &[0x15, 0x21, 0x40, 0xD6, 0x6E, 0xFD, 0xD0, 0x11, 0x2C, 0xAD, 0x9E, 0x4C, 0x7D, 0x22, 0x7E, 0x28, 0xA1, 0xF5, 0xD6, 0x0F, 0x28, 0x6E],
+        AdStruct::ServiceDataUuid128(
+            ServiceDataUuid128AdStruct::try_new(Uuid128(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640), &[0xD6, 0x0F, 0x28, 0x6E]).unwrap()
+        )
+    )]
+    #[case(
+        &[0x11, 0x24, 0x16, 0x00, b'/', b'/', b'e', b'x', b'a', b'm', b'p', b'l', b'e', b'.', b'o', b'r', b'g', b'/'],
+        AdStruct::Uri(UriAdStruct::new(Uri::try_new(ProvisionedUriScheme::Http, "//example.org/").unwrap()))
+    )]
+    #[case(&[0x01, 0x27], AdStruct::LeSupportedFeatures(LeSupportedFeaturesAdStruct::new(SupportedLeFeatures::default())))]
+    #[case(
+        &[0x1E, 0xFF, 0x4C, 0x00, 0x12, 0x19, 0x00, 0x9A, 0x9A, 0xE9, 0x80, 0x96, 0x3C, 0xA0, 0x14, 0xFB, 0xE2,
+            0x14, 0x41, 0x88, 0xF5, 0xDA, 0xB6, 0x07, 0x99, 0xD3, 0x15, 0x57, 0x6C, 0x01, 0x00],
+        AdStruct::ManufacturerSpecificData(
+            ManufacturerSpecificDataAdStruct::try_new(CompanyIdentifier::AppleInc,
+            &[0x12, 0x19, 0x00, 0x9A, 0x9A, 0xE9, 0x80, 0x96, 0x3C, 0xA0, 0x14, 0xFB, 0xE2, 0x14,
+                0x41, 0x88, 0xF5, 0xDA, 0xB6, 0x07, 0x99, 0xD3, 0x15, 0x57, 0x6C, 0x01, 0x00]
+            ).unwrap()
+        )
+    )]
+    #[case(&[0x01, 0x30], AdStruct::Unhandled(0x30))]
+    fn test_ad_struct_parsing(#[case] input: &[u8], #[case] expected_ad_struct: AdStruct) {
+        assert_eq!(
+            ad_struct(input),
+            Ok((&[] as &[u8], (input.len(), expected_ad_struct)))
+        );
+    }
+
+    #[test]
+    fn test_advertising_data_iterator() {
+        let data: &[u8] = &[0x06, 0x05, 0x12, 0x80, 0x0C, 0x06, 0x00];
+        let mut it = AdvertisingDataIterator {
+            data,
+            next_index: 0,
+        };
+        assert_eq!(it.next(), None);
+        assert_eq!(it.next_index, 7);
     }
 }

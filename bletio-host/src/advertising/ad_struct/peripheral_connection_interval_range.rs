@@ -44,7 +44,7 @@ pub(crate) mod parser {
     use core::ops::RangeInclusive;
 
     use nom::{
-        combinator::{map, map_res},
+        combinator::{map, map_res, verify},
         number::le_u16,
         IResult, Parser,
     };
@@ -62,7 +62,7 @@ pub(crate) mod parser {
     ) -> IResult<&[u8], AdStruct> {
         map(
             map(
-                (connection_interval, connection_interval),
+                verify((connection_interval, connection_interval), |(a, b)| a <= b),
                 |(start, end)| RangeInclusive::new(start, end),
             ),
             |range| {
@@ -80,7 +80,9 @@ mod test {
     use bletio_utils::{Buffer, BufferOps};
     use rstest::rstest;
 
-    use super::*;
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::{parser::*, *};
 
     #[rstest]
     #[case(0x0006.try_into().unwrap()..=0x0C80.try_into().unwrap(), &[0x05, 0x12, 0x06, 0x00, 0x80, 0x0C])]
@@ -97,5 +99,40 @@ mod test {
         value.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
         Ok(())
+    }
+
+    #[rstest]
+    #[case(&[0x06, 0x00, 0x80, 0x0C], 0x0006.try_into().unwrap()..=0x0C80.try_into().unwrap())]
+    #[case(&[0x10, 0x00, 0x10, 0x00], 0x0010.try_into().unwrap()..=0x0010.try_into().unwrap())]
+    fn test_peripheral_connection_interval_range_ad_struct_parsing_success(
+        #[case] input: &[u8],
+        #[case] range: RangeInclusive<ConnectionInterval>,
+    ) {
+        assert_eq!(
+            peripheral_connection_interval_range_ad_struct(input),
+            Ok((
+                &[] as &[u8],
+                AdStruct::PeripheralConnectionIntervalRange(
+                    PeripheralConnectionIntervalRangeAdStruct::new(range)
+                )
+            ))
+        );
+    }
+
+    #[rstest]
+    #[case(&[0xFF, 0xFF, 0x80, 0x0C])]
+    #[case(&[0x06, 0x00, 0xFF, 0xFF])]
+    #[case(&[0xFF, 0xFF, 0xFF, 0xFF])]
+    fn test_peripheral_connection_interval_range_ad_struct_parsing_undefined_success(
+        #[case] input: &[u8],
+    ) {
+        assert!(peripheral_connection_interval_range_ad_struct(input).is_ok());
+    }
+
+    #[rstest]
+    #[case(&[0x80, 0x0C, 0x06, 0x00])]
+    #[case(&[0x06, 0x00, 0xFE, 0xFF])]
+    fn test_peripheral_connection_interval_range_ad_struct_parsing_failure(#[case] input: &[u8]) {
+        assert!(peripheral_connection_interval_range_ad_struct(input).is_err())
     }
 }

@@ -185,7 +185,9 @@ mod test {
     use bletio_utils::{Buffer, BufferOps};
     use rstest::rstest;
 
-    use super::*;
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::{parser::*, *};
 
     #[rstest]
     #[case(ServiceUuid::LinkLoss, &[0x01, 0x14], &[0x05, 0x16, 0x03, 0x18, 0x01, 0x14])]
@@ -270,5 +272,94 @@ mod test {
             err,
             Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)
         );
+    }
+
+    #[rstest]
+    #[case(&[0x03, 0x18, 0x01, 0x14], ServiceUuid::LinkLoss, &[0x01, 0x14])]
+    #[case(&[0x0F, 0x18, 0x14, 0x03, 0x18, 0x0F], ServiceUuid::Battery, &[0x14, 0x03, 0x18, 0x0F])]
+    fn test_service_data_uuid16_ad_struct_parsing_success(
+        #[case] input: &[u8],
+        #[case] uuid: ServiceUuid,
+        #[case] data: &[u8],
+    ) {
+        assert_eq!(
+            service_data_uuid16_ad_struct(input),
+            Ok((
+                &[] as &[u8],
+                AdStruct::ServiceDataUuid16(
+                    ServiceDataUuid16AdStruct::try_new(uuid, data).unwrap()
+                )
+            ))
+        );
+    }
+
+    #[rstest]
+    #[case(
+        &[0x02, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])]
+    fn test_service_data_uuid16_ad_struct_parsing_failure(#[case] input: &[u8]) {
+        assert!(service_data_uuid16_ad_struct(input).is_err());
+    }
+
+    #[rstest]
+    #[case(
+        &[0x03, 0x18, 0x00, 0x00, 0x09, 0x1F, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00],
+        Uuid32(0x0000_1803), &[0x09, 0x1F, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00]
+    )]
+    #[case(
+        &[0x08, 0x18, 0x00, 0x00, 0x0D, 0x1F, 0x08, 0x18, 0x00, 0x00, 0x0D, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00],
+        Uuid32(0x0000_1808), &[0x0D, 0x1F, 0x08, 0x18, 0x00, 0x00, 0x0D, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00]
+    )]
+    fn test_service_data_uuid32_ad_struct_parsing_success(
+        #[case] input: &[u8],
+        #[case] uuid: Uuid32,
+        #[case] data: &[u8],
+    ) {
+        assert_eq!(
+            service_data_uuid32_ad_struct(input),
+            Ok((
+                &[] as &[u8],
+                AdStruct::ServiceDataUuid32(
+                    ServiceDataUuid32AdStruct::try_new(uuid, data).unwrap()
+                )
+            ))
+        );
+    }
+
+    #[rstest]
+    #[case(
+        &[0x02, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])]
+    fn test_service_data_uuid32_ad_struct_parsing_failure(#[case] input: &[u8]) {
+        assert!(service_data_uuid32_ad_struct(input).is_err());
+    }
+
+    #[rstest]
+    #[case(
+        &[0x40, 0xD6, 0x6E, 0xFD, 0xD0, 0x11, 0x2C, 0xAD, 0x9E, 0x4C, 0x7D, 0x22, 0x7E, 0x28, 0xA1, 0xF5, 0xD6, 0x0F, 0x28, 0x6E],
+        Uuid128(0xF5A1287E_227D_4C9E_AD2C_11D0FD6ED640), &[0xD6, 0x0F, 0x28, 0x6E]
+    )]
+    fn test_service_data_uuid128_ad_struct_parsing_success(
+        #[case] input: &[u8],
+        #[case] uuid: Uuid128,
+        #[case] data: &[u8],
+    ) {
+        assert_eq!(
+            service_data_uuid128_ad_struct(input),
+            Ok((
+                &[] as &[u8],
+                AdStruct::ServiceDataUuid128(
+                    ServiceDataUuid128AdStruct::try_new(uuid, data).unwrap()
+                )
+            ))
+        );
+    }
+
+    #[rstest]
+    #[case(
+        &[0x40, 0xD6, 0x6E, 0xFD, 0xD0, 0x11, 0x2C, 0xAD, 0x9E, 0x4C, 0x7D, 0x22, 0x7E, 0x28, 0xA1, 0xF5,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])]
+    fn test_service_data_uuid128_ad_struct_parsing_failure(#[case] input: &[u8]) {
+        assert!(service_data_uuid128_ad_struct(input).is_err());
     }
 }

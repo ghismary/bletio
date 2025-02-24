@@ -65,7 +65,7 @@ pub(crate) mod parser {
 
     pub(crate) fn public_target_address_ad_struct(mut input: &[u8]) -> IResult<&[u8], AdStruct> {
         let len = input.len() / 6;
-        if len > PUBLIC_TARGET_ADDRESS_NB_MAX_ADDRESSES {
+        if (len > PUBLIC_TARGET_ADDRESS_NB_MAX_ADDRESSES) || ((input.len() % 6) != 0) {
             fail::<_, &[u8], _>().parse(input)?;
         }
         let mut ad_struct = PublicTargetAddressAdStruct {
@@ -89,7 +89,9 @@ mod test {
     use bletio_utils::{Buffer, BufferOps};
     use rstest::rstest;
 
-    use super::*;
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::{parser::*, *};
 
     #[rstest]
     #[case(
@@ -134,5 +136,38 @@ mod test {
             err,
             Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)
         );
+    }
+
+    #[rstest]
+    #[case(&[0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56], &[PublicDeviceAddress::new([0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56])])]
+    #[case(
+        &[0xF4, 0x23, 0x14, 0xC3, 0xDC, 0x24, 0x38, 0x5E, 0x43, 0xCA, 0x4C, 0x40],
+        &[PublicDeviceAddress::new([0xF4, 0x23, 0x14, 0xC3, 0xDC, 0x24]), PublicDeviceAddress::new([0x38, 0x5E, 0x43, 0xCA, 0x4C, 0x40])]
+    )]
+    fn test_public_target_address_ad_struct_parsing_success(
+        #[case] input: &[u8],
+        #[case] addresses: &[PublicDeviceAddress],
+    ) {
+        assert_eq!(
+            public_target_address_ad_struct(input),
+            Ok((
+                &[] as &[u8],
+                AdStruct::PublicTargetAddress(
+                    PublicTargetAddressAdStruct::try_new(addresses).unwrap()
+                )
+            ))
+        );
+    }
+
+    #[rstest]
+    #[case(
+        &[0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56, 0xF4, 0x23, 0x14, 0xC3, 0xDC, 0x24, 0x38, 0x5E, 0x43,
+            0xCA, 0x4C, 0x40, 0xCE, 0x2E, 0x0B, 0x04, 0x32, 0x56, 0xF5, 0x23, 0x14, 0xC3, 0xDC, 0x24]
+    )]
+    #[case(
+        &[0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56, 0xF4, 0x23, 0x14, 0xC3, 0xDC, 0x24, 0x38, 0x5E, 0x43]
+    )]
+    fn test_public_target_address_ad_struct_parsing_failure(#[case] input: &[u8]) {
+        assert!(public_target_address_ad_struct(input).is_err());
     }
 }

@@ -415,3 +415,146 @@ pub(crate) mod parser {
         ))
     }
 }
+
+#[cfg(test)]
+mod test {
+    use rstest::rstest;
+
+    use crate::{packet::parser::packet, Event, Packet};
+
+    use super::*;
+
+    #[rstest]
+    #[case::le_rand(CommandCompleteEvent::new(
+            1, CommandOpCode::LeRand,
+            StatusAndRandomNumberEventParameter {
+                status: ErrorCode::Success, random_number: [68, 223, 27, 9, 83, 58, 224, 240]
+            }
+        ), &[4, 14, 12, 1, 24, 32, 0, 68, 223, 27, 9, 83, 58, 224, 240])]
+    #[case::le_read_advertising_channel_tx_power(CommandCompleteEvent::new(
+            1, CommandOpCode::LeReadAdvertisingChannelTxPower,
+            StatusAndTxPowerLevelEventParameter {
+                status: ErrorCode::Success, tx_power_level: TxPowerLevel::try_new(9).unwrap()
+            }
+        ), &[4, 14, 5, 1, 7, 32, 0, 9])]
+    #[case::le_read_buffer_size(CommandCompleteEvent::new(
+            1, CommandOpCode::LeReadBufferSize,
+            StatusAndLeBufferSizeEventParameter {
+                status: ErrorCode::Success, le_acl_data_packet_length: 255, total_num_le_acl_data_packets: 24
+            }
+        ), &[4, 14, 7, 1, 2, 32, 0, 255, 0, 24])]
+    #[case::le_read_local_supported_features_page_0(CommandCompleteEvent::new(
+            1, CommandOpCode::LeReadLocalSupportedFeaturesPage0,
+            StatusAndSupportedLeFeaturesEventParameter {
+                status: ErrorCode::Success,
+                supported_le_features: SupportedLeFeatures::LE_ENCRYPTION | SupportedLeFeatures::LE_EXTENDED_ADVERTISING
+            }
+        ), &[4, 14, 12, 1, 3, 32, 0, 1, 16, 0, 0, 0, 0, 0, 0])]
+    #[case::le_read_supported_states(CommandCompleteEvent::new(
+            1, CommandOpCode::LeReadSupportedStates,
+            StatusAndSupportedLeStatesEventParameter {
+                status: ErrorCode::Success, supported_le_states: 0x0000_03FF_FFFF_FFFF.into()
+            }
+        ), &[4, 14, 12, 1, 28, 32, 0, 255, 255, 255, 255, 255, 3, 0, 0])]
+    #[case::le_set_advertising_data(CommandCompleteEvent::new(
+            1, CommandOpCode::LeSetAdvertisingData,
+            StatusEventParameter { status: ErrorCode::Success }
+        ), &[4, 14, 4, 1, 8, 32, 0])]
+    #[case::le_set_advertising_enable(CommandCompleteEvent::new(
+            1, CommandOpCode::LeSetAdvertisingEnable,
+            StatusEventParameter { status: ErrorCode::Success }
+        ), &[4, 14, 4, 1, 10, 32, 0])]
+    #[case::le_set_advertising_parameters(CommandCompleteEvent::new(
+            1, CommandOpCode::LeSetAdvertisingParameters,
+            StatusEventParameter { status: ErrorCode::Success }
+        ), &[4, 14, 4, 1, 6, 32, 0])]
+    #[case::le_set_event_mask(CommandCompleteEvent::new(
+            1, CommandOpCode::LeSetEventMask,
+            StatusEventParameter { status: ErrorCode::Success }
+        ), &[4, 14, 4, 1, 1, 32, 0])]
+    #[case::le_set_random_address(CommandCompleteEvent::new(
+            1, CommandOpCode::LeSetRandomAddress,
+            StatusEventParameter { status: ErrorCode::Success }
+        ), &[4, 14, 4, 1, 5, 32, 0])]
+    #[case::le_set_scan_enable(CommandCompleteEvent::new(
+            1, CommandOpCode::LeSetScanEnable,
+            StatusEventParameter { status: ErrorCode::Success }
+        ), &[4, 14, 4, 1, 12, 32, 0])]
+    #[case::le_set_scan_parameters(CommandCompleteEvent::new(
+            1, CommandOpCode::LeSetScanParameters,
+            StatusEventParameter { status: ErrorCode::Success }
+        ), &[4, 14, 4, 1, 11, 32, 0])]
+    #[case::le_set_scan_response_data(CommandCompleteEvent::new(
+            1, CommandOpCode::LeSetScanResponseData,
+            StatusEventParameter { status: ErrorCode::Success }
+        ), &[4, 14, 4, 1, 9, 32, 0])]
+    #[case::nop(CommandCompleteEvent::new(
+            1, CommandOpCode::Nop,
+            EventParameter::Empty
+        ), &[4, 14, 3, 1, 0, 0])]
+    #[case::read_bd_addr(CommandCompleteEvent::new(
+            1, CommandOpCode::ReadBdAddr,
+            StatusAndBdAddrEventParameter {
+                status: ErrorCode::Success,
+                bd_addr: PublicDeviceAddress::new([0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56])
+            }
+        ), &[4, 14, 10, 1, 9, 16, 0, 0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56])]
+    #[case::read_buffer_size(CommandCompleteEvent::new(
+            1, CommandOpCode::ReadBufferSize,
+            StatusAndBufferSizeEventParameter {
+                status: ErrorCode::Success,
+                acl_data_packet_length: NonZeroU16::new(255).unwrap(),
+                synchronous_data_packet_length: NonZeroU8::new(255).unwrap(),
+                total_num_acl_data_packets: NonZeroU16::new(24).unwrap(),
+                total_num_synchronous_packets: 12,
+            }
+        ), &[4, 14, 11, 1, 5, 16, 0, 255, 0, 255, 24, 0, 12, 0])]
+    #[case::read_local_supported_commands(CommandCompleteEvent::new(
+            1, CommandOpCode::ReadLocalSupportedCommands,
+            StatusAndSupportedCommandsEventParameter {
+                status: ErrorCode::Success,
+                supported_commands: SupportedCommands::LE_RAND | SupportedCommands::LE_READ_LOCAL_SUPPORTED_FEATURES_PAGE_0
+            }
+        ), &[
+            4, 14, 68, 1, 2, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 128,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ])]
+    #[case::read_local_supported_features(CommandCompleteEvent::new(
+            1, CommandOpCode::ReadLocalSupportedFeatures,
+            StatusAndSupportedFeaturesEventParameter {
+                status: ErrorCode::Success,
+                supported_features: SupportedFeatures::LE_SUPPORTED_CONTROLLER
+            }
+        ), &[4, 14, 12, 1, 3, 16, 0, 0, 0, 0, 0, 64, 0, 0, 0])]
+    #[case::reset(CommandCompleteEvent::new(
+            1, CommandOpCode::Reset,
+            StatusEventParameter { status: ErrorCode::Success }
+        ), &[4, 14, 4, 1, 3, 12, 0])]
+    #[case::set_event_mask(CommandCompleteEvent::new(
+            1, CommandOpCode::SetEventMask,
+            StatusEventParameter { status: ErrorCode::Success }
+        ), &[4, 14, 4, 1, 1, 12, 0])]
+    fn test_command_complete_event_parsing(
+        #[case] event: CommandCompleteEvent,
+        #[case] input: &[u8],
+    ) {
+        let (rest, packet) = packet(input).unwrap();
+        assert_eq!(packet, Packet::Event(Event::CommandComplete(event)));
+        assert!(rest.is_empty());
+    }
+
+    #[rstest]
+    #[case::read_buffer_size_invalid_acl_data_packet_length(&[4, 14, 11, 1, 5, 16, 0, 0, 0, 255, 24, 0, 12, 0])]
+    #[case::read_buffer_size_invalid_synchronous_data_packet_length(&[4, 14, 11, 1, 5, 16, 0, 255, 0, 0, 24, 0, 12, 0])]
+    #[case::read_buffer_size_invalid_total_num_acl_data_packets(&[4, 14, 11, 1, 5, 16, 0, 255, 0, 255, 0, 0, 12, 0])]
+    fn test_command_complete_event_parsing_failure(#[case] input: &[u8]) {
+        assert!(packet(input).is_err());
+    }
+
+    #[test]
+    fn test_command_complete_event_for_unsupported_command_parsing() {
+        // Using Flush command opcode
+        let err = packet(&[4, 14, 4, 1, 08, 12, 0]);
+        assert!(err.is_err());
+    }
+}

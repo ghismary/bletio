@@ -326,3 +326,206 @@ pub(crate) mod parser {
         ))
     }
 }
+
+#[cfg(test)]
+mod test {
+    use rstest::rstest;
+
+    use crate::{
+        packet::parser::packet, AdvertisingData, Event, LeMetaEvent, Packet, ScanResponseData,
+    };
+
+    use super::*;
+
+    #[rstest]
+    #[case(0x01)]
+    #[case(0x19)]
+    #[case(0x0A)]
+    fn test_le_advertising_num_reports_success(#[case] input: u8) {
+        let num_reports: LeAdvertisingReportNumReports = input.try_into().unwrap();
+        assert_eq!(num_reports.value(), input);
+    }
+
+    #[rstest]
+    #[case(0x00)]
+    #[case(0x1A)]
+    #[case(0xFF)]
+    fn test_le_advertising_num_reports_failure(#[case] input: u8) {
+        let err = LeAdvertisingReportNumReports::try_new(input);
+        assert_eq!(err, Err(Error::InvalidLeAdvertisingReportNumReports(input)));
+    }
+
+    #[rstest]
+    #[case(
+        PublicDeviceAddress::default(),
+        LeAdvertisingReportAddress::PublicDevice(PublicDeviceAddress::default())
+    )]
+    #[case(
+        PublicDeviceAddress::default(),
+        LeAdvertisingReportAddress::PublicIdentity(PublicDeviceAddress::default())
+    )]
+    fn test_le_advertising_report_public_address(
+        #[case] address: PublicDeviceAddress,
+        #[case] le_advertising_report_address: LeAdvertisingReportAddress,
+    ) {
+        let event_type = LeAdvertisingReportEventType::NonConnectableUndirected;
+        let data = LeAdvertisingReportData::default();
+        let rssi = Some(Rssi::default());
+        let report = LeAdvertisingReport::new(
+            event_type,
+            le_advertising_report_address.clone(),
+            data.clone(),
+            rssi,
+        );
+        assert_eq!(report.event_type(), event_type);
+        assert_eq!(report.address(), &le_advertising_report_address);
+        assert_eq!(report.address().value(), address.value());
+        assert_eq!(report.data(), &data);
+        assert_eq!(report.rssi(), rssi);
+    }
+
+    #[rstest]
+    #[case(
+        RandomAddress::try_from([0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7]).unwrap(),
+        LeAdvertisingReportAddress::RandomDevice(RandomAddress::try_from([0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7]).unwrap())
+    )]
+    #[case(
+        RandomAddress::try_from([0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7]).unwrap(),
+        LeAdvertisingReportAddress::RandomIdentity(RandomAddress::try_from([0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7]).unwrap())
+    )]
+    fn test_le_advertising_report_random_address(
+        #[case] address: RandomAddress,
+        #[case] le_advertising_report_address: LeAdvertisingReportAddress,
+    ) {
+        let event_type = LeAdvertisingReportEventType::ConnectableDirected;
+        let data = LeAdvertisingReportData::default();
+        let rssi = Some(Rssi::default());
+        let report = LeAdvertisingReport::new(
+            event_type,
+            le_advertising_report_address.clone(),
+            data.clone(),
+            rssi,
+        );
+        assert_eq!(report.event_type(), event_type);
+        assert_eq!(report.address(), &le_advertising_report_address);
+        assert_eq!(report.address().value(), address.value());
+        assert_eq!(report.data(), &data);
+        assert_eq!(report.rssi(), rssi);
+    }
+
+    #[rstest]
+    #[case(1.try_into().unwrap(), &[
+        0, 1, 160, 215, 105, 192, 58, 123, 29, 2, 1, 6, 7, 3, 13, 24, 15, 24, 5, 24, 17, 7,
+        240, 222, 188, 154, 120, 86, 52, 18, 120, 86, 52, 18, 120, 86, 52, 18, 204
+    ])]
+    #[case(2.try_into().unwrap(), &[
+        0, 1, 160, 215, 105, 192, 58, 123, 29, 2, 1, 6, 7, 3, 13, 24, 15, 24, 5, 24, 17, 7,
+        240, 222, 188, 154, 120, 86, 52, 18, 120, 86, 52, 18, 120, 86, 52, 18, 204,
+        4, 1, 160, 215, 105, 192, 58, 123, 31, 30, 8, 90, 101, 112, 104, 121, 114, 32, 80, 101,
+        114, 105, 112, 104, 101, 114, 97, 108, 32, 83, 97, 109, 112, 108, 101, 32, 76, 111, 110, 103, 204
+    ])]
+    fn test_le_advertising_report_list(
+        #[case] num_reports: LeAdvertisingReportNumReports,
+        #[case] data: &[u8],
+    ) {
+        let report_list = LeAdvertisingReportList::new(num_reports, data);
+        assert_eq!(report_list.len(), num_reports.value() as usize);
+        let mut it = report_list.iter();
+        for _ in 0..report_list.len() {
+            assert!(matches!(it.next(), Some(_)));
+        }
+        assert_eq!(it.next(), None);
+    }
+
+    #[rstest]
+    #[case::one_report(
+        LeAdvertisingReportList::new(
+            1.try_into().unwrap(),
+            &[0, 1, 160, 215, 105, 192, 58, 123, 29, 2, 1, 6, 7, 3, 13, 24, 15, 24, 5, 24, 17, 7,
+                240, 222, 188, 154, 120, 86, 52, 18, 120, 86, 52, 18, 120, 86, 52, 18, 204]
+        ),
+        &[4, 62, 41, 2, 1, 0, 1, 160, 215, 105, 192, 58, 123, 29, 2, 1, 6, 7, 3, 13, 24, 15, 24, 5, 24, 17, 7,
+            240, 222, 188, 154, 120, 86, 52, 18, 120, 86, 52, 18, 120, 86, 52, 18, 204]
+    )]
+    #[case::two_reports(
+        LeAdvertisingReportList::new(
+            2.try_into().unwrap(),
+            &[0, 1, 160, 215, 105, 192, 58, 123, 29, 2, 1, 6, 7, 3, 13, 24, 15, 24, 5, 24, 17, 7,
+                240, 222, 188, 154, 120, 86, 52, 18, 120, 86, 52, 18, 120, 86, 52, 18, 204,
+                4, 1, 160, 215, 105, 192, 58, 123, 31, 30, 8, 90, 101, 112, 104, 121, 114, 32, 80, 101,
+                114, 105, 112, 104, 101, 114, 97, 108, 32, 83, 97, 109, 112, 108, 101, 32, 76, 111, 110, 103, 204]
+        ),
+        &[4, 62, 82, 2, 2, 0, 1, 160, 215, 105, 192, 58, 123, 29, 2, 1, 6, 7, 3, 13, 24, 15, 24, 5, 24, 17, 7,
+            240, 222, 188, 154, 120, 86, 52, 18, 120, 86, 52, 18, 120, 86, 52, 18, 204,
+            4, 1, 160, 215, 105, 192, 58, 123, 31, 30, 8, 90, 101, 112, 104, 121, 114, 32, 80, 101,
+            114, 105, 112, 104, 101, 114, 97, 108, 32, 83, 97, 109, 112, 108, 101, 32, 76, 111, 110, 103, 204]
+    )]
+    #[case::public_device_address_and_unknown_rssi(
+        LeAdvertisingReportList::new(
+            1.try_into().unwrap(),
+            &[0, 0, 0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56, 29, 2, 1, 6, 7, 3, 13, 24, 15, 24, 5, 24, 17, 7,
+                240, 222, 188, 154, 120, 86, 52, 18, 120, 86, 52, 18, 120, 86, 52, 18, 127]
+        ),
+        &[4, 62, 41, 2, 1, 0, 0, 0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56, 29, 2, 1, 6, 7, 3, 13, 24, 15, 24, 5, 24, 17, 7,
+            240, 222, 188, 154, 120, 86, 52, 18, 120, 86, 52, 18, 120, 86, 52, 18, 127]
+    )]
+    #[case::public_identity_address(
+        LeAdvertisingReportList::new(
+            1.try_into().unwrap(),
+            &[0, 2, 0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56, 29, 2, 1, 6, 7, 3, 13, 24, 15, 24, 5, 24, 17, 7,
+                240, 222, 188, 154, 120, 86, 52, 18, 120, 86, 52, 18, 120, 86, 52, 18, 204]
+        ),
+        &[4, 62, 41, 2, 1, 0, 2, 0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56, 29, 2, 1, 6, 7, 3, 13, 24, 15, 24, 5, 24, 17, 7,
+            240, 222, 188, 154, 120, 86, 52, 18, 120, 86, 52, 18, 120, 86, 52, 18, 204]
+    )]
+    fn test_le_advertising_report_event_parsing(
+        #[case] le_advertising_report_list: LeAdvertisingReportList,
+        #[case] input: &[u8],
+    ) {
+        let (rest, packet) = packet(input).unwrap();
+        assert_eq!(
+            packet,
+            Packet::Event(Event::LeMeta(LeMetaEvent::LeAdvertisingReport(
+                le_advertising_report_list
+            )))
+        );
+        assert!(rest.is_empty());
+    }
+
+    #[rstest]
+    #[case::invalid_random_device_address(
+        &[4, 62, 41, 2, 1, 0, 1, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 29, 2, 1, 6, 7, 3, 13, 24, 15,
+            24, 5, 24, 17, 7, 240, 222, 188, 154, 120, 86, 52, 18, 120, 86, 52, 18, 120, 86, 52, 18, 204])]
+    #[case::invalid_random_identity_address(
+        &[4, 62, 41, 2, 1, 0, 3, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 29, 2, 1, 6, 7, 3, 13, 24, 15,
+            24, 5, 24, 17, 7, 240, 222, 188, 154, 120, 86, 52, 18, 120, 86, 52, 18, 120, 86, 52, 18, 204])]
+    fn test_le_advertising_report_event_parsing_failure(#[case] input: &[u8]) {
+        assert!(packet(input).is_err());
+    }
+
+    #[test]
+    fn test_advertising_data_from_le_advertising_report_data() {
+        let data = [25; 16];
+        let mut buffer: Buffer<31> = Buffer::default();
+        buffer.copy_from_slice(&data[..]).unwrap();
+        let data = LeAdvertisingReportData::from(buffer);
+        let adv_data: AdvertisingData = (&data).into();
+        assert_eq!(
+            adv_data.data(),
+            &[16, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25]
+        );
+    }
+
+    #[test]
+    fn test_scan_response_data_from_le_advertising_report_data() {
+        let data = [25; 16];
+        let mut buffer: Buffer<31> = Buffer::default();
+        buffer.copy_from_slice(&data[..]).unwrap();
+        let data = LeAdvertisingReportData::from(buffer);
+        let adv_data: ScanResponseData = (&data).into();
+        assert_eq!(
+            adv_data.data(),
+            &[16, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25]
+        );
+    }
+}

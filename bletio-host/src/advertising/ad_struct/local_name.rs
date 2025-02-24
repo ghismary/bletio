@@ -122,7 +122,9 @@ mod test {
     use bletio_utils::{Buffer, BufferOps};
     use rstest::rstest;
 
-    use super::*;
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::{parser::*, *};
 
     #[rstest]
     #[case("", LocalNameComplete::Complete, &[0x01, 0x09])]
@@ -131,7 +133,7 @@ mod test {
     #[case("bletio", LocalNameComplete::Shortened(3), &[0x04, 0x08, b'b', b'l', b'e'])]
     #[case("bletio", LocalNameComplete::Shortened(5), &[0x06, 0x08, b'b', b'l', b'e', b't', b'i'])]
     #[case("bletio", LocalNameComplete::Shortened(8), &[0x09, 0x08, b'b', b'l', b'e', b't', b'i', b'o', b' ', b' '])]
-    fn test_local_name_ad_struct(
+    fn test_local_name_ad_struct_success(
         #[case] local_name: &str,
         #[case] complete: LocalNameComplete,
         #[case] encoded_data: &[u8],
@@ -141,5 +143,59 @@ mod test {
         value.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
         Ok(())
+    }
+
+    #[rstest]
+    #[case("a very very very long local name", LocalNameComplete::Complete)]
+    #[case("a very very very long local name", LocalNameComplete::Shortened(30))]
+    fn test_local_name_ad_struct_failure(
+        #[case] local_name: &str,
+        #[case] complete: LocalNameComplete,
+    ) {
+        let err = LocalNameAdStruct::try_new(local_name, complete);
+        assert_eq!(
+            err,
+            Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)
+        );
+    }
+
+    #[test]
+    fn test_shortened_local_name_ad_struct_parsing_success() {
+        assert_eq!(
+            shortened_local_name_ad_struct("ble".as_bytes()),
+            Ok((
+                &[] as &[u8],
+                AdStruct::LocalName(
+                    LocalNameAdStruct::try_new("ble", LocalNameComplete::Shortened(3)).unwrap()
+                )
+            ))
+        );
+    }
+
+    #[test]
+    fn test_shortened_local_name_ad_struct_parsing_failure() {
+        assert!(
+            shortened_local_name_ad_struct("a very very very long local name".as_bytes()).is_err()
+        );
+    }
+
+    #[test]
+    fn test_complete_local_name_ad_struct_parsing_success() {
+        assert_eq!(
+            complete_local_name_ad_struct("bletio".as_bytes()),
+            Ok((
+                &[] as &[u8],
+                AdStruct::LocalName(
+                    LocalNameAdStruct::try_new("bletio", LocalNameComplete::Complete).unwrap()
+                )
+            ))
+        );
+    }
+
+    #[test]
+    fn test_complete_local_name_ad_struct_parsing_failure() {
+        assert!(
+            complete_local_name_ad_struct("a very very very long local name".as_bytes()).is_err()
+        );
     }
 }

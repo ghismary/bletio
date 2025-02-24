@@ -20,11 +20,7 @@ enum LeMetaEventCode {
 }
 
 pub(crate) mod parser {
-    use nom::{
-        combinator::{fail, map_res},
-        number::le_u8,
-        IResult, Parser,
-    };
+    use nom::{combinator::map_res, number::le_u8, IResult, Parser};
 
     use crate::event::le_advertising_report::parser::le_advertising_report_event;
 
@@ -38,10 +34,28 @@ pub(crate) mod parser {
         let (parameters, le_meta_event_code) = le_meta_event_code(input)?;
         match le_meta_event_code {
             LeMetaEventCode::LeAdvertisingReport => le_advertising_report_event(parameters),
-            LeMetaEventCode::Unsupported(_) => {
-                fail::<_, &[u8], _>().parse(parameters)?;
-                unreachable!("the fail parser will systematically return an error")
+            LeMetaEventCode::Unsupported(event_code) => {
+                Ok((&[], LeMetaEvent::Unsupported(event_code)))
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{packet::parser::packet, Event, LeMetaEvent, Packet};
+
+    #[test]
+    fn test_unsupported_le_meta_event_parsing() {
+        // Using LE Monitored Advertisers Report event
+        let (rest, packet) = packet(&[
+            0x04, 0x3E, 0x09, 0x34, 0x00, 0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56, 0x00,
+        ])
+        .unwrap();
+        assert!(matches!(
+            packet,
+            Packet::Event(Event::LeMeta(LeMetaEvent::Unsupported(0x34)))
+        ));
+        assert!(rest.is_empty());
     }
 }

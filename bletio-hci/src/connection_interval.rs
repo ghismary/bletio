@@ -20,6 +20,8 @@ impl ConnectionInterval {
             Ok(Self {
                 value: ConnectionIntervalType::Defined(value),
             })
+        } else if value == 0xFFFF {
+            Ok(Self::undefined())
         } else {
             Err(Error::InvalidConnectionIntervalValue(value))
         }
@@ -101,6 +103,7 @@ mod test {
     #[rstest]
     #[case(0x0006.try_into().unwrap(), 0x0006, Some(7.5f32))]
     #[case(ConnectionInterval::try_new(0x0C80).unwrap(), 0x0C80, Some(4000f32))]
+    #[case(ConnectionInterval::try_new(0xFFFF).unwrap(), 0xFFFF, None)]
     #[case(ConnectionInterval::undefined(), 0xFFFF, None)]
     #[case(ConnectionInterval::default(), 0xFFFF, None)]
     fn test_connection_interval_creation_success(
@@ -122,7 +125,7 @@ mod test {
     #[case(0x0000)]
     #[case(0x0005)]
     #[case(0x0C81)]
-    #[case(0xFFFF)]
+    #[case(0xFFFE)]
     fn test_connection_interval_creation_failure(#[case] input: u16) {
         let result = ConnectionInterval::try_new(input);
         assert_eq!(result, Err(Error::InvalidConnectionIntervalValue(input)));

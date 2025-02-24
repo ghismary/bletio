@@ -62,7 +62,9 @@ mod test {
     use bletio_utils::{Buffer, BufferOps};
     use rstest::rstest;
 
-    use super::*;
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::{parser::*, *};
 
     #[rstest]
     #[case(AppearanceValue::StandmountedSpeaker, &[0x03, 0x19, 0x44, 0x08])]
@@ -76,5 +78,28 @@ mod test {
         value.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
         Ok(())
+    }
+
+    #[rstest]
+    #[case(&[0x44, 0x08], AppearanceValue::StandmountedSpeaker)]
+    #[case(&[0x48, 0x0D], AppearanceValue::InsulinPen)]
+    fn test_appearance_ad_struct_parsing_success(
+        #[case] input: &[u8],
+        #[case] appearance: AppearanceValue,
+    ) {
+        assert_eq!(
+            appearance_ad_struct(input),
+            Ok((
+                &[] as &[u8],
+                AdStruct::Appearance(AppearanceAdStruct::new(appearance))
+            ))
+        );
+    }
+
+    #[rstest]
+    #[case(&[0xFF, 0xFF])]
+    #[case(&[0x03, 0x38])]
+    fn test_appearance_ad_struct_parsing_failure(#[case] input: &[u8]) {
+        assert!(appearance_ad_struct(input).is_err());
     }
 }

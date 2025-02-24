@@ -51,10 +51,10 @@ mod test {
     use bletio_utils::{Buffer, BufferOps};
     use rstest::rstest;
 
-    use crate::advertising::{custom_uri_scheme, AdvertisingError};
+    use crate::advertising::{ad_struct::AdStruct, custom_uri_scheme, AdvertisingError};
     use crate::assigned_numbers::ProvisionedUriScheme;
 
-    use super::*;
+    use super::{parser::*, *};
 
     #[rstest]
     #[case(
@@ -85,5 +85,34 @@ mod test {
             err,
             Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)
         );
+    }
+
+    #[rstest]
+    #[case(
+        &[0x16, 0x00, b'/', b'/', b'e', b'x', b'a', b'm', b'p', b'l', b'e', b'.', b'o', b'r', b'g', b'/'],
+        Uri::try_new(ProvisionedUriScheme::Http, "//example.org/").unwrap()
+    )]
+    #[case(
+        &[0x01, 0x00, b'c', b'u', b's', b't', b'o', b'm', b':', b'r', b'e', b's', b't'],
+        Uri::try_new(custom_uri_scheme!("custom"), "rest").unwrap()
+    )]
+    fn test_uri_ad_struct_parsing_success(#[case] input: &[u8], #[case] uri: Uri) {
+        assert_eq!(
+            uri_ad_struct(input),
+            Ok((&[] as &[u8], AdStruct::Uri(UriAdStruct::new(uri))))
+        );
+    }
+
+    #[rstest]
+    #[case(
+        &[0x16, 0x00, b'/', b'/', b'e', b'x', b'a', b'm', b'p', b'l', b'e', b'.', b'o', b'r', b'g', b'/', b'a', b'-', b'p',
+            b'a', b't', b'h', b'-', b't', b'h', b'a', b't', b'-', b'i', b's', b'-', b't', b'o', b'o', b'-', b'l', b'o', b'n', b'g']
+    )]
+    #[case(
+        &[0x01, 0x00, b'c', b'u', b's', b't', b'o', b'm', b':', b'a', b'-', b'h', b'i', b'e', b'r', b'-', b'p', b'a', b'r',
+            b't', b'-', b't', b'h', b'a', b't', b'-', b'i', b's', b'-', b't', b'o', b'o', b'-', b'l', b'o', b'n', b'g']
+    )]
+    fn test_uri_ad_struct_parsing_failure(#[case] input: &[u8]) {
+        assert!(uri_ad_struct(input).is_err());
     }
 }

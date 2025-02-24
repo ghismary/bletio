@@ -42,8 +42,8 @@ mod test {
     #[case(20)]
     #[case(0)]
     fn test_rssi_try_new_success(#[case] input: i8) {
-        let value = Rssi::try_new(input).unwrap();
-        assert_eq!(value.value(), input);
+        let value: Result<Rssi, _> = input.try_into();
+        assert_eq!(value.unwrap().value(), input);
     }
 
     #[rstest]
@@ -51,7 +51,7 @@ mod test {
     #[case(64)]
     #[case(127)]
     fn test_rssi_try_new_failure(#[case] input: i8) {
-        let err = Rssi::try_new(input);
+        let err: Result<Rssi, Error> = input.try_into();
         assert_eq!(err, Err(Error::InvalidRssiValue(input)));
     }
 }

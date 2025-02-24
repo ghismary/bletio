@@ -63,7 +63,9 @@ mod test {
     use bletio_utils::{Buffer, BufferOps};
     use rstest::rstest;
 
-    use super::*;
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::{parser::*, *};
 
     #[rstest]
     #[case(AdvertisingInterval::default(), &[0x03, 0x1A, 0x00, 0x08])]
@@ -78,5 +80,28 @@ mod test {
         value.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
         Ok(())
+    }
+
+    #[rstest]
+    #[case(&[0x20, 0x00], AdvertisingInterval::try_new(0x0020).unwrap())]
+    #[case(&[0x00, 0x40], AdvertisingInterval::try_new(0x4000).unwrap())]
+    fn test_advertising_interval_ad_struct_parsing_success(
+        #[case] input: &[u8],
+        #[case] interval: AdvertisingInterval,
+    ) {
+        assert_eq!(
+            advertising_interval_ad_struct(input),
+            Ok((
+                &[] as &[u8],
+                AdStruct::AdvertisingInterval(AdvertisingIntervalAdStruct::new(interval))
+            ))
+        );
+    }
+
+    #[rstest]
+    #[case(&[0x1F, 0x00])]
+    #[case(&[0x01, 0x40])]
+    fn test_advertising_interval_ad_struct_parsing_failure(#[case] input: &[u8]) {
+        assert!(advertising_interval_ad_struct(input).is_err());
     }
 }

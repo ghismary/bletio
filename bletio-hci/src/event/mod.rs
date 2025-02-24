@@ -91,6 +91,8 @@ pub(crate) mod parser {
 
 #[cfg(test)]
 mod test {
+    use crate::{packet::parser::packet, Packet};
+
     use super::*;
 
     #[test]
@@ -100,5 +102,19 @@ mod test {
 
         let event_code: EventCode = 0xFFu8.into();
         assert!(matches!(event_code, EventCode::Unsupported(0xFF)));
+    }
+
+    #[test]
+    fn test_event_list() {
+        let event_list = EventList::default();
+        assert_eq!(event_list.deref(), &event_list.events);
+    }
+
+    #[test]
+    fn test_unsupported_event_parsing() {
+        // Using Inquiry Complete event
+        let (rest, packet) = packet(&[4, 1, 1, 0]).unwrap();
+        assert!(matches!(packet, Packet::Event(Event::Unsupported(1))));
+        assert!(rest.is_empty());
     }
 }

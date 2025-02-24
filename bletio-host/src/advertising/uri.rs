@@ -311,8 +311,8 @@ impl From<CustomUriScheme> for UriScheme {
 pub(crate) mod parser {
     use nom::{
         branch::alt,
-        bytes::{take, take_till1},
-        combinator::{map, map_res, recognize, verify},
+        bytes::{tag, take, take_till1},
+        combinator::{map, map_res, verify},
         number::le_u16,
         IResult, Parser,
     };
@@ -324,12 +324,10 @@ pub(crate) mod parser {
             map_res(
                 (
                     verify(le_u16(), |value| *value == EMPTY_SCHEME_NAME_VALUE),
-                    map_res(
-                        recognize((take_till1(|b| b == b':'), take(1u8))),
-                        core::str::from_utf8,
-                    ),
+                    map_res(take_till1(|b| b == b':'), core::str::from_utf8),
+                    tag([b':'].as_slice()),
                 ),
-                |(_, scheme)| CustomUriScheme::try_new(scheme),
+                |(_, scheme, _)| CustomUriScheme::try_new(scheme),
             ),
             Into::into,
         )
@@ -368,7 +366,7 @@ mod test {
     use bletio_utils::{Buffer, BufferOps};
     use rstest::rstest;
 
-    use super::*;
+    use super::{parser::*, *};
 
     #[test]
     fn test_check_custom_uri_scheme_is_not_empty() {
@@ -410,6 +408,15 @@ mod test {
     }
 
     #[test]
+    fn test_check_custom_uri_scheme_is_not_too_long() {
+        assert!(check_custom_uri_scheme_is_not_too_long("custom"));
+        assert!(!check_custom_uri_scheme_is_not_too_long(
+            "a-very-very-long-uri-scheme"
+        ));
+        assert!(check_custom_uri_scheme_is_not_too_long(""));
+    }
+
+    #[test]
     fn test_custom_uri_scheme() {
         let scheme = custom_uri_scheme!("custom");
         assert_eq!(scheme.scheme, "custom");
@@ -442,6 +449,12 @@ mod test {
 
     #[test]
     fn test_uri_scheme_failure() {
+        let err = CustomUriScheme::try_new("very-very-long-custom-scheme");
+        assert_eq!(
+            err,
+            Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket),
+        );
+
         let mut buffer = Buffer::<12>::default();
         let uri_scheme: UriScheme = custom_uri_scheme!("very-long-custom-scheme").into();
         let err = uri_scheme.encode(&mut buffer);
@@ -475,5 +488,31 @@ mod test {
             err,
             Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)
         );
+    }
+
+    #[rstest]
+    #[case(
+        &[0x16, 0x00, b'/', b'/', b'e', b'x', b'a', b'm', b'p', b'l', b'e', b'.', b'o', b'r', b'g', b'/'],
+        Uri::try_new(ProvisionedUriScheme::Http, "//example.org/").unwrap()
+    )]
+    #[case(
+        &[0x01, 0x00, b'c', b'u', b's', b't', b'o', b'm', b':', b'r', b'e', b's', b't'],
+        Uri::try_new(custom_uri_scheme!("custom"), "rest").unwrap()
+    )]
+    fn test_uri_parsing_success(#[case] input: &[u8], #[case] expected_uri: Uri) {
+        assert_eq!(uri(input), Ok((&[] as &[u8], expected_uri)));
+    }
+
+    #[rstest]
+    #[case(
+        &[0x16, 0x00, b'/', b'/', b'e', b'x', b'a', b'm', b'p', b'l', b'e', b'.', b'o', b'r', b'g', b'/', b'a', b'-', b'p',
+            b'a', b't', b'h', b'-', b't', b'h', b'a', b't', b'-', b'i', b's', b'-', b't', b'o', b'o', b'-', b'l', b'o', b'n', b'g']
+    )]
+    #[case(
+        &[0x01, 0x00, b'c', b'u', b's', b't', b'o', b'm', b':', b'a', b'-', b'h', b'i', b'e', b'r', b'-', b'p', b'a', b'r',
+            b't', b'-', b't', b'h', b'a', b't', b'-', b'i', b's', b'-', b't', b'o', b'o', b'-', b'l', b'o', b'n', b'g']
+    )]
+    fn test_uri_parsing_failure(#[case] input: &[u8]) {
+        assert!(uri(input).is_err());
     }
 }

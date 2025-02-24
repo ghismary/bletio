@@ -66,7 +66,7 @@ pub(crate) mod parser {
 
     pub(crate) fn random_target_address_ad_struct(mut input: &[u8]) -> IResult<&[u8], AdStruct> {
         let len = input.len() / 6;
-        if len > RANDOM_TARGET_ADDRESS_NB_MAX_ADDRESSES {
+        if (len > RANDOM_TARGET_ADDRESS_NB_MAX_ADDRESSES) || ((input.len() % 6) != 0) {
             fail::<_, &[u8], _>().parse(input)?;
         }
         let mut ad_struct = RandomTargetAddressAdStruct {
@@ -91,7 +91,9 @@ mod test {
     use bletio_utils::{Buffer, BufferOps};
     use rstest::rstest;
 
-    use super::*;
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::{parser::*, *};
 
     #[rstest]
     #[case(
@@ -149,5 +151,39 @@ mod test {
             err,
             Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)
         );
+    }
+
+    #[rstest]
+    #[case(&[0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7], &[RandomStaticDeviceAddress::try_new([0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7]).unwrap().into()])]
+    #[case(
+        &[0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0x77, 0xFE, 0x92, 0x2F, 0x0F, 0x4B, 0xD2],
+        &[RandomResolvablePrivateAddress::try_new([0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0x77]).unwrap().into(),
+            RandomStaticDeviceAddress::try_new([0xFE, 0x92, 0x2F, 0x0F, 0x4B, 0xD2]).unwrap().into()]
+    )]
+    fn test_public_target_address_ad_struct_parsing_success(
+        #[case] input: &[u8],
+        #[case] addresses: &[RandomAddress],
+    ) {
+        assert_eq!(
+            random_target_address_ad_struct(input),
+            Ok((
+                &[] as &[u8],
+                AdStruct::RandomTargetAddress(
+                    RandomTargetAddressAdStruct::try_new(addresses).unwrap()
+                )
+            ))
+        );
+    }
+
+    #[rstest]
+    #[case(
+        &[0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7, 0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0x77, 0xFE, 0x92, 0x2F, 0x0F, 0x4B, 0xD2,
+            0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7, 0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0x77]
+    )]
+    #[case(
+        &[0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7, 0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0x77, 0xFE, 0x92]
+    )]
+    fn test_public_target_address_ad_struct_parsing_failure(#[case] input: &[u8]) {
+        assert!(random_target_address_ad_struct(input).is_err());
     }
 }

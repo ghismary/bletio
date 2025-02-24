@@ -71,7 +71,9 @@ mod test {
     use bletio_utils::{Buffer, BufferOps};
     use rstest::rstest;
 
-    use super::*;
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::{parser::*, *};
 
     #[rstest]
     #[case(SupportedLeFeatures::default(), &[0x01, 0x27])]
@@ -90,5 +92,25 @@ mod test {
         value.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
         Ok(())
+    }
+
+    #[rstest]
+    #[case(&[0x40], SupportedLeFeatures::LL_PRIVACY)]
+    #[case(&[0x00, 0x09], SupportedLeFeatures::LE_2M_PHY | SupportedLeFeatures::LE_CODED_PHY)]
+    #[case(
+        &[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x01],
+        SupportedLeFeatures::LL_EXTENDED_FEATURE_SET | SupportedLeFeatures::MONITORING_ADVERTISERS
+    )]
+    fn test_le_supported_features_ad_struct_parsing(
+        #[case] input: &[u8],
+        #[case] features: SupportedLeFeatures,
+    ) {
+        assert_eq!(
+            le_supported_features_ad_struct(input),
+            Ok((
+                &[] as &[u8],
+                AdStruct::LeSupportedFeatures(LeSupportedFeaturesAdStruct::new(features))
+            ))
+        );
     }
 }

@@ -90,7 +90,9 @@ mod test {
     use bletio_utils::{Buffer, BufferOps};
     use rstest::rstest;
 
-    use super::*;
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::{parser::*, *};
 
     #[test]
     fn test_flags() {
@@ -112,5 +114,16 @@ mod test {
         value.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
         Ok(())
+    }
+
+    #[rstest]
+    #[case(&[0x04], Flags::BREDR_NOT_SUPPORTED)]
+    #[case(&[0x06], Flags::LE_GENERAL_DISCOVERABLE_MODE | Flags::BREDR_NOT_SUPPORTED)]
+    #[case(&[0xFF], Flags::all())]
+    fn test_flags_ad_struct_parsing(#[case] input: &[u8], #[case] flags: Flags) {
+        assert_eq!(
+            flags_ad_struct(input),
+            Ok((&[] as &[u8], AdStruct::Flags(FlagsAdStruct::new(flags))))
+        );
     }
 }
