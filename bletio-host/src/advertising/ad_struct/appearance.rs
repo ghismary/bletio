@@ -20,6 +20,10 @@ impl AppearanceAdStruct {
     pub(crate) const fn new(appearance: AppearanceValue) -> Self {
         Self { appearance }
     }
+
+    pub fn value(&self) -> AppearanceValue {
+        self.appearance
+    }
 }
 
 impl EncodeToBuffer for AppearanceAdStruct {
@@ -74,9 +78,10 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<4>::default();
-        let value = AppearanceAdStruct::new(appearance);
-        value.encode(&mut buffer)?;
+        let ad_struct = AppearanceAdStruct::new(appearance);
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.value(), appearance);
         Ok(())
     }
 

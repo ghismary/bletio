@@ -1,3 +1,5 @@
+use core::ops::Deref;
+
 use bletio_hci::RandomAddress;
 use bletio_utils::EncodeToBuffer;
 use heapless::Vec;
@@ -32,6 +34,14 @@ impl RandomTargetAddressAdStruct {
                     .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?,
             })
         }
+    }
+}
+
+impl Deref for RandomTargetAddressAdStruct {
+    type Target = Vec<RandomAddress, RANDOM_TARGET_ADDRESS_NB_MAX_ADDRESSES>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.addresses
     }
 }
 
@@ -109,9 +119,10 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<31>::default();
-        let value = RandomTargetAddressAdStruct::try_new(addresses).unwrap();
-        value.encode(&mut buffer)?;
+        let ad_struct = RandomTargetAddressAdStruct::try_new(addresses).unwrap();
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.iter().count(), addresses.len());
         Ok(())
     }
 

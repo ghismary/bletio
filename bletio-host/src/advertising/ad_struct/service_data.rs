@@ -28,6 +28,14 @@ impl ServiceDataUuid16AdStruct {
                 .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?,
         })
     }
+
+    pub fn uuid(&self) -> ServiceUuid {
+        self.uuid
+    }
+
+    pub fn data(&self) -> &[u8] {
+        self.data.as_slice()
+    }
 }
 
 impl EncodeToBuffer for ServiceDataUuid16AdStruct {
@@ -66,6 +74,14 @@ impl ServiceDataUuid32AdStruct {
                 .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?,
         })
     }
+
+    pub fn uuid(&self) -> Uuid32 {
+        self.uuid
+    }
+
+    pub fn data(&self) -> &[u8] {
+        self.data.as_slice()
+    }
 }
 
 impl EncodeToBuffer for ServiceDataUuid32AdStruct {
@@ -103,6 +119,14 @@ impl ServiceDataUuid128AdStruct {
                 .try_into()
                 .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?,
         })
+    }
+
+    pub fn uuid(&self) -> Uuid128 {
+        self.uuid
+    }
+
+    pub fn data(&self) -> &[u8] {
+        self.data.as_slice()
     }
 }
 
@@ -198,9 +222,11 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<31>::default();
-        let value = ServiceDataUuid16AdStruct::try_new(uuid, data).unwrap();
-        value.encode(&mut buffer)?;
+        let ad_struct = ServiceDataUuid16AdStruct::try_new(uuid, data).unwrap();
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.uuid(), uuid);
+        assert_eq!(ad_struct.data(), data);
         Ok(())
     }
 
@@ -228,9 +254,11 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<31>::default();
-        let value = ServiceDataUuid32AdStruct::try_new(uuid, data).unwrap();
-        value.encode(&mut buffer)?;
+        let ad_struct = ServiceDataUuid32AdStruct::try_new(uuid, data).unwrap();
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.uuid(), uuid);
+        assert_eq!(ad_struct.data(), data);
         Ok(())
     }
 
@@ -255,9 +283,11 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<31>::default();
-        let value = ServiceDataUuid128AdStruct::try_new(uuid, data).unwrap();
-        value.encode(&mut buffer)?;
+        let ad_struct = ServiceDataUuid128AdStruct::try_new(uuid, data).unwrap();
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.uuid(), uuid);
+        assert_eq!(ad_struct.data(), data);
         Ok(())
     }
 

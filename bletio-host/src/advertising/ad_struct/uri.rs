@@ -16,6 +16,10 @@ impl UriAdStruct {
     pub(crate) const fn new(uri: Uri) -> Self {
         Self { uri }
     }
+
+    pub fn value(&self) -> &Uri {
+        &self.uri
+    }
 }
 
 impl EncodeToBuffer for UriAdStruct {
@@ -70,10 +74,11 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<24>::default();
-        let value = UriAdStruct::new(uri);
-        assert_eq!(value.encoded_size(), encoded_data.len());
-        value.encode(&mut buffer)?;
+        let ad_struct = UriAdStruct::new(uri.clone());
+        assert_eq!(ad_struct.encoded_size(), encoded_data.len());
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.value(), &uri);
         Ok(())
     }
 

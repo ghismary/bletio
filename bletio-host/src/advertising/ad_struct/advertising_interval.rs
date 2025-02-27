@@ -21,6 +21,10 @@ impl AdvertisingIntervalAdStruct {
     pub(crate) const fn new(interval: AdvertisingInterval) -> Self {
         Self { interval }
     }
+
+    pub fn value(&self) -> AdvertisingInterval {
+        self.interval
+    }
 }
 
 impl EncodeToBuffer for AdvertisingIntervalAdStruct {
@@ -76,9 +80,10 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<4>::default();
-        let value = AdvertisingIntervalAdStruct::new(interval);
-        value.encode(&mut buffer)?;
+        let ad_struct = AdvertisingIntervalAdStruct::new(interval);
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.value(), interval);
         Ok(())
     }
 

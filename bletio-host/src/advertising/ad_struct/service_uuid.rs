@@ -1,3 +1,5 @@
+use core::ops::Deref;
+
 use bletio_utils::EncodeToBuffer;
 use heapless::Vec;
 
@@ -26,7 +28,7 @@ pub enum ServiceListComplete {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ServiceUuid16AdStruct {
     uuids: Vec<ServiceUuid, SERVICE_UUID16_NB_MAX>,
-    ad_type: AdType,
+    complete: ServiceListComplete,
 }
 
 impl ServiceUuid16AdStruct {
@@ -38,11 +40,15 @@ impl ServiceUuid16AdStruct {
             return Err(AdvertisingError::EmptyServiceUuidListShallBeComplete);
         }
         Ok(Self {
-            ad_type: Self::ad_type(complete),
+            complete,
             uuids: uuids
                 .try_into()
                 .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?,
         })
+    }
+
+    pub fn complete(&self) -> ServiceListComplete {
+        self.complete
     }
 
     const fn ad_type(complete: ServiceListComplete) -> AdType {
@@ -53,13 +59,21 @@ impl ServiceUuid16AdStruct {
     }
 }
 
+impl Deref for ServiceUuid16AdStruct {
+    type Target = Vec<ServiceUuid, SERVICE_UUID16_NB_MAX>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.uuids
+    }
+}
+
 impl EncodeToBuffer for ServiceUuid16AdStruct {
     fn encode<B: bletio_utils::BufferOps>(
         &self,
         buffer: &mut B,
     ) -> Result<usize, bletio_utils::Error> {
         buffer.try_push((self.encoded_size() - 1) as u8)?;
-        buffer.try_push(self.ad_type as u8)?;
+        buffer.try_push(Self::ad_type(self.complete) as u8)?;
         for uuid in self.uuids.iter() {
             buffer.encode_le_u16(*uuid as u16)?;
         }
@@ -79,7 +93,7 @@ impl EncodeToBuffer for ServiceUuid16AdStruct {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ServiceUuid32AdStruct {
     uuids: Vec<Uuid32, SERVICE_UUID32_NB_MAX>,
-    ad_type: AdType,
+    complete: ServiceListComplete,
 }
 
 impl ServiceUuid32AdStruct {
@@ -91,11 +105,15 @@ impl ServiceUuid32AdStruct {
             return Err(AdvertisingError::EmptyServiceUuidListShallBeComplete);
         }
         Ok(Self {
-            ad_type: Self::ad_type(complete),
+            complete,
             uuids: uuids
                 .try_into()
                 .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?,
         })
+    }
+
+    pub fn complete(&self) -> ServiceListComplete {
+        self.complete
     }
 
     const fn ad_type(complete: ServiceListComplete) -> AdType {
@@ -106,13 +124,21 @@ impl ServiceUuid32AdStruct {
     }
 }
 
+impl Deref for ServiceUuid32AdStruct {
+    type Target = Vec<Uuid32, SERVICE_UUID32_NB_MAX>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.uuids
+    }
+}
+
 impl EncodeToBuffer for ServiceUuid32AdStruct {
     fn encode<B: bletio_utils::BufferOps>(
         &self,
         buffer: &mut B,
     ) -> Result<usize, bletio_utils::Error> {
         buffer.try_push((self.encoded_size() - 1) as u8)?;
-        buffer.try_push(self.ad_type as u8)?;
+        buffer.try_push(Self::ad_type(self.complete) as u8)?;
         for uuid in self.uuids.iter() {
             buffer.encode_le_u32(uuid.0)?;
         }
@@ -132,7 +158,7 @@ impl EncodeToBuffer for ServiceUuid32AdStruct {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ServiceUuid128AdStruct {
     uuids: Vec<Uuid128, SERVICE_UUID128_NB_MAX>,
-    ad_type: AdType,
+    complete: ServiceListComplete,
 }
 
 impl ServiceUuid128AdStruct {
@@ -144,11 +170,15 @@ impl ServiceUuid128AdStruct {
             return Err(AdvertisingError::EmptyServiceUuidListShallBeComplete);
         }
         Ok(Self {
-            ad_type: Self::ad_type(complete),
+            complete,
             uuids: uuids
                 .try_into()
                 .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?,
         })
+    }
+
+    pub fn complete(&self) -> ServiceListComplete {
+        self.complete
     }
 
     const fn ad_type(complete: ServiceListComplete) -> AdType {
@@ -159,13 +189,21 @@ impl ServiceUuid128AdStruct {
     }
 }
 
+impl Deref for ServiceUuid128AdStruct {
+    type Target = Vec<Uuid128, SERVICE_UUID128_NB_MAX>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.uuids
+    }
+}
+
 impl EncodeToBuffer for ServiceUuid128AdStruct {
     fn encode<B: bletio_utils::BufferOps>(
         &self,
         buffer: &mut B,
     ) -> Result<usize, bletio_utils::Error> {
         buffer.try_push((self.encoded_size() - 1) as u8)?;
-        buffer.try_push(self.ad_type as u8)?;
+        buffer.try_push(Self::ad_type(self.complete) as u8)?;
         for uuid in self.uuids.iter() {
             buffer.encode_le_u128(uuid.0)?;
         }
@@ -195,7 +233,7 @@ pub(crate) mod parser {
         }
         let mut ad_struct = ServiceUuid16AdStruct {
             uuids: Default::default(),
-            ad_type: AdType::CompleteListOfServiceUuid16,
+            complete: ServiceListComplete::Complete,
         };
         let mut index = 0;
         while index < len {
@@ -216,7 +254,7 @@ pub(crate) mod parser {
         }
         let mut ad_struct = ServiceUuid16AdStruct {
             uuids: Default::default(),
-            ad_type: AdType::IncompleteListOfServiceUuid16,
+            complete: ServiceListComplete::Incomplete,
         };
         let mut index = 0;
         while index < len {
@@ -237,7 +275,7 @@ pub(crate) mod parser {
         }
         let mut ad_struct = ServiceUuid32AdStruct {
             uuids: Default::default(),
-            ad_type: AdType::CompleteListOfServiceUuid32,
+            complete: ServiceListComplete::Complete,
         };
         let mut index = 0;
         while index < len {
@@ -257,7 +295,7 @@ pub(crate) mod parser {
         }
         let mut ad_struct = ServiceUuid32AdStruct {
             uuids: Default::default(),
-            ad_type: AdType::IncompleteListOfServiceUuid32,
+            complete: ServiceListComplete::Incomplete,
         };
         let mut index = 0;
         while index < len {
@@ -277,7 +315,7 @@ pub(crate) mod parser {
         }
         let mut ad_struct = ServiceUuid128AdStruct {
             uuids: Default::default(),
-            ad_type: AdType::CompleteListOfServiceUuid128,
+            complete: ServiceListComplete::Complete,
         };
         let mut index = 0;
         while index < len {
@@ -297,7 +335,7 @@ pub(crate) mod parser {
         }
         let mut ad_struct = ServiceUuid128AdStruct {
             uuids: Default::default(),
-            ad_type: AdType::IncompleteListOfServiceUuid128,
+            complete: ServiceListComplete::Incomplete,
         };
         let mut index = 0;
         while index < len {
@@ -361,11 +399,13 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<31>::default();
-        let value = ServiceUuid16AdStruct::try_new(uuids, complete).unwrap();
-        assert_eq!(value.uuids, uuids);
-        assert_eq!(value.ad_type, ad_type);
-        value.encode(&mut buffer)?;
+        let ad_struct = ServiceUuid16AdStruct::try_new(uuids, complete).unwrap();
+        assert_eq!(ad_struct.uuids, uuids);
+        assert_eq!(ServiceUuid16AdStruct::ad_type(ad_struct.complete), ad_type);
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.complete(), complete);
+        assert_eq!(ad_struct.iter().count(), uuids.len());
         Ok(())
     }
 
@@ -422,11 +462,13 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<31>::default();
-        let value = ServiceUuid32AdStruct::try_new(uuids, complete).unwrap();
-        assert_eq!(value.uuids, uuids);
-        assert_eq!(value.ad_type, ad_type);
-        value.encode(&mut buffer)?;
+        let ad_struct = ServiceUuid32AdStruct::try_new(uuids, complete).unwrap();
+        assert_eq!(ad_struct.uuids, uuids);
+        assert_eq!(ServiceUuid32AdStruct::ad_type(ad_struct.complete), ad_type);
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.complete(), complete);
+        assert_eq!(ad_struct.iter().count(), uuids.len());
         Ok(())
     }
 
@@ -476,11 +518,13 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<31>::default();
-        let value = ServiceUuid128AdStruct::try_new(uuids, complete).unwrap();
-        assert_eq!(value.uuids, uuids);
-        assert_eq!(value.ad_type, ad_type);
-        value.encode(&mut buffer)?;
+        let ad_struct = ServiceUuid128AdStruct::try_new(uuids, complete).unwrap();
+        assert_eq!(ad_struct.uuids, uuids);
+        assert_eq!(ServiceUuid128AdStruct::ad_type(ad_struct.complete), ad_type);
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.complete(), complete);
+        assert_eq!(ad_struct.iter().count(), uuids.len());
         Ok(())
     }
 

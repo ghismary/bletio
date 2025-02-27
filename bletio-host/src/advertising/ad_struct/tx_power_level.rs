@@ -21,6 +21,10 @@ impl TxPowerLevelAdStruct {
     pub(crate) const fn new(tx_power_level: TxPowerLevel) -> Self {
         Self { tx_power_level }
     }
+
+    pub fn value(&self) -> TxPowerLevel {
+        self.tx_power_level
+    }
 }
 
 impl EncodeToBuffer for TxPowerLevelAdStruct {
@@ -78,10 +82,12 @@ mod test {
         #[case] tx_power_level: i8,
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
+        let tx_power_level = TxPowerLevel::try_new(tx_power_level).unwrap();
         let mut buffer = Buffer::<3>::default();
-        let value = TxPowerLevelAdStruct::new(TxPowerLevel::try_new(tx_power_level).unwrap());
-        value.encode(&mut buffer)?;
+        let ad_struct = TxPowerLevelAdStruct::new(tx_power_level);
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.value(), tx_power_level);
         Ok(())
     }
 }

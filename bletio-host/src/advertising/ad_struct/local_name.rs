@@ -58,6 +58,14 @@ impl LocalNameAdStruct {
         })
     }
 
+    pub fn value(&self) -> &str {
+        self.local_name.as_str()
+    }
+
+    pub fn complete(&self) -> LocalNameComplete {
+        self.complete
+    }
+
     fn len(&self) -> usize {
         self.local_name.len()
     }
@@ -127,21 +135,24 @@ mod test {
     use super::{parser::*, *};
 
     #[rstest]
-    #[case("", LocalNameComplete::Complete, &[0x01, 0x09])]
-    #[case("", LocalNameComplete::Shortened(3), &[0x04, 0x08, b' ', b' ', b' '])]
-    #[case("bletio", LocalNameComplete::Complete, &[0x07, 0x09, b'b', b'l', b'e', b't', b'i', b'o'])]
-    #[case("bletio", LocalNameComplete::Shortened(3), &[0x04, 0x08, b'b', b'l', b'e'])]
-    #[case("bletio", LocalNameComplete::Shortened(5), &[0x06, 0x08, b'b', b'l', b'e', b't', b'i'])]
-    #[case("bletio", LocalNameComplete::Shortened(8), &[0x09, 0x08, b'b', b'l', b'e', b't', b'i', b'o', b' ', b' '])]
+    #[case("", LocalNameComplete::Complete, "", &[0x01, 0x09])]
+    #[case("", LocalNameComplete::Shortened(3), "   ", &[0x04, 0x08, b' ', b' ', b' '])]
+    #[case("bletio", LocalNameComplete::Complete, "bletio", &[0x07, 0x09, b'b', b'l', b'e', b't', b'i', b'o'])]
+    #[case("bletio", LocalNameComplete::Shortened(3), "ble", &[0x04, 0x08, b'b', b'l', b'e'])]
+    #[case("bletio", LocalNameComplete::Shortened(5), "bleti", &[0x06, 0x08, b'b', b'l', b'e', b't', b'i'])]
+    #[case("bletio", LocalNameComplete::Shortened(8), "bletio  ", &[0x09, 0x08, b'b', b'l', b'e', b't', b'i', b'o', b' ', b' '])]
     fn test_local_name_ad_struct_success(
         #[case] local_name: &str,
         #[case] complete: LocalNameComplete,
+        #[case] encoded_local_name: &str,
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<10>::default();
-        let value = LocalNameAdStruct::try_new(local_name, complete).unwrap();
-        value.encode(&mut buffer)?;
+        let ad_struct = LocalNameAdStruct::try_new(local_name, complete).unwrap();
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.value(), encoded_local_name);
+        assert_eq!(ad_struct.complete(), complete);
         Ok(())
     }
 

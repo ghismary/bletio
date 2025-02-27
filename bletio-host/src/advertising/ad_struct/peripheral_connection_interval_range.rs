@@ -21,6 +21,10 @@ impl PeripheralConnectionIntervalRangeAdStruct {
     pub(crate) const fn new(range: RangeInclusive<ConnectionInterval>) -> Self {
         Self { range }
     }
+
+    pub fn value(&self) -> RangeInclusive<ConnectionInterval> {
+        self.range.clone()
+    }
 }
 
 impl EncodeToBuffer for PeripheralConnectionIntervalRangeAdStruct {
@@ -85,19 +89,31 @@ mod test {
     use super::{parser::*, *};
 
     #[rstest]
-    #[case(0x0006.try_into().unwrap()..=0x0C80.try_into().unwrap(), &[0x05, 0x12, 0x06, 0x00, 0x80, 0x0C])]
-    #[case(ConnectionInterval::undefined()..=0x0C80.try_into().unwrap(), &[0x05, 0x12, 0xFF, 0xFF, 0x80, 0x0C])]
-    #[case(0x0006.try_into().unwrap()..=ConnectionInterval::undefined(), &[0x05, 0x12, 0x06, 0x00, 0xFF, 0xFF])]
-    #[case(ConnectionInterval::undefined()..=ConnectionInterval::undefined(), &[0x05, 0x12, 0xFF, 0xFF, 0xFF, 0xFF])]
-    #[case(0x0010.try_into().unwrap()..=0x0010.try_into().unwrap(), &[0x05, 0x12, 0x10, 0x00, 0x10, 0x00])]
+    #[case(
+        0x0006.try_into().unwrap()..=0x0C80.try_into().unwrap(),
+        Some(0x0006.try_into().unwrap()..=0x0C80.try_into().unwrap()),
+        &[0x05, 0x12, 0x06, 0x00, 0x80, 0x0C]
+    )]
+    #[case(ConnectionInterval::undefined()..=0x0C80.try_into().unwrap(), None, &[0x05, 0x12, 0xFF, 0xFF, 0x80, 0x0C])]
+    #[case(0x0006.try_into().unwrap()..=ConnectionInterval::undefined(), None, &[0x05, 0x12, 0x06, 0x00, 0xFF, 0xFF])]
+    #[case(ConnectionInterval::undefined()..=ConnectionInterval::undefined(), None, &[0x05, 0x12, 0xFF, 0xFF, 0xFF, 0xFF])]
+    #[case(
+        0x0010.try_into().unwrap()..=0x0010.try_into().unwrap(),
+        Some(0x0010.try_into().unwrap()..=0x0010.try_into().unwrap()),
+        &[0x05, 0x12, 0x10, 0x00, 0x10, 0x00]
+    )]
     fn test_peripheral_connection_interval_range_ad_struct(
         #[case] range: RangeInclusive<ConnectionInterval>,
+        #[case] expected_range: Option<RangeInclusive<ConnectionInterval>>,
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<6>::default();
-        let value = PeripheralConnectionIntervalRangeAdStruct::new(range);
-        value.encode(&mut buffer)?;
+        let ad_struct = PeripheralConnectionIntervalRangeAdStruct::new(range.clone());
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        if let Some(range) = expected_range {
+            assert_eq!(ad_struct.value(), range);
+        }
         Ok(())
     }
 

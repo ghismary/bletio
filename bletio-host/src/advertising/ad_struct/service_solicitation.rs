@@ -1,3 +1,5 @@
+use core::ops::Deref;
+
 use bletio_utils::EncodeToBuffer;
 use heapless::Vec;
 
@@ -30,6 +32,14 @@ impl ServiceSolicitationUuid16AdStruct {
                 .try_into()
                 .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?,
         })
+    }
+}
+
+impl Deref for ServiceSolicitationUuid16AdStruct {
+    type Target = Vec<ServiceUuid, SERVICE_SOLICITATION_UUID16_NB_MAX>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.uuids
     }
 }
 
@@ -75,6 +85,14 @@ impl ServiceSolicitationUuid32AdStruct {
     }
 }
 
+impl Deref for ServiceSolicitationUuid32AdStruct {
+    type Target = Vec<Uuid32, SERVICE_SOLICITATION_UUID32_NB_MAX>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.uuids
+    }
+}
+
 impl EncodeToBuffer for ServiceSolicitationUuid32AdStruct {
     fn encode<B: bletio_utils::BufferOps>(
         &self,
@@ -114,6 +132,14 @@ impl ServiceSolicitationUuid128AdStruct {
                 .try_into()
                 .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?,
         })
+    }
+}
+
+impl Deref for ServiceSolicitationUuid128AdStruct {
+    type Target = Vec<Uuid128, SERVICE_SOLICITATION_UUID128_NB_MAX>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.uuids
     }
 }
 
@@ -228,9 +254,10 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<31>::default();
-        let value = ServiceSolicitationUuid16AdStruct::try_new(uuids).unwrap();
-        value.encode(&mut buffer)?;
+        let ad_struct = ServiceSolicitationUuid16AdStruct::try_new(uuids).unwrap();
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.iter().count(), uuids.len());
         Ok(())
     }
 
@@ -271,9 +298,10 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<31>::default();
-        let value = ServiceSolicitationUuid32AdStruct::try_new(uuids).unwrap();
-        value.encode(&mut buffer)?;
+        let ad_struct = ServiceSolicitationUuid32AdStruct::try_new(uuids).unwrap();
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.iter().count(), uuids.len());
         Ok(())
     }
 
@@ -306,9 +334,10 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<31>::default();
-        let value = ServiceSolicitationUuid128AdStruct::try_new(uuids).unwrap();
-        value.encode(&mut buffer)?;
+        let ad_struct = ServiceSolicitationUuid128AdStruct::try_new(uuids).unwrap();
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.iter().count(), uuids.len());
         Ok(())
     }
 

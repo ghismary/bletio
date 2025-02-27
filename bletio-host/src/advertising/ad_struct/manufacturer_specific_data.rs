@@ -33,6 +33,14 @@ impl ManufacturerSpecificDataAdStruct {
                 .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?,
         })
     }
+
+    pub fn manufacturer(&self) -> CompanyIdentifier {
+        self.manufacturer
+    }
+
+    pub fn data(&self) -> &[u8] {
+        self.data.as_slice()
+    }
 }
 
 impl EncodeToBuffer for ManufacturerSpecificDataAdStruct {
@@ -111,9 +119,11 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<31>::default();
-        let value = ManufacturerSpecificDataAdStruct::try_new(manufacturer, data).unwrap();
-        value.encode(&mut buffer)?;
+        let ad_struct = ManufacturerSpecificDataAdStruct::try_new(manufacturer, data).unwrap();
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.manufacturer(), manufacturer);
+        assert_eq!(ad_struct.data(), data);
         Ok(())
     }
 

@@ -26,6 +26,10 @@ impl FlagsAdStruct {
     pub(crate) const fn new(flags: Flags) -> Self {
         Self { flags }
     }
+
+    pub fn value(&self) -> Flags {
+        self.flags
+    }
 }
 
 impl EncodeToBuffer for FlagsAdStruct {
@@ -110,9 +114,10 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<3>::default();
-        let value = FlagsAdStruct::new(flags);
-        value.encode(&mut buffer)?;
+        let ad_struct = FlagsAdStruct::new(flags);
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.value(), flags);
         Ok(())
     }
 

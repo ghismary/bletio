@@ -21,6 +21,10 @@ impl LeSupportedFeaturesAdStruct {
         Self { features }
     }
 
+    pub fn value(&self) -> SupportedLeFeatures {
+        self.features
+    }
+
     fn last_non_zero_index(&self) -> Option<usize> {
         self.features.bits().0.iter().rposition(|v| *v != 0)
     }
@@ -88,9 +92,10 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<11>::default();
-        let value = LeSupportedFeaturesAdStruct::new(features);
-        value.encode(&mut buffer)?;
+        let ad_struct = LeSupportedFeaturesAdStruct::new(features);
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.value(), features);
         Ok(())
     }
 
