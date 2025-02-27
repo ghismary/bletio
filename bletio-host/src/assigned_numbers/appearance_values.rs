@@ -2,8 +2,13 @@
 //!
 //! FILE GENERATED FROM REVISION efc887857333456bda4ac2762443a7a86c99a27b OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+use num_enum::{IntoPrimitive, TryFromPrimitive};
+
+use crate::advertising::AdvertisingError;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, IntoPrimitive, TryFromPrimitive)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[num_enum(error_type(name = AdvertisingError, constructor = AdvertisingError::InvalidAppearanceValue))]
 #[repr(u16)]
 #[allow(dead_code)]
 #[non_exhaustive]

@@ -12,13 +12,17 @@ use crate::assigned_numbers::AdType;
 /// [Core Specification 6.0, Vol. 6, Part B, 4.6](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/low-energy-controller/link-layer-specification.html#UUID-25d414b5-8c50-cd46-fd17-80f0f816f354).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct LeSupportedFeaturesAdStruct {
+pub struct LeSupportedFeaturesAdStruct {
     features: SupportedLeFeatures,
 }
 
 impl LeSupportedFeaturesAdStruct {
     pub(crate) const fn new(features: SupportedLeFeatures) -> Self {
         Self { features }
+    }
+
+    pub fn value(&self) -> SupportedLeFeatures {
+        self.features
     }
 
     fn last_non_zero_index(&self) -> Option<usize> {
@@ -51,12 +55,29 @@ impl EncodeToBuffer for LeSupportedFeaturesAdStruct {
     }
 }
 
+pub(crate) mod parser {
+    use nom::{bytes::take, combinator::map, IResult, Parser};
+
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::*;
+
+    pub(crate) fn le_supported_features_ad_struct(input: &[u8]) -> IResult<&[u8], AdStruct> {
+        map(map(take(input.len()), Into::into), |features| {
+            AdStruct::LeSupportedFeatures(LeSupportedFeaturesAdStruct::new(features))
+        })
+        .parse(input)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use bletio_utils::{Buffer, BufferOps};
     use rstest::rstest;
 
-    use super::*;
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::{parser::*, *};
 
     #[rstest]
     #[case(SupportedLeFeatures::default(), &[0x01, 0x27])]
@@ -71,9 +92,30 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<11>::default();
-        let value = LeSupportedFeaturesAdStruct::new(features);
-        value.encode(&mut buffer)?;
+        let ad_struct = LeSupportedFeaturesAdStruct::new(features);
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.value(), features);
         Ok(())
+    }
+
+    #[rstest]
+    #[case(&[0x40], SupportedLeFeatures::LL_PRIVACY)]
+    #[case(&[0x00, 0x09], SupportedLeFeatures::LE_2M_PHY | SupportedLeFeatures::LE_CODED_PHY)]
+    #[case(
+        &[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x01],
+        SupportedLeFeatures::LL_EXTENDED_FEATURE_SET | SupportedLeFeatures::MONITORING_ADVERTISERS
+    )]
+    fn test_le_supported_features_ad_struct_parsing(
+        #[case] input: &[u8],
+        #[case] features: SupportedLeFeatures,
+    ) {
+        assert_eq!(
+            le_supported_features_ad_struct(input),
+            Ok((
+                &[] as &[u8],
+                AdStruct::LeSupportedFeatures(LeSupportedFeaturesAdStruct::new(features))
+            ))
+        );
     }
 }

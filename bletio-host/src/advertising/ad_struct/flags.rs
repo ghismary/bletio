@@ -18,13 +18,17 @@ const FLAGS_AD_STRUCT_SIZE: usize = 2;
 /// See [`Flags`] for more information about each of the flags.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct FlagsAdStruct {
+pub struct FlagsAdStruct {
     flags: Flags,
 }
 
 impl FlagsAdStruct {
     pub(crate) const fn new(flags: Flags) -> Self {
         Self { flags }
+    }
+
+    pub fn value(&self) -> Flags {
+        self.flags
     }
 }
 
@@ -67,12 +71,32 @@ impl Default for Flags {
     }
 }
 
+impl From<u8> for Flags {
+    fn from(value: u8) -> Self {
+        Self::from_bits_truncate(value)
+    }
+}
+
+pub(crate) mod parser {
+    use nom::{combinator::map, number::le_u8, IResult, Parser};
+
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::*;
+
+    pub(crate) fn flags_ad_struct(input: &[u8]) -> IResult<&[u8], AdStruct> {
+        map(le_u8(), |v| AdStruct::Flags(FlagsAdStruct::new(v.into()))).parse(input)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use bletio_utils::{Buffer, BufferOps};
     use rstest::rstest;
 
-    use super::*;
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::{parser::*, *};
 
     #[test]
     fn test_flags() {
@@ -90,9 +114,21 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<3>::default();
-        let value = FlagsAdStruct::new(flags);
-        value.encode(&mut buffer)?;
+        let ad_struct = FlagsAdStruct::new(flags);
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.value(), flags);
         Ok(())
+    }
+
+    #[rstest]
+    #[case(&[0x04], Flags::BREDR_NOT_SUPPORTED)]
+    #[case(&[0x06], Flags::LE_GENERAL_DISCOVERABLE_MODE | Flags::BREDR_NOT_SUPPORTED)]
+    #[case(&[0xFF], Flags::all())]
+    fn test_flags_ad_struct_parsing(#[case] input: &[u8], #[case] flags: Flags) {
+        assert_eq!(
+            flags_ad_struct(input),
+            Ok((&[] as &[u8], AdStruct::Flags(FlagsAdStruct::new(flags))))
+        );
     }
 }

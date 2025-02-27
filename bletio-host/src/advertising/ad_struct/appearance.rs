@@ -20,6 +20,10 @@ impl AppearanceAdStruct {
     pub(crate) const fn new(appearance: AppearanceValue) -> Self {
         Self { appearance }
     }
+
+    pub fn value(&self) -> AppearanceValue {
+        self.appearance
+    }
 }
 
 impl EncodeToBuffer for AppearanceAdStruct {
@@ -38,12 +42,33 @@ impl EncodeToBuffer for AppearanceAdStruct {
     }
 }
 
+pub(crate) mod parser {
+    use nom::{
+        combinator::{map, map_res},
+        number::le_u16,
+        IResult, Parser,
+    };
+
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::*;
+
+    pub(crate) fn appearance_ad_struct(input: &[u8]) -> IResult<&[u8], AdStruct> {
+        map(map_res(le_u16(), TryFrom::try_from), |appearance| {
+            AdStruct::Appearance(AppearanceAdStruct::new(appearance))
+        })
+        .parse(input)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use bletio_utils::{Buffer, BufferOps};
     use rstest::rstest;
 
-    use super::*;
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::{parser::*, *};
 
     #[rstest]
     #[case(AppearanceValue::StandmountedSpeaker, &[0x03, 0x19, 0x44, 0x08])]
@@ -53,9 +78,33 @@ mod test {
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
         let mut buffer = Buffer::<4>::default();
-        let value = AppearanceAdStruct::new(appearance);
-        value.encode(&mut buffer)?;
+        let ad_struct = AppearanceAdStruct::new(appearance);
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.value(), appearance);
         Ok(())
+    }
+
+    #[rstest]
+    #[case(&[0x44, 0x08], AppearanceValue::StandmountedSpeaker)]
+    #[case(&[0x48, 0x0D], AppearanceValue::InsulinPen)]
+    fn test_appearance_ad_struct_parsing_success(
+        #[case] input: &[u8],
+        #[case] appearance: AppearanceValue,
+    ) {
+        assert_eq!(
+            appearance_ad_struct(input),
+            Ok((
+                &[] as &[u8],
+                AdStruct::Appearance(AppearanceAdStruct::new(appearance))
+            ))
+        );
+    }
+
+    #[rstest]
+    #[case(&[0xFF, 0xFF])]
+    #[case(&[0x03, 0x38])]
+    fn test_appearance_ad_struct_parsing_failure(#[case] input: &[u8]) {
+        assert!(appearance_ad_struct(input).is_err());
     }
 }

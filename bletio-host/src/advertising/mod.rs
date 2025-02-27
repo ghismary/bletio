@@ -37,12 +37,36 @@ pub enum AdvertisingError {
     AppearanceNotAllowedInBothAdvertisingDataAndScanResponseData,
     /// An empty service UUID list Advertising Structure needs to be complete.
     EmptyServiceUuidListShallBeComplete,
+    /// Only one advertising interval Advertising Structure is allowed in an Advertising Data or Scan Response Data block.
+    OnlyOneAdvertisingIntervalAllowedInAdvertisingDataOrScanResponseData,
+    /// Only one appearance Advertising Structure is allowed in an Advertising Data or Scan Response Data block.
+    OnlyOneAppearanceAllowedInAdvertisingDataOrScanResponseData,
+    /// Only one flags Advertising Structure is allowed in an Advertising Data block.
+    OnlyOneFlagsAllowedInAdvertisingData,
+    /// Only one LE supported features Advertising Structure is allowed in an Advertising Data or Scan Response Data block.
+    OnlyOneLeSupportedFeaturesAllowedInAdvertisingDataOrScanResponseData,
+    /// Only one local name Advertising Structure is allowed in an Advertising Data or Scan Response Data block.
+    OnlyOneLocalNameAllowedInAdvertisingDataOrScanResponseData,
+    /// Only one public target address Advertising Structure is allowed in an Advertising Data or Scan Response Data block.
+    OnlyOnePublicTargetAddressAllowedInAdvertisingDataOrScanResponseData,
+    /// Only one random target address Advertising Structure is allowed in an Advertising Data or Scan Response Data block.
+    OnlyOneRandomTargetAddressAllowedInAdvertisingDataOrScanResponseData,
     /// The Public Target Address Advertising Structure must contain at least one address.
     PublicTargetAddressAdStructMustContainAtLeastOneAddress,
     /// The Random Target Address Advertising Structure must contain at least one address.
     RandomTargetAddressAdStructMustContainAtLeastOneAddress,
+    /// The provided Advertising Type value is invalid.
+    InvalidAdTypeValue(u8),
     /// The advertising parameters are not valid, probably because the advertising type is ScannableUndirected or NonConnectableUndirected, and the minimum advertising interval value is less than 0x00A0.
     InvalidAdvertisingParameters,
+    /// The provided Appearance value is invalid.
+    InvalidAppearanceValue(u16),
+    /// The provided Company Identifier value is invalid.
+    InvalidCompanyIdentifierValue(u16),
+    /// The provided Provisioned Uri Scheme value is invalid.
+    InvalidProvisionedUriSchemeValue(u16),
     /// The scan parameters are not valid, probably because the scan window is larger than the scan interval.
     InvalidScanParameters,
+    /// The provided Service Uuid value is invalid.
+    InvalidServiceUuidValue(u16),
 }

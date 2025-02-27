@@ -13,13 +13,17 @@ const TX_POWER_LEVEL_AD_STRUCT_SIZE: usize = 2;
 /// Note: When the TX Power Level Adevertising Structure is not present, the TX power level of the packet is unknown.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct TxPowerLevelAdStruct {
+pub struct TxPowerLevelAdStruct {
     tx_power_level: TxPowerLevel,
 }
 
 impl TxPowerLevelAdStruct {
     pub(crate) const fn new(tx_power_level: TxPowerLevel) -> Self {
         Self { tx_power_level }
+    }
+
+    pub fn value(&self) -> TxPowerLevel {
+        self.tx_power_level
     }
 }
 
@@ -39,6 +43,30 @@ impl EncodeToBuffer for TxPowerLevelAdStruct {
     }
 }
 
+pub(crate) mod parser {
+    use bletio_hci::TxPowerLevel;
+    use nom::{
+        combinator::{map, map_res},
+        number::le_i8,
+        IResult, Parser,
+    };
+
+    use crate::advertising::ad_struct::AdStruct;
+
+    use super::*;
+
+    fn tx_power_level(input: &[u8]) -> IResult<&[u8], TxPowerLevel> {
+        map_res(le_i8(), TryInto::try_into).parse(input)
+    }
+
+    pub(crate) fn tx_power_level_ad_struct(input: &[u8]) -> IResult<&[u8], AdStruct> {
+        map(tx_power_level, |v| {
+            AdStruct::TxPowerLevel(TxPowerLevelAdStruct::new(v))
+        })
+        .parse(input)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use bletio_utils::{Buffer, BufferOps};
@@ -54,10 +82,12 @@ mod test {
         #[case] tx_power_level: i8,
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
+        let tx_power_level = TxPowerLevel::try_new(tx_power_level).unwrap();
         let mut buffer = Buffer::<3>::default();
-        let value = TxPowerLevelAdStruct::new(TxPowerLevel::try_new(tx_power_level).unwrap());
-        value.encode(&mut buffer)?;
+        let ad_struct = TxPowerLevelAdStruct::new(tx_power_level);
+        ad_struct.encode(&mut buffer)?;
         assert_eq!(buffer.data(), encoded_data);
+        assert_eq!(ad_struct.value(), tx_power_level);
         Ok(())
     }
 }

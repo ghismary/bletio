@@ -113,8 +113,13 @@ fn generate_ad_types(
 //!
 //! FILE GENERATED FROM REVISION {} OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+use num_enum::{{IntoPrimitive, TryFromPrimitive}};
+
+use crate::advertising::AdvertisingError;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, IntoPrimitive, TryFromPrimitive)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[num_enum(error_type(name = AdvertisingError, constructor = AdvertisingError::InvalidAdTypeValue))]
 #[repr(u8)]
 #[allow(dead_code)]
 #[non_exhaustive]
@@ -258,8 +263,13 @@ fn generate_appearance_values(
 //!
 //! FILE GENERATED FROM REVISION {} OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+use num_enum::{{IntoPrimitive, TryFromPrimitive}};
+
+use crate::advertising::AdvertisingError;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, IntoPrimitive, TryFromPrimitive)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[num_enum(error_type(name = AdvertisingError, constructor = AdvertisingError::InvalidAppearanceValue))]
 #[repr(u16)]
 #[allow(dead_code)]
 #[non_exhaustive]
@@ -374,8 +384,13 @@ fn generate_company_identifiers(
 //!
 //! FILE GENERATED FROM REVISION {} OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+use num_enum::{{IntoPrimitive, TryFromPrimitive}};
+
+use crate::advertising::AdvertisingError;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, IntoPrimitive, TryFromPrimitive)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[num_enum(error_type(name = AdvertisingError, constructor = AdvertisingError::InvalidCompanyIdentifierValue))]
 #[repr(u16)]
 #[non_exhaustive]
 /// Assigned numbers for company identifiers defined in
@@ -445,8 +460,13 @@ fn generate_service_uuids(
 //!
 //! FILE GENERATED FROM REVISION {} OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+use num_enum::{{IntoPrimitive, TryFromPrimitive}};
+
+use crate::advertising::AdvertisingError;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, IntoPrimitive, TryFromPrimitive)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[num_enum(error_type(name = AdvertisingError, constructor = AdvertisingError::InvalidServiceUuidValue))]
 #[repr(u16)]
 #[non_exhaustive]
 /// Assigned numbers for Bluetooth GATT services defined in
@@ -516,8 +536,13 @@ fn generate_uri_schemes(
 //!
 //! FILE GENERATED FROM REVISION {} OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+use num_enum::{{IntoPrimitive, TryFromPrimitive}};
+
+use crate::advertising::AdvertisingError;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, IntoPrimitive, TryFromPrimitive)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[num_enum(error_type(name = AdvertisingError, constructor = AdvertisingError::InvalidProvisionedUriSchemeValue))]
 #[repr(u16)]
 #[non_exhaustive]
 /// Assigned numbers for Bluetooth URI schemes defined in

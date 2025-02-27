@@ -1,6 +1,7 @@
 use crate::{encode_le_u128, encode_le_u16, encode_le_u32, encode_le_u64, Error};
 
 pub trait BufferOps {
+    fn clear(&mut self);
     fn data(&self) -> &[u8];
     fn full_data(&self) -> &[u8];
     fn is_full(&self) -> bool;
@@ -31,6 +32,11 @@ pub struct Buffer<const CAP: usize> {
 }
 
 impl<const CAP: usize> BufferOps for Buffer<CAP> {
+    fn clear(&mut self) {
+        self.data = [0u8; CAP];
+        self.offset = 0;
+    }
+
     fn data(&self) -> &[u8] {
         &self.data[..self.offset]
     }

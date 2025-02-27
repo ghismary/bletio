@@ -4,6 +4,9 @@
 
 use bletio_utils::{Buffer, BufferOps, Error};
 
+use crate::LeAdvertisingReportData;
+
+pub(crate) const ADVERTISING_DATA_SIZE: usize = 31;
 const ADVERTISING_DATA_TOTAL_SIZE: usize = 32;
 const ADVERTISING_DATA_SIZE_OFFSET: usize = 0;
 const ADVERTISING_DATA_DATA_OFFSET: usize = 1;
@@ -19,6 +22,10 @@ pub struct AdvertisingData {
 }
 
 impl AdvertisingData {
+    pub fn data(&self) -> &[u8] {
+        self.buffer.data()
+    }
+
     pub fn fill(
         &mut self,
         func: impl FnOnce(
@@ -60,6 +67,16 @@ impl TryFrom<(u8, [u8; ADVERTISING_DATA_TOTAL_SIZE - 1])> for AdvertisingData {
     }
 }
 
+impl From<&LeAdvertisingReportData> for AdvertisingData {
+    fn from(value: &LeAdvertisingReportData) -> Self {
+        let mut s = AdvertisingData::default();
+        // INVARIANT: The buffer is known to be big enough
+        s.fill(|buffer| buffer.copy_from_slice(value.data()))
+            .unwrap();
+        s
+    }
+}
+
 impl bletio_utils::EncodeToBuffer for AdvertisingData {
     fn encode<B: bletio_utils::BufferOps>(
         &self,
@@ -84,6 +101,10 @@ pub struct ScanResponseData {
 }
 
 impl ScanResponseData {
+    pub fn data(&self) -> &[u8] {
+        self.buffer.data()
+    }
+
     pub fn fill(
         &mut self,
         func: impl FnOnce(
@@ -122,6 +143,16 @@ impl TryFrom<(u8, [u8; ADVERTISING_DATA_TOTAL_SIZE - 1])> for ScanResponseData {
         s.buffer.offset = ADVERTISING_DATA_DATA_OFFSET;
         s.buffer.copy_from_slice(&value[..len as usize])?;
         Ok(s)
+    }
+}
+
+impl From<&LeAdvertisingReportData> for ScanResponseData {
+    fn from(value: &LeAdvertisingReportData) -> Self {
+        let mut s = ScanResponseData::default();
+        // INVARIANT: The buffer is known to be big enough
+        s.fill(|buffer| buffer.copy_from_slice(value.data()))
+            .unwrap();
+        s
     }
 }
 

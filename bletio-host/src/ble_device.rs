@@ -1,28 +1,28 @@
-use bletio_hci::{Hci, HciDriver};
+use bletio_hci::{
+    Event, EventList, Hci, HciDriver, LeAdvertisingReport, LeAdvertisingReportAddress,
+    LeAdvertisingReportEventType, LeMetaEvent,
+};
 
+use crate::advertising::FullAdvertisingData;
 use crate::assigned_numbers::AppearanceValue;
-use crate::{BleHost, BleHostObserver, Error};
+use crate::{BleHost, BleHostObserver, BleHostStates, Error};
 
 #[derive(Debug)]
-pub struct BleDeviceBuilder<'a, H, O>
+pub struct BleDeviceBuilder<'a, O>
 where
-    H: HciDriver,
     O: BleHostObserver,
 {
-    hci: Hci<H>,
     observer: O,
     appearance: Option<AppearanceValue>,
     local_name: Option<&'a str>,
 }
 
-impl<'a, H, O> BleDeviceBuilder<'a, H, O>
+impl<'a, O> BleDeviceBuilder<'a, O>
 where
-    H: HciDriver,
     O: BleHostObserver,
 {
-    pub fn build(self) -> BleDevice<'a, H, O> {
+    pub fn build(self) -> BleDevice<'a, O> {
         BleDevice {
-            hci: self.hci,
             observer: self.observer,
             appearance: self.appearance.unwrap_or(AppearanceValue::GenericUnknown),
             local_name: self.local_name.unwrap_or("bletio"),
@@ -40,37 +40,107 @@ where
     }
 }
 
-pub struct BleDevice<'a, H, O>
+pub struct BleDevice<'a, O>
 where
-    H: HciDriver,
     O: BleHostObserver,
 {
-    hci: Hci<H>,
     observer: O,
     appearance: AppearanceValue,
     local_name: &'a str,
 }
 
-impl<'a, H, O> BleDevice<'a, H, O>
+impl<'a, O> BleDevice<'a, O>
 where
-    H: HciDriver,
     O: BleHostObserver,
 {
-    pub fn builder(hci_driver: H, observer: O) -> BleDeviceBuilder<'a, H, O> {
+    pub fn builder(observer: O) -> BleDeviceBuilder<'a, O> {
         BleDeviceBuilder {
-            hci: Hci::new(hci_driver),
             observer,
             appearance: Default::default(),
             local_name: Default::default(),
         }
     }
 
-    pub async fn run(&mut self) -> Result<(), Error> {
-        let host = BleHost::setup(&mut self.hci, self.appearance, self.local_name).await?;
-        let _host = self.observer.ready(host).await;
+    pub async fn run<H>(&mut self, hci_driver: H) -> Result<(), Error>
+    where
+        H: HciDriver,
+    {
+        let host = BleHost::setup(Hci::new(hci_driver), self.appearance, self.local_name).await?;
+        let mut host = self.observer.ready(host).await;
 
-        // todo!();
+        loop {
+            match host.wait_for_event().await {
+                Ok(event_list) => {
+                    if event_list
+                        .iter()
+                        .any(|e| matches!(e, Event::LeMeta(LeMetaEvent::LeAdvertisingReport(_))))
+                    {
+                        host = self.notify_le_advertising_reports(host, &event_list).await;
+                    }
+                }
+                Err(Error::Hci(bletio_hci::Error::InvalidPacket)) => {
+                    // Ignore invalid HCI packet
+                    #[cfg(feature = "defmt")]
+                    defmt::warn!("Received invalid HCI packet");
+                }
+                Err(e) => return Err(e),
+            }
+        }
+    }
 
-        Ok(())
+    pub async fn notify_le_advertising_reports<'e, H>(
+        &self,
+        mut host: BleHostStates<'a, H>,
+        event_list: &'e EventList,
+    ) -> BleHostStates<'a, H>
+    where
+        H: HciDriver,
+    {
+        fn find_corresponding_scan_response(
+            event_list: &EventList,
+            address: &LeAdvertisingReportAddress,
+        ) -> Option<LeAdvertisingReport> {
+            for reports in event_list.iter().filter_map(|e| match e {
+                Event::LeMeta(LeMetaEvent::LeAdvertisingReport(reports)) => Some(reports),
+                _ => None,
+            }) {
+                if let Some(report) = reports.iter().find(|r| {
+                    (r.event_type() == LeAdvertisingReportEventType::ScanResponse)
+                        && r.address() == address
+                }) {
+                    return Some(report);
+                }
+            }
+
+            None
+        }
+
+        for reports in event_list.iter().filter_map(|e| match e {
+            Event::LeMeta(LeMetaEvent::LeAdvertisingReport(reports)) => Some(reports),
+            _ => None,
+        }) {
+            for report in reports
+                .iter()
+                .filter(|r| r.event_type() != LeAdvertisingReportEventType::ScanResponse)
+            {
+                let adv_data = report.data().into();
+                let scanresp_report =
+                    find_corresponding_scan_response(event_list, report.address());
+                let scanresp_data = scanresp_report.map(|r| r.data().into());
+                let full_adv_data = FullAdvertisingData::try_new(adv_data, scanresp_data).unwrap();
+                host = self
+                    .observer
+                    .advertising_report_received(
+                        host,
+                        report.event_type(),
+                        report.address(),
+                        report.rssi(),
+                        full_adv_data,
+                    )
+                    .await;
+            }
+        }
+
+        host
     }
 }

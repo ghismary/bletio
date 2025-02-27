@@ -13,7 +13,7 @@ const INFORMATIONAL_PARAMETERS_OGF: u16 = 0x04;
 const LE_CONTROLLER_OGF: u16 = 0x08;
 
 const fn opcode(ogf: u16, ocf: u16) -> u16 {
-    ogf << 10 | ocf
+    (ogf << 10) | ocf
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, IntoPrimitive, FromPrimitive)]
@@ -285,6 +285,12 @@ pub(crate) mod parser {
 
 #[cfg(test)]
 mod test {
+    use crate::{
+        packet::parser::packet, AdvertisingChannelMap, AdvertisingFilterPolicy,
+        AdvertisingIntervalRange, AdvertisingType, DeviceAddress, OwnAddressType, Packet,
+        RandomAddress,
+    };
+
     use super::*;
     use rstest::rstest;
 
@@ -385,7 +391,7 @@ mod test {
     }
 
     #[test]
-    fn test_encode_unsupported_command() {
+    fn test_command_encode_unsupported_command() {
         // Use Flush command
         let command = Command::Unsupported(0x0C08);
         let err = command.encode();
@@ -394,7 +400,7 @@ mod test {
     }
 
     #[test]
-    fn test_encode_failure() {
+    fn test_command_encode_failure() {
         struct Object;
         impl EncodeToBuffer for Object {
             fn encode<B: BufferOps>(&self, buffer: &mut B) -> Result<usize, bletio_utils::Error> {
@@ -411,5 +417,80 @@ mod test {
             CommandPacket::new(CommandOpCode::Nop).encode(&object),
             Err(Error::DataWillNotFitCommandPacket)
         ));
+    }
+
+    #[test]
+    fn test_unsupported_command_parsing() {
+        // Use Flush command
+        let (rest, packet) = packet(&[1, 8, 12, 0]).unwrap();
+        assert!(matches!(
+            packet,
+            Packet::Command(Command::Unsupported(0x0C08))
+        ));
+        assert!(rest.is_empty());
+    }
+
+    #[rstest]
+    #[case::le_rand(Command::LeRand, &[1, 24, 32, 0])]
+    #[case::le_read_advertising_channel_tx_power(Command::LeReadAdvertisingChannelTxPower, &[1, 7, 32, 0])]
+    #[case::le_read_buffer_size(Command::LeReadBufferSize, &[1, 2, 32, 0])]
+    #[case::le_read_local_supported_features_page_0(Command::LeReadLocalSupportedFeaturesPage0, &[1, 3, 32, 0])]
+    #[case::le_read_supported_states(Command::LeReadSupportedStates, &[1, 28, 32, 0])]
+    #[case::le_set_advertising_data(
+        Command::LeSetAdvertisingData(AdvertisingData::default()),
+        &[1, 8, 32, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    )]
+    #[case::le_set_advertising_enable(
+        Command::LeSetAdvertisingEnable(AdvertisingEnable::Enabled), &[1, 10, 32, 1, 1]
+    )]
+    #[case::le_set_advertising_parameters::default(
+        Command::LeSetAdvertisingParameters(AdvertisingParameters::default()),
+        &[1, 6, 32, 15, 0, 8, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0]
+    )]
+    #[case::le_set_advertising_parameters::random_peer_address(
+        Command::LeSetAdvertisingParameters(AdvertisingParameters::try_new(
+            AdvertisingIntervalRange::try_new(0x0020.try_into().unwrap(), 0x0030.try_into().unwrap()).unwrap(),
+            AdvertisingType::ScannableUndirected,
+            OwnAddressType::RandomDeviceAddress,
+            DeviceAddress::Random(RandomAddress::Static(RandomStaticDeviceAddress::try_new([0xFE, 0x92, 0x2F, 0x0F, 0x4B, 0xD2]).unwrap())),
+            AdvertisingChannelMap::CHANNEL37 | AdvertisingChannelMap::CHANNEL38,
+            AdvertisingFilterPolicy::ConnectionAllAndScanFilterAcceptList,
+        ).unwrap()),
+        &[1, 6, 32, 15, 32, 0, 48, 0, 2, 1, 1, 0xFE, 0x92, 0x2F, 0x0F, 0x4B, 0xD2, 3, 1]
+    )]
+    #[case::le_set_event_mask(
+        Command::LeSetEventMask(LeEventMask::default()),
+        &[1, 1, 32, 8, 31, 0, 0, 0, 0, 0, 0, 0]
+    )]
+    #[case::le_set_random_address(
+        Command::LeSetRandomAddress([68, 223, 27, 9, 83, 250].try_into().unwrap()),
+        &[1, 5, 32, 6, 68, 223, 27, 9, 83, 250]
+    )]
+    #[case::le_set_scan_enable(
+        Command::LeSetScanEnable(ScanEnable::Enabled, FilterDuplicates::Disabled),
+        &[1, 12, 32, 2, 1, 0]
+    )]
+    #[case::le_set_scan_parameters(
+        Command::LeSetScanParameters(ScanParameters::default()),
+        &[1, 11, 32, 7, 0, 16, 0, 16, 0, 0, 0]
+    )]
+    #[case::le_set_scan_response_data(
+        Command::LeSetScanResponseData(ScanResponseData::default()),
+        &[1, 9, 32, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    )]
+    #[case::nop(Command::Nop, &[1, 0, 0, 0])]
+    #[case::read_bd_addr(Command::ReadBdAddr, &[1, 9, 16, 0])]
+    #[case::read_buffer_size(Command::ReadBufferSize, &[1, 5, 16, 0])]
+    #[case::read_local_supported_commands(Command::ReadLocalSupportedCommands, &[1, 2, 16, 0])]
+    #[case::read_local_supported_features(Command::ReadLocalSupportedFeatures, &[1, 3, 16, 0])]
+    #[case::reset(Command::Reset, &[1, 3, 12, 0])]
+    #[case::set_event_mask(
+        Command::SetEventMask(EventMask::HARDWARE_ERROR | EventMask::DATA_BUFFER_OVERFLOW),
+        &[1, 1, 12, 8, 0, 128, 0, 2, 0, 0, 0, 0]
+    )]
+    fn test_supported_command_parsing(#[case] command: Command, #[case] input: &[u8]) {
+        let (rest, hci_packet) = packet(input).unwrap();
+        assert_eq!(hci_packet, Packet::Command(command));
+        assert!(rest.is_empty());
     }
 }

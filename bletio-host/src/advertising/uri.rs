@@ -1,7 +1,10 @@
 use bletio_utils::EncodeToBuffer;
+use heapless::String;
 
-use crate::assigned_numbers::ProvisionedUriScheme;
+use crate::{advertising::AdvertisingError, assigned_numbers::ProvisionedUriScheme};
 
+const CUSTOM_URI_SCHEME_MAX_LENGTH: usize = 26;
+const URI_HIER_PART_MAX_LENGTH: usize = 27;
 const EMPTY_SCHEME_NAME_VALUE: u16 = 0x0001;
 
 /// An URI to be included in the Universal Resource Identifier Advertising Structure.
@@ -9,14 +12,22 @@ const EMPTY_SCHEME_NAME_VALUE: u16 = 0x0001;
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Uri {
     scheme: UriScheme,
-    hier_part: &'static str,
+    hier_part: String<URI_HIER_PART_MAX_LENGTH>,
 }
 
 impl Uri {
     /// Create an URI.
-    pub fn new(scheme: impl Into<UriScheme>, hier_part: &'static str) -> Self {
-        fn inner(scheme: UriScheme, hier_part: &'static str) -> Uri {
-            Uri { scheme, hier_part }
+    pub fn try_new(
+        scheme: impl Into<UriScheme>,
+        hier_part: &'static str,
+    ) -> Result<Self, AdvertisingError> {
+        fn inner(scheme: UriScheme, hier_part: &'static str) -> Result<Uri, AdvertisingError> {
+            Ok(Uri {
+                scheme,
+                hier_part: hier_part
+                    .try_into()
+                    .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?,
+            })
         }
         inner(scheme.into(), hier_part)
     }
@@ -152,20 +163,24 @@ pub const fn check_custom_uri_scheme_has_alphanumeric_last_char(scheme: &str) ->
     c.is_ascii_alphanumeric()
 }
 
-/// A custom URI scheme if the scheme you want to use is not defined in [`ProvisionedUriScheme`].
-///
-/// Use [`custom_uri_scheme`] to create it.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct CustomUriScheme {
-    scheme: &'static str,
-}
+#[diagnostic::on_unimplemented(
+    message = "the URI scheme is too long, it must be less than 26 bytes long"
+)]
+#[doc(hidden)]
+pub trait CustomUriSchemeNotTooLong {}
 
-impl CustomUriScheme {
-    #[doc(hidden)]
-    pub const fn new(scheme: &'static str) -> Self {
-        Self { scheme }
-    }
+#[doc(hidden)]
+pub struct CustomUriSchemeIsNotTooLong<const VALID: bool>;
+
+#[doc(hidden)]
+impl CustomUriSchemeNotTooLong for CustomUriSchemeIsNotTooLong<true> {}
+
+#[doc(hidden)]
+pub const fn custom_uri_scheme_is_not_too_long<T: CustomUriSchemeNotTooLong>() {}
+
+#[doc(hidden)]
+pub const fn check_custom_uri_scheme_is_not_too_long(scheme: &str) -> bool {
+    scheme.len() <= CUSTOM_URI_SCHEME_MAX_LENGTH
 }
 
 /// Create a [`CustomUriScheme`], checking that it is valid at compile-time.
@@ -209,12 +224,37 @@ macro_rules! __custom_uri_scheme__ {
                 ALPHANUMERIC_LAST_CHAR_ERR,
             >,
         >();
-        $crate::advertising::uri::CustomUriScheme::new($scheme)
+        const NOT_TOO_LONG_ERR: bool =
+            $crate::advertising::uri::check_custom_uri_scheme_is_not_too_long($scheme);
+        $crate::advertising::uri::custom_uri_scheme_is_not_too_long::<
+            $crate::advertising::uri::CustomUriSchemeIsNotTooLong<NOT_TOO_LONG_ERR>,
+        >();
+        $crate::advertising::uri::CustomUriScheme::try_new($scheme).unwrap()
     }};
 }
 
 #[doc(inline)]
 pub use __custom_uri_scheme__ as custom_uri_scheme;
+
+/// A custom URI scheme if the scheme you want to use is not defined in [`ProvisionedUriScheme`].
+///
+/// Use [`custom_uri_scheme`] to create it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct CustomUriScheme {
+    scheme: String<CUSTOM_URI_SCHEME_MAX_LENGTH>,
+}
+
+impl CustomUriScheme {
+    #[doc(hidden)]
+    pub fn try_new(scheme: &str) -> Result<Self, AdvertisingError> {
+        Ok(Self {
+            scheme: scheme
+                .try_into()
+                .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?,
+        })
+    }
+}
 
 /// An URI scheme, either provisioned or custom.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -268,12 +308,65 @@ impl From<CustomUriScheme> for UriScheme {
     }
 }
 
+pub(crate) mod parser {
+    use nom::{
+        branch::alt,
+        bytes::{tag, take, take_till1},
+        combinator::{map, map_res, verify},
+        number::le_u16,
+        IResult, Parser,
+    };
+
+    use super::*;
+
+    fn custom_uri_scheme(input: &[u8]) -> IResult<&[u8], UriScheme> {
+        map(
+            map_res(
+                (
+                    verify(le_u16(), |value| *value == EMPTY_SCHEME_NAME_VALUE),
+                    map_res(take_till1(|b| b == b':'), core::str::from_utf8),
+                    tag([b':'].as_slice()),
+                ),
+                |(_, scheme, _)| CustomUriScheme::try_new(scheme),
+            ),
+            Into::into,
+        )
+        .parse(input)
+    }
+
+    fn provisioned_uri_scheme(input: &[u8]) -> IResult<&[u8], UriScheme> {
+        map(
+            map_res(le_u16(), TryFrom::try_from),
+            |scheme: ProvisionedUriScheme| scheme.into(),
+        )
+        .parse(input)
+    }
+
+    fn uri_scheme(input: &[u8]) -> IResult<&[u8], UriScheme> {
+        alt((provisioned_uri_scheme, custom_uri_scheme)).parse(input)
+    }
+
+    pub(crate) fn uri(input: &[u8]) -> IResult<&[u8], Uri> {
+        let (rest, scheme) = uri_scheme.parse(input)?;
+        let len = rest.len();
+        let mut uri = Uri {
+            scheme,
+            hier_part: Default::default(),
+        };
+        map_res(map_res(take(len), core::str::from_utf8), |v| {
+            uri.hier_part.push_str(v)
+        })
+        .parse(rest)?;
+        Ok((&[], uri))
+    }
+}
+
 #[cfg(test)]
 mod test {
     use bletio_utils::{Buffer, BufferOps};
     use rstest::rstest;
 
-    use super::*;
+    use super::{parser::*, *};
 
     #[test]
     fn test_check_custom_uri_scheme_is_not_empty() {
@@ -315,6 +408,15 @@ mod test {
     }
 
     #[test]
+    fn test_check_custom_uri_scheme_is_not_too_long() {
+        assert!(check_custom_uri_scheme_is_not_too_long("custom"));
+        assert!(!check_custom_uri_scheme_is_not_too_long(
+            "a-very-very-long-uri-scheme"
+        ));
+        assert!(check_custom_uri_scheme_is_not_too_long(""));
+    }
+
+    #[test]
     fn test_custom_uri_scheme() {
         let scheme = custom_uri_scheme!("custom");
         assert_eq!(scheme.scheme, "custom");
@@ -335,7 +437,7 @@ mod test {
     #[rstest]
     #[case(ProvisionedUriScheme::Http.into(), &[0x16, 0x00])]
     #[case(custom_uri_scheme!("custom").into(), &[0x01, 0x00, b'c', b'u', b's', b't', b'o', b'm', b':'])]
-    fn test_uri_scheme_encode_success(
+    fn test_uri_scheme_success(
         #[case] uri_scheme: UriScheme,
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
@@ -346,23 +448,29 @@ mod test {
     }
 
     #[test]
-    fn test_uri_scheme_encode_failure() {
+    fn test_uri_scheme_failure() {
+        let err = CustomUriScheme::try_new("very-very-long-custom-scheme");
+        assert_eq!(
+            err,
+            Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket),
+        );
+
         let mut buffer = Buffer::<12>::default();
-        let uri_scheme: UriScheme = custom_uri_scheme!("very-very-very-long-custom-scheme").into();
+        let uri_scheme: UriScheme = custom_uri_scheme!("very-long-custom-scheme").into();
         let err = uri_scheme.encode(&mut buffer);
         assert_eq!(err, Err(bletio_utils::Error::BufferTooSmall));
     }
 
     #[rstest]
     #[case(
-        Uri::new(ProvisionedUriScheme::Http, "//example.org/"),
+        Uri::try_new(ProvisionedUriScheme::Http, "//example.org/").unwrap(),
         &[0x16, 0x00, b'/', b'/', b'e', b'x', b'a', b'm', b'p', b'l', b'e', b'.', b'o', b'r', b'g', b'/']
     )]
     #[case(
-        Uri::new(custom_uri_scheme!("custom"), "rest"),
+        Uri::try_new(custom_uri_scheme!("custom"), "rest").unwrap(),
         &[0x01, 0x00, b'c', b'u', b's', b't', b'o', b'm', b':', b'r', b'e', b's', b't']
     )]
-    fn test_uri_encode_success(
+    fn test_uri_success(
         #[case] uri: Uri,
         #[case] encoded_data: &[u8],
     ) -> Result<(), bletio_utils::Error> {
@@ -373,11 +481,38 @@ mod test {
     }
 
     #[rstest]
-    #[case(Uri::new(ProvisionedUriScheme::Http, "//example.org/a-path-that-is-too-long"))]
-    #[case(Uri::new(custom_uri_scheme!("custom"), "a-hier-part-that-is-too-long"))]
-    fn test_uri_encode_failure(#[case] uri: Uri) {
-        let mut buffer = Buffer::<16>::default();
-        let err = uri.encode(&mut buffer);
-        assert_eq!(err, Err(bletio_utils::Error::BufferTooSmall));
+    #[case(Uri::try_new(ProvisionedUriScheme::Http, "//example.org/a-path-that-is-too-long"))]
+    #[case(Uri::try_new(custom_uri_scheme!("custom"), "a-hier-part-that-is-too-long"))]
+    fn test_uri_failure(#[case] err: Result<Uri, AdvertisingError>) {
+        assert_eq!(
+            err,
+            Err(AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)
+        );
+    }
+
+    #[rstest]
+    #[case(
+        &[0x16, 0x00, b'/', b'/', b'e', b'x', b'a', b'm', b'p', b'l', b'e', b'.', b'o', b'r', b'g', b'/'],
+        Uri::try_new(ProvisionedUriScheme::Http, "//example.org/").unwrap()
+    )]
+    #[case(
+        &[0x01, 0x00, b'c', b'u', b's', b't', b'o', b'm', b':', b'r', b'e', b's', b't'],
+        Uri::try_new(custom_uri_scheme!("custom"), "rest").unwrap()
+    )]
+    fn test_uri_parsing_success(#[case] input: &[u8], #[case] expected_uri: Uri) {
+        assert_eq!(uri(input), Ok((&[] as &[u8], expected_uri)));
+    }
+
+    #[rstest]
+    #[case(
+        &[0x16, 0x00, b'/', b'/', b'e', b'x', b'a', b'm', b'p', b'l', b'e', b'.', b'o', b'r', b'g', b'/', b'a', b'-', b'p',
+            b'a', b't', b'h', b'-', b't', b'h', b'a', b't', b'-', b'i', b's', b'-', b't', b'o', b'o', b'-', b'l', b'o', b'n', b'g']
+    )]
+    #[case(
+        &[0x01, 0x00, b'c', b'u', b's', b't', b'o', b'm', b':', b'a', b'-', b'h', b'i', b'e', b'r', b'-', b'p', b'a', b'r',
+            b't', b'-', b't', b'h', b'a', b't', b'-', b'i', b's', b'-', b't', b'o', b'o', b'-', b'l', b'o', b'n', b'g']
+    )]
+    fn test_uri_parsing_failure(#[case] input: &[u8]) {
+        assert!(uri(input).is_err());
     }
 }
