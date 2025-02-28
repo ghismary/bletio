@@ -6,9 +6,9 @@ use core::{
 use crate::{
     AdvertisingData, AdvertisingEnable, AdvertisingParameters, Command, CommandCompleteEvent,
     CommandOpCode, Error, Event, EventList, EventMask, EventParameter, FilterDuplicates, HciBuffer,
-    HciDriver, LeEventMask, Packet, PublicDeviceAddress, RandomStaticDeviceAddress, ScanEnable,
-    ScanParameters, ScanResponseData, SupportedCommands, SupportedFeatures, SupportedLeFeatures,
-    SupportedLeStates, TxPowerLevel, WithTimeout,
+    HciDriver, LeEventMask, LeFilterAcceptListAddress, Packet, PublicDeviceAddress,
+    RandomStaticDeviceAddress, ScanEnable, ScanParameters, ScanResponseData, SupportedCommands,
+    SupportedFeatures, SupportedLeFeatures, SupportedLeStates, TxPowerLevel, WithTimeout,
 };
 
 const HCI_COMMAND_TIMEOUT: Duration = Duration::from_millis(1000);
@@ -34,6 +34,31 @@ where
             num_hci_command_packets: 0,
             read_buffer: Default::default(),
             event_list: Default::default(),
+        }
+    }
+
+    pub async fn cmd_le_add_device_to_filter_accept_list(
+        &mut self,
+        address: impl Into<LeFilterAcceptListAddress>,
+    ) -> Result<(), Error> {
+        let event = self
+            .execute_command(Command::LeAddDeviceToFilterAcceptList(address.into()))
+            .await?;
+        match event.parameter {
+            EventParameter::Status(param) if param.status.is_success() => Ok(()),
+            EventParameter::Status(param) => Err(Error::ErrorCode(param.status)),
+            _ => unreachable!("parsing would have failed"),
+        }
+    }
+
+    pub async fn cmd_le_clear_filter_accept_list(&mut self) -> Result<(), Error> {
+        let event = self
+            .execute_command(Command::LeClearFilterAcceptList)
+            .await?;
+        match event.parameter {
+            EventParameter::Status(param) if param.status.is_success() => Ok(()),
+            EventParameter::Status(param) => Err(Error::ErrorCode(param.status)),
+            _ => unreachable!("parsing would have failed"),
         }
     }
 
@@ -75,6 +100,21 @@ where
         }
     }
 
+    pub async fn cmd_le_read_filter_accept_list_size(&mut self) -> Result<usize, Error> {
+        let event = self
+            .execute_command(Command::LeReadFilterAcceptListSize)
+            .await?;
+        match event.parameter {
+            EventParameter::StatusAndFilterAcceptListSize(param) if param.status.is_success() => {
+                Ok(param.filter_accept_list_size)
+            }
+            EventParameter::StatusAndFilterAcceptListSize(param) => {
+                Err(Error::ErrorCode(param.status))
+            }
+            _ => unreachable!("parsing would have failed"),
+        }
+    }
+
     pub async fn cmd_le_read_local_supported_features_page_0(
         &mut self,
     ) -> Result<SupportedLeFeatures, Error> {
@@ -101,6 +141,20 @@ where
             EventParameter::StatusAndSupportedLeStates(param) => {
                 Err(Error::ErrorCode(param.status))
             }
+            _ => unreachable!("parsing would have failed"),
+        }
+    }
+
+    pub async fn cmd_le_remove_device_from_filter_accept_list(
+        &mut self,
+        address: impl Into<LeFilterAcceptListAddress>,
+    ) -> Result<(), Error> {
+        let event = self
+            .execute_command(Command::LeRemoveDeviceFromFilterAcceptList(address.into()))
+            .await?;
+        match event.parameter {
+            EventParameter::Status(param) if param.status.is_success() => Ok(()),
+            EventParameter::Status(param) => Err(Error::ErrorCode(param.status)),
             _ => unreachable!("parsing would have failed"),
         }
     }
@@ -393,7 +447,116 @@ mod test {
 
     use super::*;
     use crate::test::*;
-    use crate::{ErrorCode, HciDriverError};
+    use crate::{DeviceAddress, ErrorCode, HciDriverError};
+
+    #[fixture]
+    fn mock_cmd_le_add_device_to_filter_accept_list_success() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 17, 32, 7, 1, 68, 223, 27, 9, 83, 250])
+            .read(&[4, 14, 4, 1, 17, 32, 0])
+            .build()
+    }
+
+    #[fixture]
+    fn mock_cmd_le_add_device_to_filter_accept_list_command_disallowed() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 17, 32, 7, 1, 68, 223, 27, 9, 83, 250])
+            .read(&[4, 14, 4, 1, 17, 32, 12])
+            .build()
+    }
+
+    #[fixture]
+    fn mock_cmd_le_add_device_to_filter_accept_list_invalid_event_packet() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 17, 32, 7, 1, 68, 223, 27, 9, 83, 250])
+            .read(&[4, 14, 7, 1, 17, 32, 0])
+            .build()
+    }
+
+    #[rstest]
+    #[case::success(
+        mock_cmd_le_add_device_to_filter_accept_list_success(),
+        Ok(())
+    )]
+    #[case::command_disallowed(
+        mock_cmd_le_add_device_to_filter_accept_list_command_disallowed(),
+        Err(Error::ErrorCode(ErrorCode::CommandDisallowed))
+    )]
+    #[case::invalid_event_packet(
+        mock_cmd_le_add_device_to_filter_accept_list_invalid_event_packet(),
+        Err(Error::InvalidPacket)
+    )]
+    #[tokio::test(flavor = "current_thread", start_paused = true)]
+    async fn test_cmd_le_add_device_to_filter_accept_list(
+        #[case] mock: Mock,
+        #[case] expected: Result<(), Error>,
+    ) {
+        let hci_driver = TokioHciDriver { hci: mock };
+        let mut hci = Hci {
+            driver: hci_driver,
+            num_hci_command_packets: 1,
+            read_buffer: Default::default(),
+            event_list: Default::default(),
+        };
+        assert_eq!(
+            hci.cmd_le_add_device_to_filter_accept_list(DeviceAddress::Random(
+                RandomStaticDeviceAddress::try_new([68, 223, 27, 9, 83, 250])
+                    .unwrap()
+                    .into()
+            ))
+            .await,
+            expected
+        );
+    }
+
+    #[fixture]
+    fn mock_cmd_le_clear_filter_accept_list_success() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 16, 32, 0])
+            .read(&[4, 14, 4, 1, 16, 32, 0])
+            .build()
+    }
+
+    #[fixture]
+    fn mock_cmd_le_clear_filter_accept_list_hardware_failure() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 16, 32, 0])
+            .read(&[4, 14, 4, 1, 16, 32, 3])
+            .build()
+    }
+
+    #[fixture]
+    fn mock_cmd_le_clear_filter_accept_list_invalid_event_packet() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 16, 32, 0])
+            .read(&[4, 14, 30, 1, 16, 32, 0, 2, 1, 7])
+            .build()
+    }
+
+    #[rstest]
+    #[case::success(mock_cmd_le_clear_filter_accept_list_success(), Ok(()))]
+    #[case::hardware_failure(
+        mock_cmd_le_clear_filter_accept_list_hardware_failure(),
+        Err(Error::ErrorCode(ErrorCode::HardwareFailure))
+    )]
+    #[case::invalid_event_packet(
+        mock_cmd_le_clear_filter_accept_list_invalid_event_packet(),
+        Err(Error::InvalidPacket)
+    )]
+    #[tokio::test(flavor = "current_thread", start_paused = true)]
+    async fn test_cmd_le_clear_filter_accept_list(
+        #[case] mock: Mock,
+        #[case] expected: Result<(), Error>,
+    ) {
+        let hci_driver = TokioHciDriver { hci: mock };
+        let mut hci = Hci {
+            driver: hci_driver,
+            num_hci_command_packets: 1,
+            read_buffer: Default::default(),
+            event_list: Default::default(),
+        };
+        assert_eq!(hci.cmd_le_clear_filter_accept_list().await, expected);
+    }
 
     #[fixture]
     fn mock_cmd_le_rand_success() -> Mock {
@@ -552,6 +715,55 @@ mod test {
     }
 
     #[fixture]
+    fn mock_cmd_le_read_filter_accept_list_size_success() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 15, 32, 0])
+            .read(&[4, 14, 5, 1, 15, 32, 0, 12])
+            .build()
+    }
+
+    #[fixture]
+    fn mock_cmd_le_read_filter_accept_list_size_command_disallowed() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 15, 32, 0])
+            .read(&[4, 14, 4, 1, 15, 32, 12])
+            .build()
+    }
+
+    #[fixture]
+    fn mock_cmd_le_read_filter_accept_list_size_invalid_event_packet() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 15, 32, 0])
+            .read(&[4, 14, 20, 1, 15, 32, 0])
+            .build()
+    }
+
+    #[rstest]
+    #[case::success(mock_cmd_le_read_filter_accept_list_size_success(), Ok(12))]
+    #[case::command_disallowed(
+        mock_cmd_le_read_filter_accept_list_size_command_disallowed(),
+        Err(Error::ErrorCode(ErrorCode::CommandDisallowed))
+    )]
+    #[case::invalid_event_packet(
+        mock_cmd_le_read_filter_accept_list_size_invalid_event_packet(),
+        Err(Error::InvalidPacket)
+    )]
+    #[tokio::test(flavor = "current_thread", start_paused = true)]
+    async fn test_cmd_le_read_filter_accept_list_size(
+        #[case] mock: Mock,
+        #[case] expected: Result<usize, Error>,
+    ) {
+        let hci_driver = TokioHciDriver { hci: mock };
+        let mut hci = Hci {
+            driver: hci_driver,
+            num_hci_command_packets: 1,
+            read_buffer: Default::default(),
+            event_list: Default::default(),
+        };
+        assert_eq!(hci.cmd_le_read_filter_accept_list_size().await, expected);
+    }
+
+    #[fixture]
     fn mock_cmd_le_read_local_supported_features_page_0_success() -> Mock {
         tokio_test::io::Builder::new()
             .write(&[1, 3, 32, 0])
@@ -656,6 +868,66 @@ mod test {
             event_list: Default::default(),
         };
         assert_eq!(hci.cmd_le_read_supported_states().await, expected);
+    }
+
+    #[fixture]
+    fn mock_cmd_le_remove_device_from_filter_accept_list_success() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 18, 32, 7, 1, 68, 223, 27, 9, 83, 250])
+            .read(&[4, 14, 4, 1, 18, 32, 0])
+            .build()
+    }
+
+    #[fixture]
+    fn mock_cmd_le_remove_device_from_filter_accept_list_command_disallowed() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 18, 32, 7, 1, 68, 223, 27, 9, 83, 250])
+            .read(&[4, 14, 4, 1, 18, 32, 12])
+            .build()
+    }
+
+    #[fixture]
+    fn mock_cmd_le_remove_device_from_filter_accept_list_invalid_event_packet() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 18, 32, 7, 1, 68, 223, 27, 9, 83, 250])
+            .read(&[4, 14, 7, 1, 18, 32, 0])
+            .build()
+    }
+
+    #[rstest]
+    #[case::success(
+        mock_cmd_le_remove_device_from_filter_accept_list_success(),
+        Ok(())
+    )]
+    #[case::command_disallowed(
+        mock_cmd_le_remove_device_from_filter_accept_list_command_disallowed(),
+        Err(Error::ErrorCode(ErrorCode::CommandDisallowed))
+    )]
+    #[case::invalid_event_packet(
+        mock_cmd_le_remove_device_from_filter_accept_list_invalid_event_packet(),
+        Err(Error::InvalidPacket)
+    )]
+    #[tokio::test(flavor = "current_thread", start_paused = true)]
+    async fn test_cmd_le_remove_device_from_filter_accept_list(
+        #[case] mock: Mock,
+        #[case] expected: Result<(), Error>,
+    ) {
+        let hci_driver = TokioHciDriver { hci: mock };
+        let mut hci = Hci {
+            driver: hci_driver,
+            num_hci_command_packets: 1,
+            read_buffer: Default::default(),
+            event_list: Default::default(),
+        };
+        assert_eq!(
+            hci.cmd_le_remove_device_from_filter_accept_list(DeviceAddress::Random(
+                RandomStaticDeviceAddress::try_new([68, 223, 27, 9, 83, 250])
+                    .unwrap()
+                    .into()
+            ))
+            .await,
+            expected
+        );
     }
 
     #[fixture]

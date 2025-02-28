@@ -15,6 +15,7 @@ mod event_mask;
 mod hci;
 mod hci_buffer;
 mod le_event_mask;
+mod le_filter_accept_list_address;
 mod le_states;
 mod own_address_type;
 mod packet;
@@ -65,6 +66,7 @@ pub use event::{
 pub use event_mask::EventMask;
 pub use hci::Hci;
 pub use le_event_mask::LeEventMask;
+pub use le_filter_accept_list_address::LeFilterAcceptListAddress;
 pub use le_states::{LeCombinedState, LeSingleState, LeState};
 pub use own_address_type::OwnAddressType;
 pub use rssi::Rssi;

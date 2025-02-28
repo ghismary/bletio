@@ -3,8 +3,8 @@ use num_enum::{FromPrimitive, IntoPrimitive};
 
 use crate::{
     AdvertisingData, AdvertisingEnable, AdvertisingParameters, Error, EventMask, FilterDuplicates,
-    LeEventMask, PacketType, RandomStaticDeviceAddress, ScanEnable, ScanParameters,
-    ScanResponseData,
+    LeEventMask, LeFilterAcceptListAddress, PacketType, RandomStaticDeviceAddress, ScanEnable,
+    ScanParameters, ScanResponseData,
 };
 
 const NOP_OGF: u16 = 0x00;
@@ -38,10 +38,10 @@ pub(crate) enum CommandOpCode {
     LeSetAdvertisingEnable = opcode(LE_CONTROLLER_OGF, 0x000A),
     LeSetScanParameters = opcode(LE_CONTROLLER_OGF, 0x000B),
     LeSetScanEnable = opcode(LE_CONTROLLER_OGF, 0x000C),
-    // LeReadFilterAcceptListSize = opcode(LE_CONTROLLER_OGF, 0x000F),
-    // LeClearFilterAcceptList = opcode(LE_CONTROLLER_OGF, 0x0010),
-    // LeAddDeviceToFilterAcceptList = opcode(LE_CONTROLLER_OGF, 0x0011),
-    // LeRemoveDeviceFromFilterAcceptList = opcode(LE_CONTROLLER_OGF, 0x0012),
+    LeReadFilterAcceptListSize = opcode(LE_CONTROLLER_OGF, 0x000F),
+    LeClearFilterAcceptList = opcode(LE_CONTROLLER_OGF, 0x0010),
+    LeAddDeviceToFilterAcceptList = opcode(LE_CONTROLLER_OGF, 0x0011),
+    LeRemoveDeviceFromFilterAcceptList = opcode(LE_CONTROLLER_OGF, 0x0012),
     // LeEncrypt = opcode(LE_CONTROLLER_OGF, 0x0017),
     LeRand = opcode(LE_CONTROLLER_OGF, 0x0018),
     LeReadSupportedStates = opcode(LE_CONTROLLER_OGF, 0x001C),
@@ -52,16 +52,16 @@ pub(crate) enum CommandOpCode {
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) enum Command {
-    // LeAddDeviceToFilterAcceptList(AddressType, Address),
-    // LeClearFilterAcceptList,
+    LeAddDeviceToFilterAcceptList(LeFilterAcceptListAddress),
+    LeClearFilterAcceptList,
     // LeEncrypt(Key, Data),
     LeRand,
     LeReadAdvertisingChannelTxPower,
     LeReadBufferSize,
     LeReadLocalSupportedFeaturesPage0,
     LeReadSupportedStates,
-    // LeReadFilterAcceptListSize,
-    // LeRemoveDeviceFromFilterAcceptList(AddressType, Address),
+    LeReadFilterAcceptListSize,
+    LeRemoveDeviceFromFilterAcceptList(LeFilterAcceptListAddress),
     LeSetEventMask(LeEventMask),
     LeSetAdvertisingEnable(AdvertisingEnable),
     LeSetAdvertisingData(AdvertisingData),
@@ -83,8 +83,10 @@ pub(crate) enum Command {
 impl Command {
     pub(crate) fn encode(&self) -> Result<CommandPacket, Error> {
         Ok(match self {
-            Command::LeReadAdvertisingChannelTxPower
+            Command::LeClearFilterAcceptList
+            | Command::LeReadAdvertisingChannelTxPower
             | Command::LeReadBufferSize
+            | Command::LeReadFilterAcceptListSize
             | Command::LeReadLocalSupportedFeaturesPage0
             | Command::LeReadSupportedStates
             | Command::Nop
@@ -94,6 +96,10 @@ impl Command {
             | Command::ReadLocalSupportedCommands
             | Command::ReadLocalSupportedFeatures
             | Command::Reset => CommandPacket::new(self.opcode()),
+            Command::LeAddDeviceToFilterAcceptList(address)
+            | Command::LeRemoveDeviceFromFilterAcceptList(address) => {
+                CommandPacket::new(self.opcode()).encode(address)?
+            }
             Command::LeSetAdvertisingEnable(enable) => {
                 CommandPacket::new(self.opcode()).encode(enable)?
             }
@@ -129,15 +135,19 @@ impl Command {
 
     pub(crate) const fn opcode(&self) -> CommandOpCode {
         match self {
-            // Self::LeClearFilterAcceptList => CommandOpCode::LeClearFilterAcceptList,
+            Self::LeAddDeviceToFilterAcceptList(_) => CommandOpCode::LeAddDeviceToFilterAcceptList,
+            Self::LeClearFilterAcceptList => CommandOpCode::LeClearFilterAcceptList,
             Self::LeRand => CommandOpCode::LeRand,
             Self::LeReadAdvertisingChannelTxPower => CommandOpCode::LeReadAdvertisingChannelTxPower,
             Self::LeReadBufferSize => CommandOpCode::LeReadBufferSize,
-            // Self::LeReadFilterAcceptListSize => CommandOpCode::LeReadFilterAcceptListSize,
+            Self::LeReadFilterAcceptListSize => CommandOpCode::LeReadFilterAcceptListSize,
             Self::LeReadLocalSupportedFeaturesPage0 => {
                 CommandOpCode::LeReadLocalSupportedFeaturesPage0
             }
             Self::LeReadSupportedStates => CommandOpCode::LeReadSupportedStates,
+            Self::LeRemoveDeviceFromFilterAcceptList(_) => {
+                CommandOpCode::LeRemoveDeviceFromFilterAcceptList
+            }
             Self::LeSetAdvertisingEnable(_) => CommandOpCode::LeSetAdvertisingEnable,
             Self::LeSetAdvertisingData(_) => CommandOpCode::LeSetAdvertisingData,
             Self::LeSetAdvertisingParameters(_) => CommandOpCode::LeSetAdvertisingParameters,
@@ -206,6 +216,7 @@ pub(crate) mod parser {
     use crate::device_address::parser::random_address;
     use crate::event_mask::parser::event_mask;
     use crate::le_event_mask::parser::le_event_mask;
+    use crate::le_filter_accept_list_address::parser::le_filter_accept_list_address;
     use crate::packet::parser::parameter_total_length;
     use crate::scan_enable::parser::scan_enable_parameters;
     use crate::scan_parameters::parser::scan_parameters;
@@ -222,19 +233,27 @@ pub(crate) mod parser {
         Ok((
             input,
             Packet::Command(match command_opcode {
-                // CommandOpCode::LeClearFilterAcceptList => Command::LeClearFilterAcceptList,
+                CommandOpCode::LeAddDeviceToFilterAcceptList => {
+                    let (_, le_filter_accept_list_address) =
+                        le_filter_accept_list_address(parameters)?;
+                    Command::LeAddDeviceToFilterAcceptList(le_filter_accept_list_address)
+                }
+                CommandOpCode::LeClearFilterAcceptList => Command::LeClearFilterAcceptList,
                 CommandOpCode::LeRand => Command::LeRand,
                 CommandOpCode::LeReadAdvertisingChannelTxPower => {
                     Command::LeReadAdvertisingChannelTxPower
                 }
                 CommandOpCode::LeReadBufferSize => Command::LeReadBufferSize,
-                // CommandOpCode::LeReadFilterAcceptListSize => {
-                //     Command::LeReadFilterAcceptListSize
-                // }
+                CommandOpCode::LeReadFilterAcceptListSize => Command::LeReadFilterAcceptListSize,
                 CommandOpCode::LeReadLocalSupportedFeaturesPage0 => {
                     Command::LeReadLocalSupportedFeaturesPage0
                 }
                 CommandOpCode::LeReadSupportedStates => Command::LeReadSupportedStates,
+                CommandOpCode::LeRemoveDeviceFromFilterAcceptList => {
+                    let (_, le_filter_accept_list_address) =
+                        le_filter_accept_list_address(parameters)?;
+                    Command::LeRemoveDeviceFromFilterAcceptList(le_filter_accept_list_address)
+                }
                 CommandOpCode::LeSetAdvertisingEnable => {
                     let (_, advertising_enable) = advertising_enable(parameters)?;
                     Command::LeSetAdvertisingEnable(advertising_enable)
@@ -288,7 +307,7 @@ mod test {
     use crate::{
         packet::parser::packet, AdvertisingChannelMap, AdvertisingFilterPolicy,
         AdvertisingIntervalRange, AdvertisingType, DeviceAddress, OwnAddressType, Packet,
-        RandomAddress,
+        PublicDeviceAddress, RandomAddress,
     };
 
     use super::*;
@@ -322,15 +341,27 @@ mod test {
 
     #[rstest]
     #[case::nop(Command::Nop, CommandOpCode::Nop, &[1, 0, 0, 0])]
+    #[case::le_add_device_to_filter_accept_list(
+        Command::LeAddDeviceToFilterAcceptList(PublicDeviceAddress::from([0x38, 0x5E, 0x43, 0xCA, 0x4C, 0x40]).into()),
+        CommandOpCode::LeAddDeviceToFilterAcceptList,
+        &[1, 17, 32, 7, 0, 0x38, 0x5E, 0x43, 0xCA, 0x4C, 0x40]
+    )]
+    #[case::le_clear_filter_accept_list(Command::LeClearFilterAcceptList, CommandOpCode::LeClearFilterAcceptList, &[1, 16, 32, 0])]
     #[case::le_rand(Command::LeRand, CommandOpCode::LeRand, &[1, 24, 32, 0])]
     #[case::le_read_advertising_channel_tx_power(
         Command::LeReadAdvertisingChannelTxPower, CommandOpCode::LeReadAdvertisingChannelTxPower, &[1, 7, 32, 0]
     )]
     #[case::le_read_buffer_size(Command::LeReadBufferSize, CommandOpCode::LeReadBufferSize, &[1, 2, 32, 0])]
+    #[case::le_read_filter_accept_list_size(Command::LeReadFilterAcceptListSize, CommandOpCode::LeReadFilterAcceptListSize, &[1, 15, 32, 0])]
     #[case::le_read_local_supported_features_page_0(
         Command::LeReadLocalSupportedFeaturesPage0, CommandOpCode::LeReadLocalSupportedFeaturesPage0, &[1, 3, 32, 0]
     )]
     #[case::le_read_supported_states(Command::LeReadSupportedStates, CommandOpCode::LeReadSupportedStates, &[1, 28, 32, 0])]
+    #[case::le_remove_device_from_filter_accept_list(
+        Command::LeRemoveDeviceFromFilterAcceptList(PublicDeviceAddress::from([0x38, 0x5E, 0x43, 0xCA, 0x4C, 0x40]).into()),
+        CommandOpCode::LeRemoveDeviceFromFilterAcceptList,
+        &[1, 18, 32, 7, 0, 0x38, 0x5E, 0x43, 0xCA, 0x4C, 0x40]
+    )]
     #[case::le_set_advertising_enable(
         Command::LeSetAdvertisingEnable(AdvertisingEnable::Enabled), CommandOpCode::LeSetAdvertisingEnable, &[1, 10, 32, 1, 1]
     )]
@@ -431,11 +462,21 @@ mod test {
     }
 
     #[rstest]
+    #[case::le_add_device_to_filter_accept_list(
+        Command::LeAddDeviceToFilterAcceptList(PublicDeviceAddress::from([0x38, 0x5E, 0x43, 0xCA, 0x4C, 0x40]).into()),
+        &[1, 17, 32, 7, 0, 0x38, 0x5E, 0x43, 0xCA, 0x4C, 0x40]
+    )]
+    #[case::le_clear_filter_accept_list(Command::LeClearFilterAcceptList, &[1, 16, 32, 0])]
     #[case::le_rand(Command::LeRand, &[1, 24, 32, 0])]
     #[case::le_read_advertising_channel_tx_power(Command::LeReadAdvertisingChannelTxPower, &[1, 7, 32, 0])]
     #[case::le_read_buffer_size(Command::LeReadBufferSize, &[1, 2, 32, 0])]
+    #[case::le_read_filter_accept_list_size(Command::LeReadFilterAcceptListSize, &[1, 15, 32, 0])]
     #[case::le_read_local_supported_features_page_0(Command::LeReadLocalSupportedFeaturesPage0, &[1, 3, 32, 0])]
     #[case::le_read_supported_states(Command::LeReadSupportedStates, &[1, 28, 32, 0])]
+    #[case::le_remove_device_from_filter_accept_list(
+        Command::LeRemoveDeviceFromFilterAcceptList(PublicDeviceAddress::from([0x38, 0x5E, 0x43, 0xCA, 0x4C, 0x40]).into()),
+        &[1, 18, 32, 7, 0, 0x38, 0x5E, 0x43, 0xCA, 0x4C, 0x40]
+    )]
     #[case::le_set_advertising_data(
         Command::LeSetAdvertisingData(AdvertisingData::default()),
         &[1, 8, 32, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]

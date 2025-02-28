@@ -41,6 +41,7 @@ pub(crate) enum EventParameter {
     StatusAndSupportedLeFeatures(StatusAndSupportedLeFeaturesEventParameter),
     StatusAndSupportedLeStates(StatusAndSupportedLeStatesEventParameter),
     StatusAndTxPowerLevel(StatusAndTxPowerLevelEventParameter),
+    StatusAndFilterAcceptListSize(StatusAndFilterAcceptListSizeEventParameter),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -176,6 +177,19 @@ impl From<StatusAndTxPowerLevelEventParameter> for EventParameter {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub(crate) struct StatusAndFilterAcceptListSizeEventParameter {
+    pub(crate) status: ErrorCode,
+    pub(crate) filter_accept_list_size: usize,
+}
+
+impl From<StatusAndFilterAcceptListSizeEventParameter> for EventParameter {
+    fn from(value: StatusAndFilterAcceptListSizeEventParameter) -> Self {
+        Self::StatusAndFilterAcceptListSize(value)
+    }
+}
+
 pub(crate) mod parser {
     use bitflags::Flags;
     use nom::{
@@ -247,6 +261,10 @@ pub(crate) mod parser {
         map_res(take(8u8), TryInto::try_into).parse(input)
     }
 
+    fn filter_accept_list_size(input: &[u8]) -> IResult<&[u8], usize> {
+        map(le_u8(), |v| v as usize).parse(input)
+    }
+
     pub(crate) fn command_complete_event(input: &[u8]) -> IResult<&[u8], CommandCompleteEvent> {
         let (return_parameters, (num_hci_command_packets, command_opcode)) =
             pair(num_hci_command_packets, command_opcode).parse(input)?;
@@ -257,6 +275,9 @@ pub(crate) mod parser {
             }
             CommandOpCode::SetEventMask
             | CommandOpCode::Reset
+            | CommandOpCode::LeAddDeviceToFilterAcceptList
+            | CommandOpCode::LeClearFilterAcceptList
+            | CommandOpCode::LeRemoveDeviceFromFilterAcceptList
             | CommandOpCode::LeSetAdvertisingEnable
             | CommandOpCode::LeSetAdvertisingData
             | CommandOpCode::LeSetAdvertisingParameters
@@ -310,6 +331,20 @@ pub(crate) mod parser {
                     status,
                     le_acl_data_packet_length,
                     total_num_le_acl_data_packets,
+                }
+                .into()
+            }
+            CommandOpCode::LeReadFilterAcceptListSize => {
+                let (rest, status) = hci_error_code(return_parameters)?;
+                let (rest, filter_accept_list_size) = if status.is_success() {
+                    filter_accept_list_size(rest)?
+                } else {
+                    (rest, 0)
+                };
+                eof(rest)?;
+                StatusAndFilterAcceptListSizeEventParameter {
+                    status,
+                    filter_accept_list_size,
                 }
                 .into()
             }
@@ -425,6 +460,14 @@ mod test {
     use super::*;
 
     #[rstest]
+    #[case::le_add_device_to_filter_accept_list(CommandCompleteEvent::new(
+            1, CommandOpCode::LeAddDeviceToFilterAcceptList,
+            StatusEventParameter { status: ErrorCode::Success }
+        ), &[4, 14, 4, 1, 17, 32, 0])]
+    #[case::le_clear_filter_accept_list(CommandCompleteEvent::new(
+            1, CommandOpCode::LeClearFilterAcceptList,
+            StatusEventParameter { status: ErrorCode::Success }
+        ), &[4, 14, 4, 1, 16, 32, 0])]
     #[case::le_rand(CommandCompleteEvent::new(
             1, CommandOpCode::LeRand,
             StatusAndRandomNumberEventParameter {
@@ -443,6 +486,12 @@ mod test {
                 status: ErrorCode::Success, le_acl_data_packet_length: 255, total_num_le_acl_data_packets: 24
             }
         ), &[4, 14, 7, 1, 2, 32, 0, 255, 0, 24])]
+    #[case::le_read_filter_accept_list_size(CommandCompleteEvent::new(
+            1, CommandOpCode::LeReadFilterAcceptListSize,
+            StatusAndFilterAcceptListSizeEventParameter {
+                status: ErrorCode::Success, filter_accept_list_size: 12
+            }
+        ), &[4, 14, 5, 1, 15, 32, 0, 12])]
     #[case::le_read_local_supported_features_page_0(CommandCompleteEvent::new(
             1, CommandOpCode::LeReadLocalSupportedFeaturesPage0,
             StatusAndSupportedLeFeaturesEventParameter {
@@ -456,6 +505,10 @@ mod test {
                 status: ErrorCode::Success, supported_le_states: 0x0000_03FF_FFFF_FFFF.into()
             }
         ), &[4, 14, 12, 1, 28, 32, 0, 255, 255, 255, 255, 255, 3, 0, 0])]
+    #[case::le_remove_device_from_filter_accept_list(CommandCompleteEvent::new(
+            1, CommandOpCode::LeRemoveDeviceFromFilterAcceptList,
+            StatusEventParameter { status: ErrorCode:: Success }
+        ), &[4, 14, 4, 1, 18, 32, 0])]
     #[case::le_set_advertising_data(CommandCompleteEvent::new(
             1, CommandOpCode::LeSetAdvertisingData,
             StatusEventParameter { status: ErrorCode::Success }
