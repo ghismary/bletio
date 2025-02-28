@@ -1549,7 +1549,7 @@ mod test {
     }
 
     #[fixture]
-    fn mock_cmd_reset_receive_unandled_event() -> Mock {
+    fn mock_cmd_reset_receive_unhandled_event() -> Mock {
         tokio_test::io::Builder::new()
             .read(&[4, 14, 3, 1, 0, 0])
             .write(&[1, 3, 12, 0])
@@ -1581,7 +1581,7 @@ mod test {
         Err(Error::InvalidPacket)
     )]
     #[case::receive_unhandled_event(
-        mock_cmd_reset_receive_unandled_event(),
+        mock_cmd_reset_receive_unhandled_event(),
         Ok(())
     )]
     #[tokio::test(flavor = "current_thread", start_paused = true)]

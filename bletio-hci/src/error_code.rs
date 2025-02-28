@@ -62,7 +62,7 @@ pub enum ErrorCode {
     ///  - a command parameter is an invalid type.
     ///  - a connection identifier does not match the corresponding event.
     ///  - a parameter is odd when it is required to be even.
-    ///  - a parameter is outside of the specified range.
+    ///  - a parameter is outside the specified range.
     ///  - two or more parameter values have inconsistent values.
     InvalidHciCommandParameters = 0x12,
     /// The user on the remote device either terminated the connection or stopped broadcasting packets.
@@ -93,7 +93,7 @@ pub enum ErrorCode {
     /// Some LMP PDU / LL Control PDU parameters were invalid:
     ///  - the PDU length is invalid.
     ///  - a parameter is odd when it is required to be even.
-    ///  - a parameter is outside of the specified range.
+    ///  - a parameter is outside the specified range.
     ///  - two or more parameters have inconsistent values.
     InvalidLmpParametersInvalidLlParameters = 0x1E,
     /// No other error code specified is appropriate to use.
@@ -120,7 +120,7 @@ pub enum ErrorCode {
     RequestedQosNotSupported = 0x27,
     /// An LMP PDU or LL PDU that includes an instant cannot be performed because the instant when this would have occurred has passed.
     InstantPassed = 0x28,
-    /// It was not possible to pair as a unit key was requested and it is not supported.
+    /// It was not possible to pair as a unit key was requested, and it is not supported.
     PairingWithUnitKeyNotSupported = 0x29,
     /// An LMP transaction or LL Procedure was started that collides with an ongoing transaction.
     DifferentTransactionCollision = 0x2A,
@@ -140,7 +140,7 @@ pub enum ErrorCode {
     RoleSwitchPending = 0x32,
     /// The current Synchronous negotiation was terminated with the negotiation state set to Reserved Slot Violation.
     ReservedSlotViolation = 0x34,
-    /// A role switch was attempted but it failed and the original piconet structure is restored.
+    /// A role switch was attempted, but it failed and the original piconet structure is restored.
     /// The switch may have failed because the TDD switch or piconet switch failed.
     RoleSwitchFailed = 0x35,
     /// The extended inquiry response, with the requested requirements for FEC, is too large to fit in any of the
@@ -168,7 +168,7 @@ pub enum ErrorCode {
     /// established or the Link Layer failed to synchronize within the specified time.
     ConnectionFailedToBeEstablished = 0x3E,
     /// The Central, at this time, is unable to make a coarse adjustment to the piconet clock, using the
-    /// supplied parameters. Instead the Central will attempt to move the clock using clock dragging.
+    /// supplied parameters. Instead, the Central will attempt to move the clock using clock dragging.
     CoarseClockAdjustmentRejectedButWillTryToAdjustUsingClockDragging = 0x40,
     /// The LMP PDU is rejected because the Type 0 submap is not currently defined.
     Type0SubmapNotDefined = 0x41,

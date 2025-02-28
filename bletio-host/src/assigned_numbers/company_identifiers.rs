@@ -254,7 +254,7 @@ pub enum CompanyIdentifier {
     /// SLOC GmbH (0x0E38)
     SlocGmbH = 0x0E38,
     /// CESYS Gesellschaft für angewandte Mikroelektronik mbH (0x0E37)
-    CesysGesellschaftFürAngewandteMikroelektronikMbH = 0x0E37,
+    CesysGesellschaftFurAngewandteMikroelektronikMbH = 0x0E37,
     /// Cousins and Sears LLC (0x0E36)
     CousinsAndSearsLlc = 0x0E36,
     /// SNAPPWISH LLC (0x0E35)
@@ -1092,7 +1092,7 @@ pub enum CompanyIdentifier {
     /// Movesense Oy (0x0C93)
     MovesenseOy = 0x0C93,
     /// Kesseböhmer Ergonomietechnik GmbH (0x0C92)
-    KesseböhmerErgonomietechnikGmbH = 0x0C92,
+    KessebohmerErgonomietechnikGmbH = 0x0C92,
     /// Yashu Systems (0x0C91)
     YashuSystems = 0x0C91,
     /// WESCO AG (0x0C90)
@@ -1154,7 +1154,7 @@ pub enum CompanyIdentifier {
     /// yupiteru (0x0C74)
     Yupiteru = 0x0C74,
     /// Truma Gerätetechnik GmbH & Co. KG (0x0C73)
-    TrumaGerätetechnikGmbHAndCoKg = 0x0C73,
+    TrumaGeratetechnikGmbHAndCoKg = 0x0C73,
     /// StreetCar ORV, LLC (0x0C72)
     StreetCarOrvLlc = 0x0C72,
     /// BitGreen Technolabz (OPC) Private Limited (0x0C71)
@@ -1390,7 +1390,7 @@ pub enum CompanyIdentifier {
     /// Media-Cartec GmbH (0x0BFE)
     MediaCartecGmbH = 0x0BFE,
     /// Esmé Solutions (0x0BFD)
-    EsméSolutions = 0x0BFD,
+    EsmeSolutions = 0x0BFD,
     /// T+A elektroakustik GmbH & Co.KG (0x0BFC)
     TAElektroakustikGmbHAndCoKg = 0x0BFC,
     /// Dodam Enersys Co., Ltd (0x0BFB)
@@ -3476,7 +3476,7 @@ pub enum CompanyIdentifier {
     /// ShapeLog, Inc. (0x07EA)
     ShapeLogInc = 0x07EA,
     /// Häfele GmbH & Co KG (0x07E9)
-    HäfeleGmbHAndCoKg = 0x07E9,
+    HafeleGmbHAndCoKg = 0x07E9,
     /// Packetcraft, Inc. (0x07E8)
     PacketcraftInc = 0x07E8,
     /// Komfort IQ, Inc. (0x07E7)
@@ -3922,7 +3922,7 @@ pub enum CompanyIdentifier {
     /// Element Products, Inc. (0x070B)
     ElementProductsInc = 0x070B,
     /// Huf Hülsbeck & Fürst GmbH & Co. KG (0x070A)
-    HufHülsbeckAndFürstGmbHAndCoKg = 0x070A,
+    HufHulsbeckAndFurstGmbHAndCoKg = 0x070A,
     /// Carewear Corp. (0x0709)
     CarewearCorp = 0x0709,
     /// Be Interactive Co., Ltd (0x0708)
@@ -3966,7 +3966,7 @@ pub enum CompanyIdentifier {
     /// Vigil Technologies Inc. (0x06F5)
     VigilTechnologiesInc = 0x06F5,
     /// Touché Technology Ltd (0x06F4)
-    TouchéTechnologyLtd = 0x06F4,
+    ToucheTechnologyLtd = 0x06F4,
     /// Alfred International Inc. (0x06F3)
     AlfredInternationalInc = 0x06F3,
     /// Trapper Data AB (0x06F2)
@@ -5734,7 +5734,7 @@ pub enum CompanyIdentifier {
     /// LLC "MEGA-F service" (0x0380)
     LlcMegaFService = 0x0380,
     /// Société des Produits Nestlé S.A. (0x037F)
-    SociétéDesProduitsNestléSA = 0x037F,
+    SocieteDesProduitsNestleSA = 0x037F,
     /// lulabytes S.L. (0x037E)
     LulabytesSL = 0x037E,
     /// MICRODIA Ltd. (0x037D)
@@ -6342,7 +6342,7 @@ pub enum CompanyIdentifier {
     /// Sapphire Circuits LLC (0x0250)
     SapphireCircuitsLlc = 0x0250,
     /// Schneider Schreibgeräte GmbH (0x024F)
-    SchneiderSchreibgeräteGmbH = 0x024F,
+    SchneiderSchreibgerateGmbH = 0x024F,
     /// Microtronics Engineering GmbH (0x024E)
     MicrotronicsEngineeringGmbH = 0x024E,
     /// M-Way Solutions GmbH (0x024D)
@@ -6426,7 +6426,7 @@ pub enum CompanyIdentifier {
     /// Merlinia A/S (0x0226)
     MerliniaAS = 0x0226,
     /// Nestlé Nespresso S.A. (0x0225)
-    NestléNespressoSA = 0x0225,
+    NestleNespressoSA = 0x0225,
     /// Comarch SA (0x0224)
     ComarchSa = 0x0224,
     /// Philip Morris Products S.A. (0x0223)

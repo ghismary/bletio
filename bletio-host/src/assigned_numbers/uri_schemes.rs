@@ -14,7 +14,7 @@ use crate::advertising::AdvertisingError;
 /// Assigned numbers for Bluetooth URI schemes defined in
 /// [Assigned Numbers, 2.7](https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/core/uri_schemes.yaml).
 ///
-/// It is be used when creating a Uniform Resource Identifier Advertising Structure.
+/// It is to be used when creating a Uniform Resource Identifier Advertising Structure.
 /// See [UriAdStruct::try_new](crate::advertising::ad_struct::UriAdStruct::try_new).
 pub enum ProvisionedUriScheme {
     /// "aaa:" URI scheme

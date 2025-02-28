@@ -32,7 +32,7 @@ bitflags! {
         const LE_DATA_LENGTH_CHANGE = 1 << 6;
         /// The local P-256 key generation is complete.
         const LE_READ_LOCAL_P256_PUBLIC_KEY_COMPLETE = 1 << 7;
-        /// Indicates that LE Diffie Hellman key generation has been completed by the Controller.
+        /// Indicates that LE Diffie-Hellman key generation has been completed by the Controller.
         const LE_GENERATE_DHKEY_COMPLETE = 1 << 8;
         /// Indicates to both of the Hosts forming the connection that a new connection has been created.
         const LE_ENHANCED_CONNECTION_COMPLETE = 1 << 9;

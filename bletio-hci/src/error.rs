@@ -39,7 +39,7 @@ pub enum Error {
     InvalidLeAdvertisingReportNumReports(u8),
     /// The provided own address type is invalid.
     InvalidOwnAddressType(u8),
-    /// Invalid HCI packet, either malformed or not expected (eg. Command received by the Host).
+    /// Invalid HCI packet, either malformed or not expected (e.g. Command received by the Host).
     InvalidPacket,
     /// Invalid or unhandled HCI packet type.
     InvalidPacketType(u8),
