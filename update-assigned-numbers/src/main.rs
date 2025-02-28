@@ -316,6 +316,11 @@ impl CompanyIdentifier {
             .replace("（", " ")
             .replace("）", " ")
             .replace("&", " And ")
+            .replace("ä", "a")
+            .replace("ö", "o")
+            .replace("ü", "u")
+            .replace("é", "e")
+            .replace("ó", "o")
             .split(' ')
             .map(|s| s.to_case(Case::Pascal))
             .collect::<Vec<_>>()
@@ -472,7 +477,7 @@ use crate::advertising::AdvertisingError;
 /// Assigned numbers for Bluetooth GATT services defined in
 /// [Assigned Numbers, 3.4](https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/uuids/service_uuids.yaml).
 ///
-/// It is be used when creating a list of 16-bit Service UUIDs Advertising Structure.
+/// It is to be used when creating a list of 16-bit Service UUIDs Advertising Structure.
 /// See [ServiceUuid16AdStruct::try_new](crate::advertising::ad_struct::ServiceUuid16AdStruct::try_new).
 pub enum ServiceUuid {{
 {}
@@ -548,7 +553,7 @@ use crate::advertising::AdvertisingError;
 /// Assigned numbers for Bluetooth URI schemes defined in
 /// [Assigned Numbers, 2.7](https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/core/uri_schemes.yaml).
 ///
-/// It is be used when creating a Uniform Resource Identifier Advertising Structure.
+/// It is to be used when creating a Uniform Resource Identifier Advertising Structure.
 /// See [UriAdStruct::try_new](crate::advertising::ad_struct::UriAdStruct::try_new).
 pub enum ProvisionedUriScheme {{
 {}

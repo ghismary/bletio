@@ -14,7 +14,7 @@ use crate::advertising::AdvertisingError;
 /// Assigned numbers for Bluetooth GATT services defined in
 /// [Assigned Numbers, 3.4](https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/uuids/service_uuids.yaml).
 ///
-/// It is be used when creating a list of 16-bit Service UUIDs Advertising Structure.
+/// It is to be used when creating a list of 16-bit Service UUIDs Advertising Structure.
 /// See [ServiceUuid16AdStruct::try_new](crate::advertising::ad_struct::ServiceUuid16AdStruct::try_new).
 pub enum ServiceUuid {
     /// GAP Service (0x1800) — org.bluetooth.service.gap

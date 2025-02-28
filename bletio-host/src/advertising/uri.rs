@@ -7,7 +7,7 @@ const CUSTOM_URI_SCHEME_MAX_LENGTH: usize = 26;
 const URI_HIER_PART_MAX_LENGTH: usize = 27;
 const EMPTY_SCHEME_NAME_VALUE: u16 = 0x0001;
 
-/// An URI to be included in the Universal Resource Identifier Advertising Structure.
+/// A URI to be included in the Universal Resource Identifier Advertising Structure.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Uri {
@@ -16,7 +16,7 @@ pub struct Uri {
 }
 
 impl Uri {
-    /// Create an URI.
+    /// Create a URI.
     pub fn try_new(
         scheme: impl Into<UriScheme>,
         hier_part: &'static str,
