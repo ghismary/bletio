@@ -15,6 +15,7 @@ const SERVICE_UUID128_NB_MAX: usize = 1;
 ///
 /// Used when creating list of UUID16, UUID32 or UUID128 services Advertising Structures.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum ServiceListComplete {
     Complete,
     Incomplete,
