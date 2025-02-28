@@ -1,7 +1,7 @@
 #![no_std]
 
 use bletio_hci::Error as HciError;
-use bletio_hci::HciDriverError;
+use bletio_hci::{HciDriverError, SupportedCommands};
 
 pub mod advertising;
 pub mod assigned_numbers;
@@ -29,6 +29,8 @@ pub enum Error {
     Advertising(AdvertisingError),
     /// The host is in a state where it cannot wait for an event.
     CannotWaitForEventInThisState,
+    /// The controller does not support the command.
+    ControllerDoesNotSupportCommand(SupportedCommands),
     /// HCI related error.
     Hci(HciError),
     /// The Bluetooth controller is not LE capable.

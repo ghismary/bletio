@@ -4,8 +4,9 @@ use core::ops::Deref;
 
 use bletio_hci::{
     EventList, EventMask, FilterDuplicates, Hci, HciDriver, LeAdvertisingReportAddress,
-    LeAdvertisingReportEventType, LeEventMask, PublicDeviceAddress, RandomStaticDeviceAddress,
-    Rssi, ScanEnable, SupportedCommands, SupportedFeatures, SupportedLeFeatures, SupportedLeStates,
+    LeAdvertisingReportEventType, LeEventMask, LeFilterAcceptListAddress, PublicDeviceAddress,
+    RandomStaticDeviceAddress, Rssi, ScanEnable, SupportedCommands, SupportedFeatures,
+    SupportedLeFeatures, SupportedLeStates,
 };
 
 use crate::advertising::{
@@ -122,6 +123,38 @@ impl<'a, H> BleHost<'a, H, BleHostStateStandby>
 where
     H: HciDriver,
 {
+    pub async fn add_le_filter_accept_list_device(
+        &mut self,
+        address: impl Into<LeFilterAcceptListAddress>,
+    ) -> Result<(), Error> {
+        if self
+            .device_information
+            .is_command_supported(SupportedCommands::LE_ADD_DEVICE_TO_FILTER_ACCEPT_LIST)
+        {
+            Ok(self
+                .hci
+                .cmd_le_add_device_to_filter_accept_list(address.into())
+                .await?)
+        } else {
+            Err(Error::ControllerDoesNotSupportCommand(
+                SupportedCommands::LE_ADD_DEVICE_TO_FILTER_ACCEPT_LIST,
+            ))
+        }
+    }
+
+    pub async fn clear_le_filter_accept_list(&mut self) -> Result<(), Error> {
+        if self
+            .device_information
+            .is_command_supported(SupportedCommands::LE_CLEAR_FILTER_ACCEPT_LIST)
+        {
+            Ok(self.hci.cmd_le_clear_filter_accept_list().await?)
+        } else {
+            Err(Error::ControllerDoesNotSupportCommand(
+                SupportedCommands::LE_CLEAR_FILTER_ACCEPT_LIST,
+            ))
+        }
+    }
+
     pub async fn create_random_address(&mut self) -> Result<(), Error> {
         if self
             .device_information
@@ -141,6 +174,38 @@ where
                 self.device_information.random_static_device_address = Some(random_address);
                 return Ok(());
             }
+        }
+    }
+
+    pub async fn get_le_filter_accept_list_size(&mut self) -> Result<usize, Error> {
+        if self
+            .device_information
+            .is_command_supported(SupportedCommands::LE_READ_FILTER_ACCEPT_LIST_SIZE)
+        {
+            Ok(self.hci.cmd_le_read_filter_accept_list_size().await?)
+        } else {
+            Err(Error::ControllerDoesNotSupportCommand(
+                SupportedCommands::LE_READ_FILTER_ACCEPT_LIST_SIZE,
+            ))
+        }
+    }
+
+    pub async fn remove_le_filter_accept_list_device(
+        &mut self,
+        address: impl Into<LeFilterAcceptListAddress>,
+    ) -> Result<(), Error> {
+        if self
+            .device_information
+            .is_command_supported(SupportedCommands::LE_REMOVE_DEVICE_FROM_FILTER_ACCEPT_LIST)
+        {
+            Ok(self
+                .hci
+                .cmd_le_remove_device_from_filter_accept_list(address.into())
+                .await?)
+        } else {
+            Err(Error::ControllerDoesNotSupportCommand(
+                SupportedCommands::LE_REMOVE_DEVICE_FROM_FILTER_ACCEPT_LIST,
+            ))
         }
     }
 
