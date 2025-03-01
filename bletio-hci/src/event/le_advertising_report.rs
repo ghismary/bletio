@@ -283,7 +283,7 @@ pub(crate) mod parser {
 
     fn le_advertising_report_rssi(input: &[u8]) -> IResult<&[u8], Option<Rssi>> {
         map_res(le_u8(), |v| match v {
-            0x7F => Ok::<_, crate::Error>(None),
+            0x7F => Ok::<_, Error>(None),
             _ => Ok(Some(Rssi::try_new(v as i8)?)),
         })
         .parse(input)
@@ -331,9 +331,7 @@ pub(crate) mod parser {
 mod test {
     use rstest::rstest;
 
-    use crate::{
-        packet::parser::packet, AdvertisingData, Event, LeMetaEvent, Packet, ScanResponseData,
-    };
+    use crate::{packet::parser::packet, AdvertisingData, Event, LeMetaEvent, Packet};
 
     use super::*;
 
@@ -510,19 +508,6 @@ mod test {
         buffer.copy_from_slice(&data[..]).unwrap();
         let data = LeAdvertisingReportData::from(buffer);
         let adv_data: AdvertisingData = (&data).into();
-        assert_eq!(
-            adv_data.data(),
-            &[16, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25]
-        );
-    }
-
-    #[test]
-    fn test_scan_response_data_from_le_advertising_report_data() {
-        let data = [25; 16];
-        let mut buffer: Buffer<31> = Buffer::default();
-        buffer.copy_from_slice(&data[..]).unwrap();
-        let data = LeAdvertisingReportData::from(buffer);
-        let adv_data: ScanResponseData = (&data).into();
         assert_eq!(
             adv_data.data(),
             &[16, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25]

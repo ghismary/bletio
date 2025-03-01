@@ -41,7 +41,7 @@ pub(crate) use event::command_complete::EventParameter;
 pub(crate) use hci_buffer::HciBuffer;
 pub(crate) use packet::{Packet, PacketType};
 
-pub use advertising_data::{AdvertisingData, ScanResponseData};
+pub use advertising_data::AdvertisingData;
 pub use advertising_enable::AdvertisingEnable;
 pub use advertising_parameters::{
     advertising_interval_range, AdvertisingChannelMap, AdvertisingFilterPolicy,
