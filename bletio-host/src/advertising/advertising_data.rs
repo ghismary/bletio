@@ -1,3 +1,4 @@
+use core::marker::PhantomData;
 use core::ops::RangeInclusive;
 
 use bletio_hci::{
@@ -20,407 +21,98 @@ use crate::assigned_numbers::{AppearanceValue, CompanyIdentifier, ServiceUuid};
 use crate::uuid::{Uuid128, Uuid32};
 use crate::{DeviceInformation, Error};
 
-const EMPTY_ADVERTISING_DATA_ITERATOR: AdvertisingDataIterator = AdvertisingDataIterator {
-    data: &[],
-    next_index: 0,
-};
+/// Marker trait for Advertising Data types.
+pub trait IsAdvertisingData {}
 
+/// Type implementing the `IsAdvertisingData` trait for Advertising Data.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct FullAdvertisingData {
-    pub(crate) adv_data: AdvertisingData,
-    pub(crate) scanresp_data: Option<ScanResponseData>,
+pub struct AdvertisingDataType;
+
+/// Type implementing the `IsAdvertisingData` trait for Scan Response Data.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct ScanResponseDataType;
+
+impl IsAdvertisingData for AdvertisingDataType {}
+
+impl IsAdvertisingData for ScanResponseDataType {}
+
+/// Advertising Data or Scan Response Data sent when advertising.
+///
+/// Prefer using the `AdvertisingData` and `ScanResponseData` types.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct GenericAdvertisingData<AdvertisingDataType> {
+    data: bletio_hci::AdvertisingData,
+    _marker: PhantomData<AdvertisingDataType>,
 }
 
-impl FullAdvertisingData {
-    pub fn try_new(
-        adv_data: AdvertisingData,
-        scanresp_data: impl Into<Option<ScanResponseData>>,
-    ) -> Result<Self, Error> {
-        let scanresp_data = scanresp_data.into();
-        if let Some(scanresp_data) = &scanresp_data {
-            if adv_data
-                .iter()
-                .any(|ad_struct| matches!(ad_struct, AdStruct::Appearance(_)))
-                && scanresp_data
-                    .iter()
-                    .any(|ad_struct| matches!(ad_struct, AdStruct::Appearance(_)))
-            {
-                return Err(
-                    AdvertisingError::AppearanceNotAllowedInBothAdvertisingDataAndScanResponseData,
-                )?;
-            }
-        }
-        Ok(Self {
-            adv_data,
-            scanresp_data,
-        })
+impl<T> GenericAdvertisingData<T>
+where
+    T: IsAdvertisingData + Default,
+{
+    pub fn builder() -> GenericAdvertisingDataBuilder<T> {
+        GenericAdvertisingDataBuilder::new()
     }
 
-    pub fn advertising_data(&self) -> &AdvertisingData {
-        &self.adv_data
+    pub fn has_ad_struct(&self, func: impl FnMut(AdStruct) -> bool) -> bool {
+        self.iter().any(func)
     }
 
-    pub fn iter(
-        &self,
-    ) -> core::iter::Chain<AdvertisingDataIterator<'_>, AdvertisingDataIterator<'_>> {
-        if let Some(scanresp_data) = self.scanresp_data.as_ref() {
-            self.adv_data.iter().chain(scanresp_data.iter())
-        } else {
-            self.adv_data.iter().chain(EMPTY_ADVERTISING_DATA_ITERATOR)
+    pub fn iter(&self) -> AdvertisingDataIterator {
+        AdvertisingDataIterator {
+            data: self.data.data(),
+            next_index: 0,
         }
     }
 
-    pub fn scan_response_data(&self) -> Option<&ScanResponseData> {
-        self.scanresp_data.as_ref()
-    }
-
-    pub(crate) fn fill_automatic_data(
-        &self,
-        device_information: &DeviceInformation,
-    ) -> Result<Self, Error> {
-        let mut adv_data_builder = AdvertisingData::builder();
-        for ad_struct in self.adv_data.iter() {
+    fn fill_automatic_data(&self, device_information: &DeviceInformation) -> Result<Self, Error> {
+        let mut builder = Self::builder();
+        for ad_struct in self.iter() {
             if matches!(ad_struct, AdStruct::Appearance(_)) {
-                adv_data_builder = adv_data_builder
+                builder = builder
                     .add_ad_struct(AppearanceAdStruct::new(device_information.appearance))?;
             } else if matches!(ad_struct, AdStruct::LeSupportedFeatures(_)) {
-                adv_data_builder = adv_data_builder.add_ad_struct(
-                    LeSupportedFeaturesAdStruct::new(device_information.supported_le_features),
-                )?;
+                builder = builder.add_ad_struct(LeSupportedFeaturesAdStruct::new(
+                    device_information.supported_le_features,
+                ))?;
             } else if matches!(ad_struct, AdStruct::TxPowerLevel(_)) {
-                adv_data_builder = adv_data_builder
+                builder = builder
                     .add_ad_struct(TxPowerLevelAdStruct::new(device_information.tx_power_level))?;
             } else if let AdStruct::LocalName(local_name) = ad_struct {
-                adv_data_builder = adv_data_builder.add_ad_struct(LocalNameAdStruct::try_new(
+                builder = builder.add_ad_struct(LocalNameAdStruct::try_new(
                     device_information.local_name,
                     local_name.complete,
                 )?)?;
             } else {
-                adv_data_builder = adv_data_builder.add_ad_struct(ad_struct)?;
+                builder = builder.add_ad_struct(ad_struct)?;
             }
         }
 
-        let adv_data = adv_data_builder.build();
-
-        let scanresp_data = if let Some(scanresp_data) = self.scanresp_data.as_ref() {
-            let mut scanresp_data_builder = ScanResponseData::builder();
-            for ad_struct in scanresp_data.iter() {
-                if matches!(ad_struct, AdStruct::Appearance(_)) {
-                    scanresp_data_builder = scanresp_data_builder
-                        .add_ad_struct(AppearanceAdStruct::new(device_information.appearance))?;
-                } else if matches!(ad_struct, AdStruct::LeSupportedFeatures(_)) {
-                    scanresp_data_builder = scanresp_data_builder.add_ad_struct(
-                        LeSupportedFeaturesAdStruct::new(device_information.supported_le_features),
-                    )?;
-                } else if matches!(ad_struct, AdStruct::TxPowerLevel(_)) {
-                    scanresp_data_builder = scanresp_data_builder.add_ad_struct(
-                        TxPowerLevelAdStruct::new(device_information.tx_power_level),
-                    )?;
-                } else if let AdStruct::LocalName(local_name) = ad_struct {
-                    scanresp_data_builder =
-                        scanresp_data_builder.add_ad_struct(LocalNameAdStruct::try_new(
-                            device_information.local_name,
-                            local_name.complete,
-                        )?)?;
-                } else {
-                    scanresp_data_builder = scanresp_data_builder.add_ad_struct(ad_struct)?;
-                }
-            }
-
-            Some(scanresp_data_builder.build())
-        } else {
-            None
-        };
-
-        FullAdvertisingData::try_new(adv_data, scanresp_data)
+        Ok(builder.build())
     }
 }
 
-/// Builder to create `AdvertisingData` packets.
-#[derive(Debug, Default, PartialEq, Eq)]
-pub struct AdvertisingDataBuilder {
-    data: AdvertisingData,
+impl<T> EncodeToBuffer for GenericAdvertisingData<T>
+where
+    T: IsAdvertisingData,
+{
+    fn encode<B: BufferOps>(&self, buffer: &mut B) -> Result<usize, bletio_utils::Error> {
+        self.data.encode(buffer)
+    }
+
+    fn encoded_size(&self) -> usize {
+        self.data.encoded_size()
+    }
 }
 
-impl AdvertisingDataBuilder {
-    /// Create a builder to instantiate `AdvertisingData`.
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Build the `AdvertisingData`, containing all the Advertising Structures that has been added.
-    pub fn build(self) -> AdvertisingData {
-        self.data
-    }
-
-    /// Add an Advertising Interval Advertising Structure to the `AdvertisingData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `interval` — The Advertising Interval value to put in the added Advertising Interval Advertising Structure.
-    pub fn with_advertising_interval(
-        self,
-        interval: AdvertisingInterval,
-    ) -> Result<Self, AdvertisingError> {
-        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::AdvertisingInterval(_))) {
-            Err(AdvertisingError::OnlyOneAdvertisingIntervalAllowedInAdvertisingDataOrScanResponseData)
-        } else {
-            self.add_ad_struct(AdvertisingIntervalAdStruct::new(interval))
-        }
-    }
-
-    /// Add an Appearance Advertising Structure to the `AdvertisingData`.
-    pub fn with_appearance(self) -> Result<Self, AdvertisingError> {
-        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::Appearance(_))) {
-            Err(AdvertisingError::OnlyOneAppearanceAllowedInAdvertisingDataOrScanResponseData)
-        } else {
-            self.add_ad_struct(AppearanceAdStruct::new(AppearanceValue::GenericUnknown))
-        }
-    }
-
-    /// Add a Flags Advertising Structure to the `AdvertisingData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `flags` — The Flags value to put in the added Flags Advertising Structure.
-    pub fn with_flags(self, flags: Flags) -> Result<Self, AdvertisingError> {
-        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::Flags(_))) {
-            Err(AdvertisingError::OnlyOneFlagsAllowedInAdvertisingData)
-        } else {
-            self.add_ad_struct(FlagsAdStruct::new(flags))
-        }
-    }
-
-    /// Add a LE Supported Features Advertising Structure to the `AdvertisingData`.
-    pub fn with_le_supported_features(self) -> Result<Self, AdvertisingError> {
-        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::LeSupportedFeatures(_))) {
-            Err(AdvertisingError::OnlyOneLeSupportedFeaturesAllowedInAdvertisingDataOrScanResponseData)
-        } else {
-            self.add_ad_struct(LeSupportedFeaturesAdStruct::new(
-                SupportedLeFeatures::default(),
-            ))
-        }
-    }
-
-    /// Add a Local Name Advertising Structure to the `AdvertisingData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `complete` — Whether the local name should be put complete or shortened in the added Local Name Advertising Structure.
-    pub fn with_local_name(self, complete: LocalNameComplete) -> Result<Self, AdvertisingError> {
-        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::LocalName(_))) {
-            Err(AdvertisingError::OnlyOneLocalNameAllowedInAdvertisingDataOrScanResponseData)
-        } else {
-            self.add_ad_struct(LocalNameAdStruct::try_new("", complete)?)
-        }
-    }
-
-    /// Add a Manufacturer Specific Data Advertising Structure to the `AdvertisingData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `manufacturer` — The `CompanyIdentifier` to put in the added Manufacturer Specific Data Advertising Structure.
-    /// * `data` — The data to put in the added Manufacturer Specific Data Advertising Structure.
-    pub fn with_manufacturer_specific_data(
-        self,
-        manufacturer: CompanyIdentifier,
-        data: &[u8],
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(ManufacturerSpecificDataAdStruct::try_new(
-            manufacturer,
-            data,
-        )?)
-    }
-
-    /// Add a Peripheral Connection Interval Range Advertising Structure to the `AdvertisingData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `range` — The Connection Interval value to put in the added Peripheral Connection Range Advertising Structure.
-    pub fn with_peripheral_connection_interval_range(
-        self,
-        range: RangeInclusive<ConnectionInterval>,
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(PeripheralConnectionIntervalRangeAdStruct::new(range))
-    }
-
-    /// Add a Public Target Address Advertising Structure to the `AdvertisingData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `addresses` — The list of public device addresses to put in the added Public Target Address Advertising Structure.
-    pub fn with_public_target_address(
-        self,
-        addresses: &[PublicDeviceAddress],
-    ) -> Result<Self, AdvertisingError> {
-        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::PublicTargetAddress(_))) {
-            Err(AdvertisingError::OnlyOnePublicTargetAddressAllowedInAdvertisingDataOrScanResponseData)
-        } else {
-            self.add_ad_struct(PublicTargetAddressAdStruct::try_new(addresses)?)
-        }
-    }
-
-    /// Add a Random Target Address Advertising Structure to the `AdvertisingData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `addresses` — The list of random addresses to put in the added Random Target Address Advertising Structure.
-    pub fn with_random_target_address(
-        self,
-        addresses: &[RandomAddress],
-    ) -> Result<Self, AdvertisingError> {
-        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::RandomTargetAddress(_))) {
-            Err(AdvertisingError::OnlyOneRandomTargetAddressAllowedInAdvertisingDataOrScanResponseData)
-        } else {
-            self.add_ad_struct(RandomTargetAddressAdStruct::try_new(addresses)?)
-        }
-    }
-
-    /// Add a Service Data for a 16-bit Service UUID Advertising Structure to the `AdvertisingData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `uuid` — The 16-bit Service UUID to put in the added Service Data Advertising Structure.
-    /// * `data` — The data to put in the added Service Data Advertising Structure.
-    pub fn with_service_data_uuid16(
-        self,
-        uuid: ServiceUuid,
-        data: &[u8],
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(ServiceDataUuid16AdStruct::try_new(uuid, data)?)
-    }
-
-    /// Add a Service Data for a 32-bit Service UUID Advertising Structure to the `AdvertisingData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `uuid` — The 32-bit Service UUID to put in the added Service Data Advertising Structure.
-    /// * `data` — The data to put in the added Service Data Advertising Structure.
-    pub fn with_service_data_uuid32(
-        self,
-        uuid: Uuid32,
-        data: &[u8],
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(ServiceDataUuid32AdStruct::try_new(uuid, data)?)
-    }
-
-    /// Add a Service Data for a 128-bit Service UUID Advertising Structure to the `AdvertisingData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `uuid` — The 128-bit Service UUID to put in the added Service Data Advertising Structure.
-    /// * `data` — The data to put in the added Service Data Advertising Structure.
-    pub fn with_service_data_uuid128(
-        self,
-        uuid: Uuid128,
-        data: &[u8],
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(ServiceDataUuid128AdStruct::try_new(uuid, data)?)
-    }
-
-    /// Add a list of 16-bit Service Solicitation UUIDs Advertising Structure to the `AdvertisingData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `uuids` — The list of 16-bit Service UUIDs to put in the added Service Solicitation UUID16 Advertising Structure.
-    pub fn with_service_solicitation_uuid16(
-        self,
-        uuids: &[ServiceUuid],
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(ServiceSolicitationUuid16AdStruct::try_new(uuids)?)
-    }
-
-    /// Add a list of 32-bit Service Solicitation UUIDs Advertising Structure to the `AdvertisingData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `uuids` — The list of 32-bit Service UUIDs to put in the added Service Solicitation UUID32 Advertising Structure.
-    pub fn with_service_solicitation_uuid32(
-        self,
-        uuids: &[Uuid32],
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(ServiceSolicitationUuid32AdStruct::try_new(uuids)?)
-    }
-
-    /// Add a list of 128-bit Service Solicitation UUIDs Advertising Structure to the `AdvertisingData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `uuids` — The list of 128-bit Service UUIDs to put in the added Service Solicitation UUID128 Advertising Structure.
-    pub fn with_service_solicitation_uuid128(
-        self,
-        uuids: &[Uuid128],
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(ServiceSolicitationUuid128AdStruct::try_new(uuids)?)
-    }
-
-    /// Add a list of 16-bit Service UUIDs Advertising Structure to the `AdvertisingData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `uuids` — The list of 16-bit Service UUIDs to put in the added Service UUID16 Advertising Structure.
-    /// * `complete` — Whether the provided list is complete or not.
-    pub fn with_service_uuid16(
-        self,
-        uuids: &[ServiceUuid],
-        complete: ServiceListComplete,
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(ServiceUuid16AdStruct::try_new(uuids, complete)?)
-    }
-
-    /// Add a list of 32-bit Service UUIDs Advertising Structure to the `AdvertisingData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `uuids` — The list of 32-bit Service UUIDs to put in the added Service UUID32 Advertising Structure.
-    /// * `complete` — Whether the provided list is complete or not.
-    pub fn with_service_uuid32(
-        self,
-        uuids: &[Uuid32],
-        complete: ServiceListComplete,
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(ServiceUuid32AdStruct::try_new(uuids, complete)?)
-    }
-
-    /// Add a list of 128-bit Service UUIDs Advertising Structure to the `AdvertisingData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `uuids` — The list of 128-bit Service UUIDs to put in the added Service UUID128 Advertising Structure.
-    /// * `complete` — Whether the provided list is complete or not.
-    pub fn with_service_uuid128(
-        self,
-        uuids: &[Uuid128],
-        complete: ServiceListComplete,
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(ServiceUuid128AdStruct::try_new(uuids, complete)?)
-    }
-
-    /// Add a TX Power Level Advertising Structure to the `AdvertisingData`.
-    pub fn with_tx_power_level(self) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(TxPowerLevelAdStruct::new(TxPowerLevel::default()))
-    }
-
-    /// Add a Uri Advertising Structure to the `AdvertisingData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `uri` — The Uri to put in the added Uri Advertising Structure.
-    pub fn with_uri(self, uri: Uri) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(UriAdStruct::new(uri))
-    }
-
-    fn add_ad_struct(mut self, ad_struct: impl EncodeToBuffer) -> Result<Self, AdvertisingError> {
-        self.data
-            .data
-            .fill(|b| ad_struct.encode(b))
-            .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
-        Ok(self)
-    }
-
-    fn has_ad_struct(&self, func: impl FnMut(AdStruct) -> bool) -> bool {
-        self.data.iter().any(func)
+impl<T> From<&GenericAdvertisingData<T>> for bletio_hci::AdvertisingData
+where
+    T: IsAdvertisingData,
+{
+    fn from(value: &GenericAdvertisingData<T>) -> Self {
+        value.data.clone()
     }
 }
 
@@ -433,319 +125,14 @@ impl AdvertisingDataBuilder {
 /// [Supplement to the Bluetooth Core Specification, Part A, 1](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-36b7e551-d4cf-9ae3-a8ee-0482fbc1d5bc).
 ///
 /// Use the [`AdvertisingDataBuilder`] to instantiate it.
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct AdvertisingData {
-    data: bletio_hci::AdvertisingData,
-}
-
-impl AdvertisingData {
-    /// Instantiate a builder to create Advertising Data.
-    pub fn builder() -> AdvertisingDataBuilder {
-        AdvertisingDataBuilder::new()
-    }
-
-    pub fn iter(&self) -> AdvertisingDataIterator {
-        AdvertisingDataIterator {
-            data: self.data.data(),
-            next_index: 0,
-        }
-    }
-}
-
-impl EncodeToBuffer for AdvertisingData {
-    fn encode<B: BufferOps>(&self, buffer: &mut B) -> Result<usize, bletio_utils::Error> {
-        self.data.encode(buffer)
-    }
-
-    fn encoded_size(&self) -> usize {
-        self.data.encoded_size()
-    }
-}
-
-impl From<&AdvertisingData> for bletio_hci::AdvertisingData {
-    fn from(value: &AdvertisingData) -> Self {
-        value.data.clone()
-    }
-}
+pub type AdvertisingData = GenericAdvertisingData<AdvertisingDataType>;
 
 impl From<&LeAdvertisingReportData> for AdvertisingData {
     fn from(value: &LeAdvertisingReportData) -> Self {
-        Self { data: value.into() }
-    }
-}
-
-/// Builder to create `ScanResponseData` packets.
-#[derive(Debug, Default, PartialEq, Eq)]
-pub struct ScanResponseDataBuilder {
-    data: ScanResponseData,
-}
-
-impl ScanResponseDataBuilder {
-    /// Create a builder to instantiate `ScanResponseData`.
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Build the `ScanResponseData`, containing all the Advertising Structures that has been added.
-    pub fn build(self) -> ScanResponseData {
-        self.data
-    }
-
-    /// Add an Advertising Interval Advertising Structure to the `ScanResponseData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `interval` — The Advertising Interval value to put in the added Advertising Interval Advertising Structure.
-    pub fn with_advertising_interval(
-        self,
-        interval: AdvertisingInterval,
-    ) -> Result<Self, AdvertisingError> {
-        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::AdvertisingInterval(_))) {
-            Err(AdvertisingError::OnlyOneAdvertisingIntervalAllowedInAdvertisingDataOrScanResponseData)
-        } else {
-            self.add_ad_struct(AdvertisingIntervalAdStruct::new(interval))
+        Self {
+            data: value.into(),
+            _marker: PhantomData,
         }
-    }
-
-    /// Add an Appearance Advertising Structure to the `ScanResponseData`.
-    pub fn with_appearance(self) -> Result<Self, AdvertisingError> {
-        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::Appearance(_))) {
-            Err(AdvertisingError::OnlyOneAppearanceAllowedInAdvertisingDataOrScanResponseData)
-        } else {
-            self.add_ad_struct(AppearanceAdStruct::new(AppearanceValue::GenericUnknown))
-        }
-    }
-
-    /// Add a LE Supported Features Advertising Structure to the `ScanResponseData`.
-    pub fn with_le_supported_features(self) -> Result<Self, AdvertisingError> {
-        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::LeSupportedFeatures(_))) {
-            Err(AdvertisingError::OnlyOneLeSupportedFeaturesAllowedInAdvertisingDataOrScanResponseData)
-        } else {
-            self.add_ad_struct(LeSupportedFeaturesAdStruct::new(
-                SupportedLeFeatures::default(),
-            ))
-        }
-    }
-
-    /// Add a Local Name Advertising Structure to the `ScanResponseData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `complete` — Whether the local name should be put complete or shortened in the added Local Name Advertising Structure.
-    pub fn with_local_name(self, complete: LocalNameComplete) -> Result<Self, AdvertisingError> {
-        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::LocalName(_))) {
-            Err(AdvertisingError::OnlyOneLocalNameAllowedInAdvertisingDataOrScanResponseData)
-        } else {
-            self.add_ad_struct(LocalNameAdStruct::try_new("", complete)?)
-        }
-    }
-
-    /// Add a Manufacturer Specific Data Advertising Structure to the `ScanResponseData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `manufacturer` — The `CompanyIdentifier` to put in the added Manufacturer Specific Data Advertising Structure.
-    /// * `data` — The data to put in the added Manufacturer Specific Data Advertising Structure.
-    pub fn with_manufacturer_specific_data(
-        self,
-        manufacturer: CompanyIdentifier,
-        data: &[u8],
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(ManufacturerSpecificDataAdStruct::try_new(
-            manufacturer,
-            data,
-        )?)
-    }
-
-    /// Add a Peripheral Connection Interval Range Advertising Structure to the `ScanResponseData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `range` — The Connection Interval value to put in the added Peripheral Connection Range Advertising Structure.
-    pub fn with_peripheral_connection_interval_range(
-        self,
-        range: RangeInclusive<ConnectionInterval>,
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(PeripheralConnectionIntervalRangeAdStruct::new(range))
-    }
-
-    /// Add a Public Target Address Advertising Structure to the `ScanResponseData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `addresses` — The list of public device addresses to put in the added Public Target Address Advertising Structure.
-    pub fn with_public_target_address(
-        self,
-        addresses: &[PublicDeviceAddress],
-    ) -> Result<Self, AdvertisingError> {
-        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::PublicTargetAddress(_))) {
-            Err(AdvertisingError::OnlyOnePublicTargetAddressAllowedInAdvertisingDataOrScanResponseData)
-        } else {
-            self.add_ad_struct(PublicTargetAddressAdStruct::try_new(addresses)?)
-        }
-    }
-
-    /// Add a Random Target Address Advertising Structure to the `ScanResponseData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `addresses` — The list of random addresses to put in the added Random Target Address Advertising Structure.
-    pub fn with_random_target_address(
-        self,
-        addresses: &[RandomAddress],
-    ) -> Result<Self, AdvertisingError> {
-        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::RandomTargetAddress(_))) {
-            Err(AdvertisingError::OnlyOneRandomTargetAddressAllowedInAdvertisingDataOrScanResponseData)
-        } else {
-            self.add_ad_struct(RandomTargetAddressAdStruct::try_new(addresses)?)
-        }
-    }
-
-    /// Add a Service Data for a 16-bit Service UUID Advertising Structure to the `ScanResponseData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `uuid` — The 16-bit Service UUID to put in the added Service Data Advertising Structure.
-    /// * `data` — The data to put in the added Service Data Advertising Structure.
-    pub fn with_service_data_uuid16(
-        self,
-        uuid: ServiceUuid,
-        data: &[u8],
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(ServiceDataUuid16AdStruct::try_new(uuid, data)?)
-    }
-
-    /// Add a Service Data for a 32-bit Service UUID Advertising Structure to the `ScanResponseData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `uuid` — The 32-bit Service UUID to put in the added Service Data Advertising Structure.
-    /// * `data` — The data to put in the added Service Data Advertising Structure.
-    pub fn with_service_data_uuid32(
-        self,
-        uuid: Uuid32,
-        data: &[u8],
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(ServiceDataUuid32AdStruct::try_new(uuid, data)?)
-    }
-
-    /// Add a Service Data for a 128-bit Service UUID Advertising Structure to the `ScanResponseData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `uuid` — The 128-bit Service UUID to put in the added Service Data Advertising Structure.
-    /// * `data` — The data to put in the added Service Data Advertising Structure.
-    pub fn with_service_data_uuid128(
-        self,
-        uuid: Uuid128,
-        data: &[u8],
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(ServiceDataUuid128AdStruct::try_new(uuid, data)?)
-    }
-
-    /// Add a list of 16-bit Service Solicitation UUIDs Advertising Structure to the `ScanResponseData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `uuids` — The list of 16-bit Service UUIDs to put in the added Service Solicitation UUID16 Advertising Structure.
-    pub fn with_service_solicitation_uuid16(
-        self,
-        uuids: &[ServiceUuid],
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(ServiceSolicitationUuid16AdStruct::try_new(uuids)?)
-    }
-
-    /// Add a list of 32-bit Service Solicitation UUIDs Advertising Structure to the `ScanResponseData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `uuids` — The list of 32-bit Service UUIDs to put in the added Service Solicitation UUID32 Advertising Structure.
-    pub fn with_service_solicitation_uuid32(
-        self,
-        uuids: &[Uuid32],
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(ServiceSolicitationUuid32AdStruct::try_new(uuids)?)
-    }
-
-    /// Add a list of 128-bit Service Solicitation UUIDs Advertising Structure to the `ScanResponseData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `uuids` — The list of 128-bit Service UUIDs to put in the added Service Solicitation UUID128 Advertising Structure.
-    pub fn with_service_solicitation_uuid128(
-        self,
-        uuids: &[Uuid128],
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(ServiceSolicitationUuid128AdStruct::try_new(uuids)?)
-    }
-
-    /// Add a list of 16-bit Service UUIDs Advertising Structure to the `AdvertisingData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `uuids` — The list of 16-bit Service UUIDs to put in the added Service UUID16 Advertising Structure.
-    /// * `complete` — Whether the provided list is complete or not.
-    pub fn with_service_uuid16(
-        self,
-        uuids: &[ServiceUuid],
-        complete: ServiceListComplete,
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(ServiceUuid16AdStruct::try_new(uuids, complete)?)
-    }
-
-    /// Add a list of 32-bit Service UUIDs Advertising Structure to the `ScanResponseData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `uuids` — The list of 32-bit Service UUIDs to put in the added Service UUID32 Advertising Structure.
-    /// * `complete` — Whether the provided list is complete or not.
-    pub fn with_service_uuid32(
-        self,
-        uuids: &[Uuid32],
-        complete: ServiceListComplete,
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(ServiceUuid32AdStruct::try_new(uuids, complete)?)
-    }
-
-    /// Add a list of 128-bit Service UUIDs Advertising Structure to the `ScanResponseData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `uuids` — The list of 128-bit Service UUIDs to put in the added Service UUID128 Advertising Structure.
-    /// * `complete` — Whether the provided list is complete or not.
-    pub fn with_service_uuid128(
-        self,
-        uuids: &[Uuid128],
-        complete: ServiceListComplete,
-    ) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(ServiceUuid128AdStruct::try_new(uuids, complete)?)
-    }
-
-    /// Add a TX Power Level Advertising Structure to the `ScanResponseData`.
-    pub fn with_tx_power_level(self) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(TxPowerLevelAdStruct::new(TxPowerLevel::default()))
-    }
-
-    /// Add a Uri Advertising Structure to the `ScanResponseData`.
-    ///
-    /// # Arguments
-    ///
-    /// * `uri` — The Uri to put in the added Uri Advertising Structure.
-    pub fn with_uri(self, uri: Uri) -> Result<Self, AdvertisingError> {
-        self.add_ad_struct(UriAdStruct::new(uri))
-    }
-
-    fn add_ad_struct(mut self, ad_struct: impl EncodeToBuffer) -> Result<Self, AdvertisingError> {
-        self.data
-            .data
-            .fill(|b| ad_struct.encode(b))
-            .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
-        Ok(self)
-    }
-
-    fn has_ad_struct(&self, func: impl FnMut(AdStruct) -> bool) -> bool {
-        self.data.iter().any(func)
     }
 }
 
@@ -758,48 +145,18 @@ impl ScanResponseDataBuilder {
 /// [Supplement to the Bluetooth Core Specification, Part A, 1](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v12/CSS/out/en/supplement-to-the-bluetooth-core-specification/data-types-specification.html#UUID-36b7e551-d4cf-9ae3-a8ee-0482fbc1d5bc).
 ///
 /// Use the [`ScanResponseDataBuilder`] to instantiate it.
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct ScanResponseData {
-    data: bletio_hci::ScanResponseData,
-}
+pub type ScanResponseData = GenericAdvertisingData<ScanResponseDataType>;
 
-impl ScanResponseData {
-    /// Instantiate a builder to create Scan Response Data.
-    pub fn builder() -> ScanResponseDataBuilder {
-        ScanResponseDataBuilder::new()
-    }
-
-    pub fn iter(&self) -> AdvertisingDataIterator {
-        AdvertisingDataIterator {
-            data: self.data.data(),
-            next_index: 0,
+impl From<&LeAdvertisingReportData> for ScanResponseData {
+    fn from(value: &LeAdvertisingReportData) -> Self {
+        Self {
+            data: value.into(),
+            _marker: PhantomData,
         }
     }
 }
 
-impl EncodeToBuffer for ScanResponseData {
-    fn encode<B: BufferOps>(&self, buffer: &mut B) -> Result<usize, bletio_utils::Error> {
-        self.data.encode(buffer)
-    }
-
-    fn encoded_size(&self) -> usize {
-        self.data.encoded_size()
-    }
-}
-
-impl From<&ScanResponseData> for bletio_hci::ScanResponseData {
-    fn from(value: &ScanResponseData) -> Self {
-        value.data.clone()
-    }
-}
-
-impl From<&LeAdvertisingReportData> for ScanResponseData {
-    fn from(value: &LeAdvertisingReportData) -> Self {
-        Self { data: value.into() }
-    }
-}
-
+/// Iterator over the Advertising Structures of an Advertising Data or Scan Response Data.
 pub struct AdvertisingDataIterator<'a> {
     data: &'a [u8],
     next_index: usize,
@@ -833,6 +190,374 @@ impl Iterator for AdvertisingDataIterator<'_> {
                 },
             }
         }
+    }
+}
+
+/// Builder to create `AdvertisingData` packets.
+pub type AdvertisingDataBuilder = GenericAdvertisingDataBuilder<AdvertisingDataType>;
+
+/// Builder to create `ScanResponseData` packets.
+pub type ScanResponseDataBuilder = GenericAdvertisingDataBuilder<ScanResponseDataType>;
+
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct GenericAdvertisingDataBuilder<T>
+where
+    T: IsAdvertisingData,
+{
+    data: GenericAdvertisingData<T>,
+}
+
+impl<T> GenericAdvertisingDataBuilder<T>
+where
+    T: IsAdvertisingData + Default,
+{
+    /// Create an Advertising Data builder.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Build the Advertising Data, containing all the Advertising Structures that has been added.
+    pub fn build(self) -> GenericAdvertisingData<T> {
+        self.data
+    }
+
+    /// Add an Advertising Interval Advertising Structure to the Advertising Data.
+    ///
+    /// # Arguments
+    ///
+    /// * `interval` — The Advertising Interval value to put in the added Advertising Interval Advertising Structure.
+    pub fn with_advertising_interval(
+        self,
+        interval: AdvertisingInterval,
+    ) -> Result<Self, AdvertisingError> {
+        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::AdvertisingInterval(_))) {
+            Err(AdvertisingError::OnlyOneAdvertisingIntervalAllowedInAdvertisingDataOrScanResponseData)
+        } else {
+            self.add_ad_struct(AdvertisingIntervalAdStruct::new(interval))
+        }
+    }
+
+    /// Add an Appearance Advertising Structure to the Advertising Data.
+    pub fn with_appearance(self) -> Result<Self, AdvertisingError> {
+        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::Appearance(_))) {
+            Err(AdvertisingError::OnlyOneAppearanceAllowedInAdvertisingDataOrScanResponseData)
+        } else {
+            self.add_ad_struct(AppearanceAdStruct::new(AppearanceValue::GenericUnknown))
+        }
+    }
+
+    /// Add a LE Supported Features Advertising Structure to the Advertising Data.
+    pub fn with_le_supported_features(self) -> Result<Self, AdvertisingError> {
+        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::LeSupportedFeatures(_))) {
+            Err(AdvertisingError::OnlyOneLeSupportedFeaturesAllowedInAdvertisingDataOrScanResponseData)
+        } else {
+            self.add_ad_struct(LeSupportedFeaturesAdStruct::new(
+                SupportedLeFeatures::default(),
+            ))
+        }
+    }
+
+    /// Add a Local Name Advertising Structure to the Advertising Data.
+    ///
+    /// # Arguments
+    ///
+    /// * `complete` — Whether the local name should be put complete or shortened in the added Local Name Advertising Structure.
+    pub fn with_local_name(self, complete: LocalNameComplete) -> Result<Self, AdvertisingError> {
+        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::LocalName(_))) {
+            Err(AdvertisingError::OnlyOneLocalNameAllowedInAdvertisingDataOrScanResponseData)
+        } else {
+            self.add_ad_struct(LocalNameAdStruct::try_new("", complete)?)
+        }
+    }
+
+    /// Add a Manufacturer Specific Data Advertising Structure to the Advertising Data.
+    ///
+    /// # Arguments
+    ///
+    /// * `manufacturer` — The `CompanyIdentifier` to put in the added Manufacturer Specific Data Advertising Structure.
+    /// * `data` — The data to put in the added Manufacturer Specific Data Advertising Structure.
+    pub fn with_manufacturer_specific_data(
+        self,
+        manufacturer: CompanyIdentifier,
+        data: &[u8],
+    ) -> Result<Self, AdvertisingError> {
+        self.add_ad_struct(ManufacturerSpecificDataAdStruct::try_new(
+            manufacturer,
+            data,
+        )?)
+    }
+
+    /// Add a Peripheral Connection Interval Range Advertising Structure to the Advertising Data.
+    ///
+    /// # Arguments
+    ///
+    /// * `range` — The Connection Interval value to put in the added Peripheral Connection Range Advertising Structure.
+    pub fn with_peripheral_connection_interval_range(
+        self,
+        range: RangeInclusive<ConnectionInterval>,
+    ) -> Result<Self, AdvertisingError> {
+        self.add_ad_struct(PeripheralConnectionIntervalRangeAdStruct::new(range))
+    }
+
+    /// Add a Public Target Address Advertising Structure to the Advertising Data.
+    ///
+    /// # Arguments
+    ///
+    /// * `addresses` — The list of public device addresses to put in the added Public Target Address Advertising Structure.
+    pub fn with_public_target_address(
+        self,
+        addresses: &[PublicDeviceAddress],
+    ) -> Result<Self, AdvertisingError> {
+        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::PublicTargetAddress(_))) {
+            Err(AdvertisingError::OnlyOnePublicTargetAddressAllowedInAdvertisingDataOrScanResponseData)
+        } else {
+            self.add_ad_struct(PublicTargetAddressAdStruct::try_new(addresses)?)
+        }
+    }
+
+    /// Add a Random Target Address Advertising Structure to the Advertising Data.
+    ///
+    /// # Arguments
+    ///
+    /// * `addresses` — The list of random addresses to put in the added Random Target Address Advertising Structure.
+    pub fn with_random_target_address(
+        self,
+        addresses: &[RandomAddress],
+    ) -> Result<Self, AdvertisingError> {
+        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::RandomTargetAddress(_))) {
+            Err(AdvertisingError::OnlyOneRandomTargetAddressAllowedInAdvertisingDataOrScanResponseData)
+        } else {
+            self.add_ad_struct(RandomTargetAddressAdStruct::try_new(addresses)?)
+        }
+    }
+
+    /// Add a Service Data for a 16-bit Service UUID Advertising Structure to the Advertising Data.
+    ///
+    /// # Arguments
+    ///
+    /// * `uuid` — The 16-bit Service UUID to put in the added Service Data Advertising Structure.
+    /// * `data` — The data to put in the added Service Data Advertising Structure.
+    pub fn with_service_data_uuid16(
+        self,
+        uuid: ServiceUuid,
+        data: &[u8],
+    ) -> Result<Self, AdvertisingError> {
+        self.add_ad_struct(ServiceDataUuid16AdStruct::try_new(uuid, data)?)
+    }
+
+    /// Add a Service Data for a 32-bit Service UUID Advertising Structure to the Advertising Data.
+    ///
+    /// # Arguments
+    ///
+    /// * `uuid` — The 32-bit Service UUID to put in the added Service Data Advertising Structure.
+    /// * `data` — The data to put in the added Service Data Advertising Structure.
+    pub fn with_service_data_uuid32(
+        self,
+        uuid: Uuid32,
+        data: &[u8],
+    ) -> Result<Self, AdvertisingError> {
+        self.add_ad_struct(ServiceDataUuid32AdStruct::try_new(uuid, data)?)
+    }
+
+    /// Add a Service Data for a 128-bit Service UUID Advertising Structure to the Advertising Data.
+    ///
+    /// # Arguments
+    ///
+    /// * `uuid` — The 128-bit Service UUID to put in the added Service Data Advertising Structure.
+    /// * `data` — The data to put in the added Service Data Advertising Structure.
+    pub fn with_service_data_uuid128(
+        self,
+        uuid: Uuid128,
+        data: &[u8],
+    ) -> Result<Self, AdvertisingError> {
+        self.add_ad_struct(ServiceDataUuid128AdStruct::try_new(uuid, data)?)
+    }
+
+    /// Add a list of 16-bit Service Solicitation UUIDs Advertising Structure to the Advertising Data.
+    ///
+    /// # Arguments
+    ///
+    /// * `uuids` — The list of 16-bit Service UUIDs to put in the added Service Solicitation UUID16 Advertising Structure.
+    pub fn with_service_solicitation_uuid16(
+        self,
+        uuids: &[ServiceUuid],
+    ) -> Result<Self, AdvertisingError> {
+        self.add_ad_struct(ServiceSolicitationUuid16AdStruct::try_new(uuids)?)
+    }
+
+    /// Add a list of 32-bit Service Solicitation UUIDs Advertising Structure to the Advertising Data.
+    ///
+    /// # Arguments
+    ///
+    /// * `uuids` — The list of 32-bit Service UUIDs to put in the added Service Solicitation UUID32 Advertising Structure.
+    pub fn with_service_solicitation_uuid32(
+        self,
+        uuids: &[Uuid32],
+    ) -> Result<Self, AdvertisingError> {
+        self.add_ad_struct(ServiceSolicitationUuid32AdStruct::try_new(uuids)?)
+    }
+
+    /// Add a list of 128-bit Service Solicitation UUIDs Advertising Structure to the Advertising Data.
+    ///
+    /// # Arguments
+    ///
+    /// * `uuids` — The list of 128-bit Service UUIDs to put in the added Service Solicitation UUID128 Advertising Structure.
+    pub fn with_service_solicitation_uuid128(
+        self,
+        uuids: &[Uuid128],
+    ) -> Result<Self, AdvertisingError> {
+        self.add_ad_struct(ServiceSolicitationUuid128AdStruct::try_new(uuids)?)
+    }
+
+    /// Add a list of 16-bit Service UUIDs Advertising Structure to the Advertising Data.
+    ///
+    /// # Arguments
+    ///
+    /// * `uuids` — The list of 16-bit Service UUIDs to put in the added Service UUID16 Advertising Structure.
+    /// * `complete` — Whether the provided list is complete or not.
+    pub fn with_service_uuid16(
+        self,
+        uuids: &[ServiceUuid],
+        complete: ServiceListComplete,
+    ) -> Result<Self, AdvertisingError> {
+        self.add_ad_struct(ServiceUuid16AdStruct::try_new(uuids, complete)?)
+    }
+
+    /// Add a list of 32-bit Service UUIDs Advertising Structure to the Advertising Data.
+    ///
+    /// # Arguments
+    ///
+    /// * `uuids` — The list of 32-bit Service UUIDs to put in the added Service UUID32 Advertising Structure.
+    /// * `complete` — Whether the provided list is complete or not.
+    pub fn with_service_uuid32(
+        self,
+        uuids: &[Uuid32],
+        complete: ServiceListComplete,
+    ) -> Result<Self, AdvertisingError> {
+        self.add_ad_struct(ServiceUuid32AdStruct::try_new(uuids, complete)?)
+    }
+
+    /// Add a list of 128-bit Service UUIDs Advertising Structure to the Advertising Data.
+    ///
+    /// # Arguments
+    ///
+    /// * `uuids` — The list of 128-bit Service UUIDs to put in the added Service UUID128 Advertising Structure.
+    /// * `complete` — Whether the provided list is complete or not.
+    pub fn with_service_uuid128(
+        self,
+        uuids: &[Uuid128],
+        complete: ServiceListComplete,
+    ) -> Result<Self, AdvertisingError> {
+        self.add_ad_struct(ServiceUuid128AdStruct::try_new(uuids, complete)?)
+    }
+
+    /// Add a TX Power Level Advertising Structure to the Advertising Data.
+    pub fn with_tx_power_level(self) -> Result<Self, AdvertisingError> {
+        self.add_ad_struct(TxPowerLevelAdStruct::new(TxPowerLevel::default()))
+    }
+
+    /// Add a Uri Advertising Structure to the Advertising Data.
+    ///
+    /// # Arguments
+    ///
+    /// * `uri` — The Uri to put in the added Uri Advertising Structure.
+    pub fn with_uri(self, uri: Uri) -> Result<Self, AdvertisingError> {
+        self.add_ad_struct(UriAdStruct::new(uri))
+    }
+
+    fn add_ad_struct(mut self, ad_struct: impl EncodeToBuffer) -> Result<Self, AdvertisingError> {
+        self.data
+            .data
+            .fill(|b| ad_struct.encode(b))
+            .map_err(|_| AdvertisingError::AdvertisingDataWillNotFitAdvertisingPacket)?;
+        Ok(self)
+    }
+
+    fn has_ad_struct(&self, func: impl FnMut(AdStruct) -> bool) -> bool {
+        self.data.has_ad_struct(func)
+    }
+}
+
+impl GenericAdvertisingDataBuilder<AdvertisingDataType> {
+    /// Add a Flags Advertising Structure to the Advertising Data.
+    ///
+    /// # Arguments
+    ///
+    /// * `flags` — The Flags value to put in the added Flags Advertising Structure.
+    pub fn with_flags(self, flags: Flags) -> Result<Self, AdvertisingError> {
+        if self.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::Flags(_))) {
+            Err(AdvertisingError::OnlyOneFlagsAllowedInAdvertisingData)
+        } else {
+            self.add_ad_struct(FlagsAdStruct::new(flags))
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct FullAdvertisingData {
+    pub(crate) adv_data: AdvertisingData,
+    pub(crate) scanresp_data: Option<ScanResponseData>,
+}
+
+impl FullAdvertisingData {
+    pub fn try_new(
+        adv_data: AdvertisingData,
+        scanresp_data: impl Into<Option<ScanResponseData>>,
+    ) -> Result<Self, Error> {
+        let scanresp_data = scanresp_data.into();
+        if let Some(scanresp_data) = &scanresp_data {
+            if adv_data.has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::Appearance(_)))
+                && scanresp_data
+                    .has_ad_struct(|ad_struct| matches!(ad_struct, AdStruct::Appearance(_)))
+            {
+                return Err(
+                    AdvertisingError::AppearanceNotAllowedInBothAdvertisingDataAndScanResponseData,
+                )?;
+            }
+        }
+        Ok(Self {
+            adv_data,
+            scanresp_data,
+        })
+    }
+
+    pub fn advertising_data(&self) -> &AdvertisingData {
+        &self.adv_data
+    }
+
+    pub fn iter(
+        &self,
+    ) -> core::iter::Chain<AdvertisingDataIterator<'_>, AdvertisingDataIterator<'_>> {
+        const EMPTY_ADVERTISING_DATA_ITERATOR: AdvertisingDataIterator = AdvertisingDataIterator {
+            data: &[],
+            next_index: 0,
+        };
+
+        if let Some(scanresp_data) = self.scanresp_data.as_ref() {
+            self.adv_data.iter().chain(scanresp_data.iter())
+        } else {
+            self.adv_data.iter().chain(EMPTY_ADVERTISING_DATA_ITERATOR)
+        }
+    }
+
+    pub fn scan_response_data(&self) -> Option<&ScanResponseData> {
+        self.scanresp_data.as_ref()
+    }
+
+    pub(crate) fn fill_automatic_data(
+        &self,
+        device_information: &DeviceInformation,
+    ) -> Result<Self, Error> {
+        let adv_data = self.adv_data.fill_automatic_data(device_information)?;
+
+        let scanresp_data = if let Some(scanresp_data) = self.scanresp_data.as_ref() {
+            Some(scanresp_data.fill_automatic_data(device_information)?)
+        } else {
+            None
+        };
+
+        FullAdvertisingData::try_new(adv_data, scanresp_data)
     }
 }
 
@@ -1567,29 +1292,23 @@ mod test {
     #[test]
     fn test_hci_scan_response_data_from_scan_response_data() {
         let scanresp_data = ScanResponseData::default();
-        let hci_scanresp_data: bletio_hci::ScanResponseData = (&scanresp_data).into();
+        let hci_scanresp_data: bletio_hci::AdvertisingData = (&scanresp_data).into();
         assert_eq!(scanresp_data.data, hci_scanresp_data);
     }
 
     #[test]
     fn test_full_advertising_data_success() -> Result<(), Error> {
         let local_name = "bletio";
-        let uri = Uri::try_new(ProvisionedUriScheme::Https, "//example.org").unwrap();
+        let uri = Uri::try_new(ProvisionedUriScheme::Https, "//example.org")?;
         let adv_data = AdvertisingData::builder()
-            .with_appearance()
-            .unwrap()
-            .with_tx_power_level()
-            .unwrap()
-            .with_le_supported_features()
-            .unwrap()
-            .with_local_name(LocalNameComplete::Shortened(3))
-            .unwrap()
+            .with_appearance()?
+            .with_tx_power_level()?
+            .with_le_supported_features()?
+            .with_local_name(LocalNameComplete::Shortened(3))?
             .build();
         let scanresp_data = ScanResponseData::builder()
-            .with_local_name(LocalNameComplete::Complete)
-            .unwrap()
-            .with_uri(uri.clone())
-            .unwrap()
+            .with_local_name(LocalNameComplete::Complete)?
+            .with_uri(uri.clone())?
             .build();
         let full_adv_data = FullAdvertisingData::try_new(adv_data.clone(), scanresp_data.clone())?;
         assert_eq!(full_adv_data.iter().count(), 6);
@@ -1619,15 +1338,17 @@ mod test {
         );
         assert_eq!(
             it.next(),
-            Some(AdStruct::LocalName(
-                LocalNameAdStruct::try_new("", LocalNameComplete::Shortened(3)).unwrap()
-            ))
+            Some(AdStruct::LocalName(LocalNameAdStruct::try_new(
+                "",
+                LocalNameComplete::Shortened(3)
+            )?))
         );
         assert_eq!(
             it.next(),
-            Some(AdStruct::LocalName(
-                LocalNameAdStruct::try_new("", LocalNameComplete::Complete).unwrap()
-            ))
+            Some(AdStruct::LocalName(LocalNameAdStruct::try_new(
+                "",
+                LocalNameComplete::Complete
+            )?))
         );
         assert_eq!(
             it.next(),
@@ -1636,7 +1357,7 @@ mod test {
         assert_eq!(it.next(), None);
 
         let appearance = AppearanceValue::Thermostat;
-        let tx_power_level = TxPowerLevel::try_new(-8).unwrap();
+        let tx_power_level = TxPowerLevel::try_new(-8)?;
         let supported_le_features =
             SupportedLeFeatures::LE_2M_PHY | SupportedLeFeatures::LE_CODED_PHY;
         let mut device_information = DeviceInformation::default();
@@ -1674,15 +1395,17 @@ mod test {
         );
         assert_eq!(
             it.next(),
-            Some(AdStruct::LocalName(
-                LocalNameAdStruct::try_new(local_name, LocalNameComplete::Shortened(3)).unwrap()
-            ))
+            Some(AdStruct::LocalName(LocalNameAdStruct::try_new(
+                local_name,
+                LocalNameComplete::Shortened(3)
+            )?))
         );
         assert_eq!(
             it.next(),
-            Some(AdStruct::LocalName(
-                LocalNameAdStruct::try_new(local_name, LocalNameComplete::Complete).unwrap()
-            ))
+            Some(AdStruct::LocalName(LocalNameAdStruct::try_new(
+                local_name,
+                LocalNameComplete::Complete
+            )?))
         );
         assert_eq!(it.next(), Some(AdStruct::Uri(UriAdStruct::new(uri))));
         assert_eq!(it.next(), None);
@@ -1694,10 +1417,8 @@ mod test {
     fn test_full_advertising_data_success_no_scan_response_data() -> Result<(), Error> {
         let local_name = "bletio";
         let adv_data = AdvertisingData::builder()
-            .with_appearance()
-            .unwrap()
-            .with_local_name(LocalNameComplete::Complete)
-            .unwrap()
+            .with_appearance()?
+            .with_local_name(LocalNameComplete::Complete)?
             .build();
         let full_adv_data = FullAdvertisingData::try_new(adv_data.clone(), None)?;
         assert_eq!(full_adv_data.iter().count(), 2);
@@ -1712,9 +1433,10 @@ mod test {
         );
         assert_eq!(
             it.next(),
-            Some(AdStruct::LocalName(
-                LocalNameAdStruct::try_new("", LocalNameComplete::Complete).unwrap()
-            ))
+            Some(AdStruct::LocalName(LocalNameAdStruct::try_new(
+                "",
+                LocalNameComplete::Complete
+            )?))
         );
         assert_eq!(it.next(), None);
 
@@ -1733,9 +1455,10 @@ mod test {
         );
         assert_eq!(
             it.next(),
-            Some(AdStruct::LocalName(
-                LocalNameAdStruct::try_new(local_name, LocalNameComplete::Complete).unwrap()
-            ))
+            Some(AdStruct::LocalName(LocalNameAdStruct::try_new(
+                local_name,
+                LocalNameComplete::Complete
+            )?))
         );
         assert_eq!(it.next(), None);
 
@@ -1745,20 +1468,13 @@ mod test {
     #[test]
     fn test_full_advertising_data_success_fill_scan_response_data() -> Result<(), Error> {
         let local_name = "bletio";
-        let uri = Uri::try_new(ProvisionedUriScheme::Https, "//example.org").unwrap();
-        let adv_data = AdvertisingData::builder()
-            .with_uri(uri.clone())
-            .unwrap()
-            .build();
+        let uri = Uri::try_new(ProvisionedUriScheme::Https, "//example.org")?;
+        let adv_data = AdvertisingData::builder().with_uri(uri.clone())?.build();
         let scanresp_data = ScanResponseData::builder()
-            .with_local_name(LocalNameComplete::Complete)
-            .unwrap()
-            .with_appearance()
-            .unwrap()
-            .with_tx_power_level()
-            .unwrap()
-            .with_le_supported_features()
-            .unwrap()
+            .with_local_name(LocalNameComplete::Complete)?
+            .with_appearance()?
+            .with_tx_power_level()?
+            .with_le_supported_features()?
             .build();
         let full_adv_data = FullAdvertisingData::try_new(adv_data.clone(), scanresp_data.clone())?;
         assert_eq!(full_adv_data.iter().count(), 5);
@@ -1774,9 +1490,10 @@ mod test {
         );
         assert_eq!(
             it.next(),
-            Some(AdStruct::LocalName(
-                LocalNameAdStruct::try_new("", LocalNameComplete::Complete).unwrap()
-            ))
+            Some(AdStruct::LocalName(LocalNameAdStruct::try_new(
+                "",
+                LocalNameComplete::Complete
+            )?))
         );
         assert_eq!(
             it.next(),
@@ -1799,7 +1516,7 @@ mod test {
         assert_eq!(it.next(), None);
 
         let appearance = AppearanceValue::Thermostat;
-        let tx_power_level = TxPowerLevel::try_new(-8).unwrap();
+        let tx_power_level = TxPowerLevel::try_new(-8)?;
         let supported_le_features =
             SupportedLeFeatures::LE_2M_PHY | SupportedLeFeatures::LE_CODED_PHY;
         let mut device_information = DeviceInformation::default();
@@ -1822,9 +1539,10 @@ mod test {
         assert_eq!(it.next(), Some(AdStruct::Uri(UriAdStruct::new(uri))));
         assert_eq!(
             it.next(),
-            Some(AdStruct::LocalName(
-                LocalNameAdStruct::try_new(local_name, LocalNameComplete::Complete).unwrap()
-            ))
+            Some(AdStruct::LocalName(LocalNameAdStruct::try_new(
+                local_name,
+                LocalNameComplete::Complete
+            )?))
         );
         assert_eq!(
             it.next(),
@@ -1867,7 +1585,8 @@ mod test {
     }
 
     #[rstest]
-    #[case(&[0x02, 0x01, 0x06], AdStruct::Flags(FlagsAdStruct::new(Flags::LE_GENERAL_DISCOVERABLE_MODE | Flags::BREDR_NOT_SUPPORTED)))]
+    #[case(&[0x02, 0x01, 0x06], AdStruct::Flags(FlagsAdStruct::new(Flags::LE_GENERAL_DISCOVERABLE_MODE | Flags::BREDR_NOT_SUPPORTED))
+    )]
     #[case(
         &[0x07, 0x02, 0x03, 0x18, 0x0F, 0x18, 0x1A, 0x18],
         AdStruct::ServiceUuid16(ServiceUuid16AdStruct::try_new(
@@ -1918,7 +1637,8 @@ mod test {
         &[0x07, 0x09, b'b', b'l', b'e', b't', b'i', b'o'],
         AdStruct::LocalName(LocalNameAdStruct::try_new("bletio", LocalNameComplete::Complete).unwrap())
     )]
-    #[case(&[0x02, 0x0A, 0x14], AdStruct::TxPowerLevel(TxPowerLevelAdStruct::new(TxPowerLevel::try_new(20).unwrap())))]
+    #[case(&[0x02, 0x0A, 0x14], AdStruct::TxPowerLevel(TxPowerLevelAdStruct::new(TxPowerLevel::try_new(20).unwrap()))
+    )]
     #[case(
         &[0x05, 0x12, 0x06, 0x00, 0x80, 0x0C],
         AdStruct::PeripheralConnectionIntervalRange(
@@ -1955,8 +1675,10 @@ mod test {
             RandomTargetAddressAdStruct::try_new(&[RandomStaticDeviceAddress::try_new([0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7]).unwrap().into()]).unwrap()
         )
     )]
-    #[case(&[0x03, 0x19, 0x44, 0x08], AdStruct::Appearance(AppearanceAdStruct::new(AppearanceValue::StandmountedSpeaker)))]
-    #[case(&[0x03, 0x1A, 0x00, 0x08], AdStruct::AdvertisingInterval(AdvertisingIntervalAdStruct::new(AdvertisingInterval::default())))]
+    #[case(&[0x03, 0x19, 0x44, 0x08], AdStruct::Appearance(AppearanceAdStruct::new(AppearanceValue::StandmountedSpeaker))
+    )]
+    #[case(&[0x03, 0x1A, 0x00, 0x08], AdStruct::AdvertisingInterval(AdvertisingIntervalAdStruct::new(AdvertisingInterval::default()))
+    )]
     #[case(
         &[0x09, 0x1F, 0x03, 0x18, 0x00, 0x00, 0x0F, 0x18, 0x00, 0x00],
         AdStruct::ServiceSolicitationUuid32(
@@ -1979,7 +1701,8 @@ mod test {
         &[0x11, 0x24, 0x16, 0x00, b'/', b'/', b'e', b'x', b'a', b'm', b'p', b'l', b'e', b'.', b'o', b'r', b'g', b'/'],
         AdStruct::Uri(UriAdStruct::new(Uri::try_new(ProvisionedUriScheme::Http, "//example.org/").unwrap()))
     )]
-    #[case(&[0x01, 0x27], AdStruct::LeSupportedFeatures(LeSupportedFeaturesAdStruct::new(SupportedLeFeatures::default())))]
+    #[case(&[0x01, 0x27], AdStruct::LeSupportedFeatures(LeSupportedFeaturesAdStruct::new(SupportedLeFeatures::default()))
+    )]
     #[case(
         &[0x1E, 0xFF, 0x4C, 0x00, 0x12, 0x19, 0x00, 0x9A, 0x9A, 0xE9, 0x80, 0x96, 0x3C, 0xA0, 0x14, 0xFB, 0xE2,
             0x14, 0x41, 0x88, 0xF5, 0xDA, 0xB6, 0x07, 0x99, 0xD3, 0x15, 0x57, 0x6C, 0x01, 0x00],

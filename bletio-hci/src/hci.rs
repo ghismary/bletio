@@ -7,8 +7,8 @@ use crate::{
     AdvertisingData, AdvertisingEnable, AdvertisingParameters, Command, CommandCompleteEvent,
     CommandOpCode, Error, Event, EventList, EventMask, EventParameter, FilterDuplicates, HciBuffer,
     HciDriver, LeEventMask, LeFilterAcceptListAddress, Packet, PublicDeviceAddress,
-    RandomStaticDeviceAddress, ScanEnable, ScanParameters, ScanResponseData, SupportedCommands,
-    SupportedFeatures, SupportedLeFeatures, SupportedLeStates, TxPowerLevel, WithTimeout,
+    RandomStaticDeviceAddress, ScanEnable, ScanParameters, SupportedCommands, SupportedFeatures,
+    SupportedLeFeatures, SupportedLeStates, TxPowerLevel, WithTimeout,
 };
 
 const HCI_COMMAND_TIMEOUT: Duration = Duration::from_millis(1000);
@@ -41,25 +41,13 @@ where
         &mut self,
         address: impl Into<LeFilterAcceptListAddress>,
     ) -> Result<(), Error> {
-        let event = self
-            .execute_command(Command::LeAddDeviceToFilterAcceptList(address.into()))
-            .await?;
-        match event.parameter {
-            EventParameter::Status(param) if param.status.is_success() => Ok(()),
-            EventParameter::Status(param) => Err(Error::ErrorCode(param.status)),
-            _ => unreachable!("parsing would have failed"),
-        }
+        self.cmd_with_status_response(Command::LeAddDeviceToFilterAcceptList(address.into()))
+            .await
     }
 
     pub async fn cmd_le_clear_filter_accept_list(&mut self) -> Result<(), Error> {
-        let event = self
-            .execute_command(Command::LeClearFilterAcceptList)
-            .await?;
-        match event.parameter {
-            EventParameter::Status(param) if param.status.is_success() => Ok(()),
-            EventParameter::Status(param) => Err(Error::ErrorCode(param.status)),
-            _ => unreachable!("parsing would have failed"),
-        }
+        self.cmd_with_status_response(Command::LeClearFilterAcceptList)
+            .await
     }
 
     pub async fn cmd_le_rand(&mut self) -> Result<[u8; 8], Error> {
@@ -149,14 +137,8 @@ where
         &mut self,
         address: impl Into<LeFilterAcceptListAddress>,
     ) -> Result<(), Error> {
-        let event = self
-            .execute_command(Command::LeRemoveDeviceFromFilterAcceptList(address.into()))
-            .await?;
-        match event.parameter {
-            EventParameter::Status(param) if param.status.is_success() => Ok(()),
-            EventParameter::Status(param) => Err(Error::ErrorCode(param.status)),
-            _ => unreachable!("parsing would have failed"),
-        }
+        self.cmd_with_status_response(Command::LeRemoveDeviceFromFilterAcceptList(address.into()))
+            .await
     }
 
     pub async fn cmd_le_set_advertising_data(
@@ -210,7 +192,7 @@ where
 
     pub async fn cmd_le_set_scan_response_data(
         &mut self,
-        data: ScanResponseData,
+        data: AdvertisingData,
     ) -> Result<(), Error> {
         self.cmd_with_status_response(Command::LeSetScanResponseData(data))
             .await
@@ -1274,7 +1256,7 @@ mod test {
             event_list: Default::default(),
         };
         assert_eq!(
-            hci.cmd_le_set_scan_response_data(ScanResponseData::default())
+            hci.cmd_le_set_scan_response_data(AdvertisingData::default())
                 .await,
             expected
         );

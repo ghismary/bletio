@@ -4,7 +4,7 @@ use num_enum::{FromPrimitive, IntoPrimitive};
 use crate::{
     AdvertisingData, AdvertisingEnable, AdvertisingParameters, Error, EventMask, FilterDuplicates,
     LeEventMask, LeFilterAcceptListAddress, PacketType, RandomStaticDeviceAddress, ScanEnable,
-    ScanParameters, ScanResponseData,
+    ScanParameters,
 };
 
 const NOP_OGF: u16 = 0x00;
@@ -69,7 +69,7 @@ pub(crate) enum Command {
     LeSetRandomAddress(RandomStaticDeviceAddress),
     LeSetScanEnable(ScanEnable, FilterDuplicates),
     LeSetScanParameters(ScanParameters),
-    LeSetScanResponseData(ScanResponseData),
+    LeSetScanResponseData(AdvertisingData),
     Nop,
     ReadBdAddr,
     ReadBufferSize,
@@ -210,7 +210,7 @@ impl CommandPacket {
 pub(crate) mod parser {
     use nom::{bytes::take, combinator::map, number::le_u16, sequence::pair, IResult, Parser};
 
-    use crate::advertising_data::parser::{advertising_data, scan_response_data};
+    use crate::advertising_data::parser::advertising_data;
     use crate::advertising_enable::parser::advertising_enable;
     use crate::advertising_parameters::parser::advertising_parameters;
     use crate::device_address::parser::random_address;
@@ -283,7 +283,7 @@ pub(crate) mod parser {
                     Command::LeSetScanParameters(scan_parameters)
                 }
                 CommandOpCode::LeSetScanResponseData => {
-                    let (_, scan_response_data) = scan_response_data(parameters)?;
+                    let (_, scan_response_data) = advertising_data(parameters)?;
                     Command::LeSetScanResponseData(scan_response_data)
                 }
                 CommandOpCode::Nop => Command::Nop,
@@ -392,7 +392,7 @@ mod test {
         &[1, 11, 32, 7, 0, 16, 0, 16, 0, 0, 0]
     )]
     #[case::le_set_scan_response_data(
-        Command::LeSetScanResponseData(ScanResponseData::default()),
+        Command::LeSetScanResponseData(AdvertisingData::default()),
         CommandOpCode::LeSetScanResponseData,
         &[1, 9, 32, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     )]
@@ -516,7 +516,7 @@ mod test {
         &[1, 11, 32, 7, 0, 16, 0, 16, 0, 0, 0]
     )]
     #[case::le_set_scan_response_data(
-        Command::LeSetScanResponseData(ScanResponseData::default()),
+        Command::LeSetScanResponseData(AdvertisingData::default()),
         &[1, 9, 32, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     )]
     #[case::nop(Command::Nop, &[1, 0, 0, 0])]
