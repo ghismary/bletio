@@ -1,6 +1,6 @@
 //! Assigned numbers for company identifiers.
 //!
-//! FILE GENERATED FROM REVISION efc887857333456bda4ac2762443a7a86c99a27b OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
+//! FILE GENERATED FROM REVISION 4f955efbe9144b01c02e2ee2044f43d510cc8da0 OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
@@ -17,6 +17,56 @@ use crate::advertising::AdvertisingError;
 /// It is to be used when creating a Manufacturer Specific Data Advertising Structure.
 /// See [ManufacturerSpecificDataAdStruct::try_new](crate::advertising::ad_struct::ManufacturerSpecificDataAdStruct::try_new).
 pub enum CompanyIdentifier {
+    /// OPTRON Co., Ltd. (0x0EAD)
+    OptronCoLtd = 0x0EAD,
+    /// Dynetrex Solutions Inc. (0x0EAC)
+    DynetrexSolutionsInc = 0x0EAC,
+    /// STEYR Sport GmbH (0x0EAB)
+    SteyrSportGmbH = 0x0EAB,
+    /// Hive Soundz inc. (0x0EAA)
+    HiveSoundzInc = 0x0EAA,
+    /// Makichie Co., ltd. (0x0EA9)
+    MakichieCoLtd = 0x0EA9,
+    /// Dongguan Trangjan Industrial Co., Ltd (0x0EA8)
+    DongguanTrangjanIndustrialCoLtd = 0x0EA8,
+    /// BrickXter GmbH (0x0EA7)
+    BrickXterGmbH = 0x0EA7,
+    /// AMG Lab LLC (0x0EA6)
+    AmgLabLlc = 0x0EA6,
+    /// EasyReach Solutions Private Limited (0x0EA5)
+    EasyReachSolutionsPrivateLimited = 0x0EA5,
+    /// BiTECH Automotive (Wuhu) Co.,Ltd (0x0EA4)
+    BiTechAutomotiveWuhuCoLtd = 0x0EA4,
+    /// OLIS ELECTRONICS, LLC (0x0EA3)
+    OlisElectronicsLlc = 0x0EA3,
+    /// QIKCONNEX LLC (0x0EA2)
+    QikconnexLlc = 0x0EA2,
+    /// Culligan International Company (0x0EA1)
+    CulliganInternationalCompany = 0x0EA1,
+    /// ENLESS WIRELESS (0x0EA0)
+    EnlessWireless = 0x0EA0,
+    /// Owlet Baby Care Inc. (0x0E9F)
+    OwletBabyCareInc = 0x0E9F,
+    /// Travelxp India Private Limited (0x0E9E)
+    TravelxpIndiaPrivateLimited = 0x0E9E,
+    /// Audinor ApS (0x0E9D)
+    AudinorApS = 0x0E9D,
+    /// Andrews & Arnold Ltd (0x0E9C)
+    AndrewsAndArnoldLtd = 0x0E9C,
+    /// Panasonic Automotive Systems Co., Ltd. (0x0E9B)
+    PanasonicAutomotiveSystemsCoLtd = 0x0E9B,
+    /// Scanbro OU (0x0E9A)
+    ScanbroOu = 0x0E9A,
+    /// Medibound, Inc. (0x0E99)
+    MediboundInc = 0x0E99,
+    /// Chromatic Inc. (0x0E98)
+    ChromaticInc = 0x0E98,
+    /// kokoromil Inc. (0x0E97)
+    KokoromilInc = 0x0E97,
+    /// Skeed,co,Ltd. (0x0E96)
+    SkeedCoLtd = 0x0E96,
+    /// Viaanix, Inc. (0x0E95)
+    ViaanixInc = 0x0E95,
     /// Tactrix (0x0E94)
     Tactrix = 0x0E94,
     /// MIV ELECTRONICS, LTD (0x0E93)
