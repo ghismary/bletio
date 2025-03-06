@@ -179,7 +179,7 @@ mod test {
     #[test]
     fn test_le_filter_accept_list_address_from_public_address() {
         let data = [0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56];
-        let address = PublicDeviceAddress::new(data.clone());
+        let address = PublicDeviceAddress::new(data);
         let address: LeFilterAcceptListAddress = address.into();
         assert_eq!(
             address.r#type(),
@@ -191,8 +191,7 @@ mod test {
     #[test]
     fn test_le_filter_accept_list_address_from_random_address() {
         let data = [0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7];
-        let address =
-            RandomAddress::Static(RandomStaticDeviceAddress::try_new(data.clone()).unwrap());
+        let address = RandomAddress::Static(RandomStaticDeviceAddress::try_new(data).unwrap());
         let address: LeFilterAcceptListAddress = address.into();
         assert_eq!(
             address.r#type(),

@@ -132,7 +132,7 @@ mod test {
             device_information
                 .random_static_device_address
                 .clone()
-                .and_then(|v| Some(*v.value())),
+                .map(|v| *(v.value())),
             Some([0x44, 0xDF, 0x1B, 0x09, 0x53, 0xFA])
         );
         assert_eq!(
