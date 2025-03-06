@@ -430,7 +430,7 @@ mod test {
         assert_eq!(report_list.len(), num_reports.value() as usize);
         let mut it = report_list.iter();
         for _ in 0..report_list.len() {
-            assert!(matches!(it.next(), Some(_)));
+            assert!(it.next().is_some());
         }
         assert_eq!(it.next(), None);
     }

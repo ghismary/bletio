@@ -607,7 +607,7 @@ mod test {
     #[test]
     fn test_command_complete_event_for_unsupported_command_parsing() {
         // Using Flush command opcode
-        let err = packet(&[4, 14, 4, 1, 08, 12, 0]);
+        let err = packet(&[4, 14, 4, 1, 8, 12, 0]);
         assert!(err.is_err());
     }
 }
