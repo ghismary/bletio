@@ -1,8 +1,8 @@
 //! Advertising parameters and data handling.
 //!
 //! This module gives access to all that is need to start advertising:
-//!  - definition of the [advertising parameters](crate::advertising::advertising_parameters)
-//!  - definition of all the [advertising structures](crate::advertising::ad_struct) to be used in the [`AdvertisingData`] or [`ScanResponseData`] packets.
+//!  - definition of the [advertising parameters](advertising_parameters)
+//!  - definition of all the [advertising structures](ad_struct) to be used in the [`AdvertisingData`] or [`ScanResponseData`] packets.
 
 pub use bletio_hci::{
     AdvertisingChannelMap, AdvertisingEnable, AdvertisingFilterPolicy, AdvertisingInterval,
@@ -18,7 +18,12 @@ pub mod uri;
 
 pub use ad_struct::flags::Flags;
 pub use ad_struct::local_name::LocalNameComplete;
+pub use ad_struct::peripheral_connection_interval_range::{
+    peripheral_connection_interval_range, PeripheralConnectionInterval,
+    PeripheralConnectionIntervalRange,
+};
 pub use ad_struct::service_uuid::ServiceListComplete;
+pub use ad_struct::AdStruct;
 pub use advertising_data::{
     AdvertisingData, AdvertisingDataBuilder, FullAdvertisingData, ScanResponseData,
     ScanResponseDataBuilder,
@@ -27,7 +32,7 @@ pub use advertising_parameters::{AdvertisingParameters, AdvertisingParametersBui
 pub use scan_parameters::{ScanParameters, ScanParametersBuilder};
 pub use uri::{custom_uri_scheme, CustomUriScheme, Uri, UriScheme};
 
-/// Error occuring in the advertising part of the BLE stack.
+/// Error occurring in the advertising part of the BLE stack.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum AdvertisingError {
@@ -63,6 +68,10 @@ pub enum AdvertisingError {
     InvalidAppearanceValue(u16),
     /// The provided Company Identifier value is invalid.
     InvalidCompanyIdentifierValue(u16),
+    /// The peripheral connection interval range is invalid.
+    InvalidPeripheralConnectionIntervalRange,
+    /// The provided peripheral connection interval value is invalid.
+    InvalidPeripheralConnectionIntervalValue(u16),
     /// The provided Provisioned Uri Scheme value is invalid.
     InvalidProvisionedUriSchemeValue(u16),
     /// The scan parameters are not valid, probably because the scan window is larger than the scan interval.

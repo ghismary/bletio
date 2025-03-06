@@ -1,9 +1,7 @@
 use bletio_utils::{Buffer, BufferOps};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
-use crate::{
-    advertising_data::ADVERTISING_DATA_SIZE, Error, PublicDeviceAddress, RandomAddress, Rssi,
-};
+use crate::{advertising_data::ADVERTISING_DATA_SIZE, ConnectionPeerAddress, Error, Rssi};
 
 const LE_ADVERTISING_REPORT_EVENT_MAX_SIZE: usize = 251;
 
@@ -63,48 +61,6 @@ pub enum LeAdvertisingReportEventType {
     ScanResponse = 0x04,
 }
 
-/// Address type contained in a LE Advertising Report event.
-///
-/// See [Core Specification 6.0, Vol.4, Part E, 7.7.65.2](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-bacd71f4-fabc-238d-72ee-f9aaaf5cbf22).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, IntoPrimitive, TryFromPrimitive)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[num_enum(error_type(name = Error, constructor = Error::InvalidLeAdvertisingReportAddressType))]
-#[repr(u8)]
-#[non_exhaustive]
-enum LeAdvertisingReportAddressType {
-    /// Public device address.
-    PublicDevice = 0x00,
-    /// Random device address.
-    RandomDevice = 0x01,
-    /// Public identity address (corresponds to a resolved RPA).
-    PublicIdentity = 0x02,
-    /// Random (static) identity address (corresponds to a resolved RPA).
-    RandomIdentity = 0x03,
-}
-
-/// Address contained in a LE Advertising Report event.
-///
-/// See [Core Specification 6.0, Vol.4, Part E, 7.7.65.2](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-bacd71f4-fabc-238d-72ee-f9aaaf5cbf22).
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum LeAdvertisingReportAddress {
-    PublicDevice(PublicDeviceAddress),
-    RandomDevice(RandomAddress),
-    PublicIdentity(PublicDeviceAddress),
-    RandomIdentity(RandomAddress),
-}
-
-impl LeAdvertisingReportAddress {
-    pub const fn value(&self) -> &[u8; 6] {
-        match self {
-            Self::PublicDevice(address) => address.value(),
-            Self::RandomDevice(address) => address.value(),
-            Self::PublicIdentity(address) => address.value(),
-            Self::RandomIdentity(address) => address.value(),
-        }
-    }
-}
-
 /// Data contained in a LE Advertising Report event.
 ///
 /// See [Core Specification 6.0, Vol.4, Part E, 7.7.65.2](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-bacd71f4-fabc-238d-72ee-f9aaaf5cbf22).
@@ -117,7 +73,7 @@ pub type LeAdvertisingReportData = Buffer<ADVERTISING_DATA_SIZE>;
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct LeAdvertisingReport {
     event_type: LeAdvertisingReportEventType,
-    address: LeAdvertisingReportAddress,
+    address: ConnectionPeerAddress,
     data: LeAdvertisingReportData,
     rssi: Option<Rssi>,
 }
@@ -125,7 +81,7 @@ pub struct LeAdvertisingReport {
 impl LeAdvertisingReport {
     fn new(
         event_type: LeAdvertisingReportEventType,
-        address: LeAdvertisingReportAddress,
+        address: ConnectionPeerAddress,
         data: LeAdvertisingReportData,
         rssi: Option<Rssi>,
     ) -> Self {
@@ -137,7 +93,7 @@ impl LeAdvertisingReport {
         }
     }
 
-    pub fn address(&self) -> &LeAdvertisingReportAddress {
+    pub fn address(&self) -> &ConnectionPeerAddress {
         &self.address
     }
 
@@ -216,9 +172,9 @@ pub(crate) mod parser {
         IResult, Parser,
     };
 
-    use crate::{device_address::parser::address, LeMetaEvent};
-
     use super::*;
+    use crate::connection_peer_address::parser::connection_peer_address;
+    use crate::LeMetaEvent;
 
     fn le_advertising_report_num_reports(
         input: &[u8],
@@ -230,46 +186,6 @@ pub(crate) mod parser {
         input: &[u8],
     ) -> IResult<&[u8], LeAdvertisingReportEventType> {
         map_res(le_u8(), LeAdvertisingReportEventType::try_from).parse(input)
-    }
-
-    fn le_advertising_report_address_type(
-        input: &[u8],
-    ) -> IResult<&[u8], LeAdvertisingReportAddressType> {
-        map_res(le_u8(), LeAdvertisingReportAddressType::try_from).parse(input)
-    }
-
-    fn le_advertising_report_address(input: &[u8]) -> IResult<&[u8], LeAdvertisingReportAddress> {
-        let (rest, address_type) = le_advertising_report_address_type(input)?;
-        let (rest, address) = address(rest)?;
-        Ok((
-            rest,
-            match address_type {
-                LeAdvertisingReportAddressType::PublicDevice => {
-                    LeAdvertisingReportAddress::PublicDevice(address.into())
-                }
-                LeAdvertisingReportAddressType::RandomDevice => {
-                    LeAdvertisingReportAddress::RandomDevice(address.try_into().map_err(|_| {
-                        nom::Err::Failure(nom::error::Error::new(
-                            input,
-                            nom::error::ErrorKind::Fail,
-                        ))
-                    })?)
-                }
-                LeAdvertisingReportAddressType::PublicIdentity => {
-                    LeAdvertisingReportAddress::PublicIdentity(address.into())
-                }
-                LeAdvertisingReportAddressType::RandomIdentity => {
-                    LeAdvertisingReportAddress::RandomIdentity(address.try_into().map_err(
-                        |_| {
-                            nom::Err::Failure(nom::error::Error::new(
-                                input,
-                                nom::error::ErrorKind::Fail,
-                            ))
-                        },
-                    )?)
-                }
-            },
-        ))
     }
 
     fn le_advertising_report_data_length(input: &[u8]) -> IResult<&[u8], u8> {
@@ -295,7 +211,7 @@ pub(crate) mod parser {
         map(
             consumed((
                 le_advertising_report_event_type,
-                le_advertising_report_address,
+                connection_peer_address,
                 le_advertising_report_data,
                 le_advertising_report_rssi,
             )),
@@ -331,7 +247,10 @@ pub(crate) mod parser {
 mod test {
     use rstest::rstest;
 
-    use crate::{packet::parser::packet, AdvertisingData, Event, LeMetaEvent, Packet};
+    use crate::{
+        packet::parser::packet, AdvertisingData, Event, LeMetaEvent, Packet, PublicDeviceAddress,
+        RandomAddress,
+    };
 
     use super::*;
 
@@ -356,15 +275,15 @@ mod test {
     #[rstest]
     #[case(
         PublicDeviceAddress::default(),
-        LeAdvertisingReportAddress::PublicDevice(PublicDeviceAddress::default())
+        ConnectionPeerAddress::PublicDevice(PublicDeviceAddress::default())
     )]
     #[case(
         PublicDeviceAddress::default(),
-        LeAdvertisingReportAddress::PublicIdentity(PublicDeviceAddress::default())
+        ConnectionPeerAddress::PublicIdentity(PublicDeviceAddress::default())
     )]
     fn test_le_advertising_report_public_address(
         #[case] address: PublicDeviceAddress,
-        #[case] le_advertising_report_address: LeAdvertisingReportAddress,
+        #[case] le_advertising_report_address: ConnectionPeerAddress,
     ) {
         let event_type = LeAdvertisingReportEventType::NonConnectableUndirected;
         let data = LeAdvertisingReportData::default();
@@ -385,15 +304,15 @@ mod test {
     #[rstest]
     #[case(
         RandomAddress::try_from([0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7]).unwrap(),
-        LeAdvertisingReportAddress::RandomDevice(RandomAddress::try_from([0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7]).unwrap())
+        ConnectionPeerAddress::RandomDevice(RandomAddress::try_from([0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7]).unwrap())
     )]
     #[case(
         RandomAddress::try_from([0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7]).unwrap(),
-        LeAdvertisingReportAddress::RandomIdentity(RandomAddress::try_from([0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7]).unwrap())
+        ConnectionPeerAddress::RandomIdentity(RandomAddress::try_from([0x28, 0xC8, 0xE9, 0x7D, 0x6A, 0xF7]).unwrap())
     )]
     fn test_le_advertising_report_random_address(
         #[case] address: RandomAddress,
-        #[case] le_advertising_report_address: LeAdvertisingReportAddress,
+        #[case] le_advertising_report_address: ConnectionPeerAddress,
     ) {
         let event_type = LeAdvertisingReportEventType::ConnectableDirected;
         let data = LeAdvertisingReportData::default();

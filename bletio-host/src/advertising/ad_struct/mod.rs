@@ -139,7 +139,9 @@ mod test {
     use rstest::rstest;
 
     use crate::{
-        advertising::{Flags, LocalNameComplete, ServiceListComplete, Uri},
+        advertising::{
+            Flags, LocalNameComplete, PeripheralConnectionIntervalRange, ServiceListComplete, Uri,
+        },
         assigned_numbers::{AppearanceValue, CompanyIdentifier, ProvisionedUriScheme, ServiceUuid},
         uuid::{Uuid128, Uuid32},
     };
@@ -167,7 +169,7 @@ mod test {
     )]
     #[case(
         AdStruct::PeripheralConnectionIntervalRange(
-            PeripheralConnectionIntervalRangeAdStruct::new(0x0006.try_into().unwrap()..=0x0C80.try_into().unwrap())
+            PeripheralConnectionIntervalRangeAdStruct::new(PeripheralConnectionIntervalRange::try_new(0x0006.try_into().unwrap(), 0x0C80.try_into().unwrap()).unwrap())
         ),
         &[0x05, 0x12, 0x06, 0x00, 0x80, 0x0C]
     )]

@@ -124,7 +124,8 @@ impl Default for AdvertisingIntervalRange {
 impl EncodeToBuffer for AdvertisingIntervalRange {
     fn encode<B: BufferOps>(&self, buffer: &mut B) -> Result<usize, UtilsError> {
         self.value.start().encode(buffer)?;
-        self.value.end().encode(buffer)
+        self.value.end().encode(buffer)?;
+        Ok(self.encoded_size())
     }
 
     fn encoded_size(&self) -> usize {
@@ -583,11 +584,17 @@ mod test {
     }
 
     #[rstest]
-    #[case(0x0030, 0x0020)]
-    #[case(0x4000, 0x3000)]
-    fn test_advertising_interval_range_failure(#[case] min: u16, #[case] max: u16) {
+    #[case(0x0000, 0x0020, Error::InvalidAdvertisingInterval(0x0000))]
+    #[case(0x0030, 0x5000, Error::InvalidAdvertisingInterval(0x5000))]
+    #[case(0x0030, 0x0020, Error::InvalidAdvertisingIntervalRange)]
+    #[case(0x4000, 0x3000, Error::InvalidAdvertisingIntervalRange)]
+    fn test_advertising_interval_range_failure(
+        #[case] min: u16,
+        #[case] max: u16,
+        #[case] error: Error,
+    ) {
         let err = AdvertisingIntervalRange::try_new(min, max);
-        assert_eq!(err, Err(Error::InvalidAdvertisingIntervalRange));
+        assert_eq!(err, Err(error));
     }
 
     #[rstest]

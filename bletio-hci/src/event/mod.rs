@@ -3,9 +3,11 @@ use core::ops::{Deref, DerefMut};
 use heapless::Vec;
 use num_enum::{FromPrimitive, IntoPrimitive};
 
+use crate::event::command_status::CommandStatusEvent;
 use crate::{CommandCompleteEvent, LeMetaEvent};
 
 pub(crate) mod command_complete;
+pub(crate) mod command_status;
 pub(crate) mod le_advertising_report;
 pub(crate) mod le_meta;
 
@@ -16,6 +18,7 @@ const EVENT_LIST_NB_EVENTS: usize = 4;
 #[allow(clippy::large_enum_variant)]
 pub enum Event {
     CommandComplete(CommandCompleteEvent),
+    CommandStatus(CommandStatusEvent),
     LeMeta(LeMetaEvent),
     Unsupported(u8),
 }
@@ -45,6 +48,7 @@ impl DerefMut for EventList {
 #[repr(u8)]
 enum EventCode {
     CommandComplete = 0x0E,
+    CommandStatus = 0x0F,
     LeMeta = 0x3E,
     #[num_enum(catch_all)]
     Unsupported(u8),
@@ -53,19 +57,27 @@ enum EventCode {
 pub(crate) mod parser {
     use nom::{bytes::take, combinator::map_res, number::le_u8, sequence::pair, IResult, Parser};
 
+    use super::*;
+    use crate::event::command_status::parser::command_status_event;
     use crate::{
         event::{
             command_complete::parser::command_complete_event, le_meta::parser::le_meta_event,
             EventCode,
         },
         packet::parser::parameter_total_length,
-        Packet,
+        ErrorCode, Packet,
     };
-
-    use super::*;
 
     fn event_code(input: &[u8]) -> IResult<&[u8], EventCode> {
         map_res(le_u8(), EventCode::try_from).parse(input)
+    }
+
+    pub(crate) fn num_hci_command_packets(input: &[u8]) -> IResult<&[u8], u8> {
+        le_u8().parse(input)
+    }
+
+    pub(crate) fn hci_error_code(input: &[u8]) -> IResult<&[u8], ErrorCode> {
+        map_res(le_u8(), ErrorCode::try_from).parse(input)
     }
 
     pub(crate) fn event(input: &[u8]) -> IResult<&[u8], Packet> {
@@ -78,6 +90,10 @@ pub(crate) mod parser {
                 EventCode::CommandComplete => {
                     let (_, event) = command_complete_event(parameters)?;
                     Event::CommandComplete(event)
+                }
+                EventCode::CommandStatus => {
+                    let (_, event) = command_status_event(parameters)?;
+                    Event::CommandStatus(event)
                 }
                 EventCode::LeMeta => {
                     let (_, event) = le_meta_event(parameters)?;

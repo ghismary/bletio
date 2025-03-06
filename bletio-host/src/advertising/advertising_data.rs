@@ -1,9 +1,8 @@
 use core::marker::PhantomData;
-use core::ops::RangeInclusive;
 
 use bletio_hci::{
-    AdvertisingInterval, ConnectionInterval, LeAdvertisingReportData, PublicDeviceAddress,
-    RandomAddress, SupportedLeFeatures, TxPowerLevel,
+    AdvertisingInterval, LeAdvertisingReportData, PublicDeviceAddress, RandomAddress,
+    SupportedLeFeatures, TxPowerLevel,
 };
 use bletio_utils::{BufferOps, EncodeToBuffer};
 
@@ -16,7 +15,10 @@ use crate::advertising::ad_struct::{
     ServiceSolicitationUuid16AdStruct, ServiceSolicitationUuid32AdStruct, ServiceUuid128AdStruct,
     ServiceUuid16AdStruct, ServiceUuid32AdStruct, TxPowerLevelAdStruct, UriAdStruct,
 };
-use crate::advertising::{AdvertisingError, Flags, LocalNameComplete, ServiceListComplete, Uri};
+use crate::advertising::{
+    AdvertisingError, Flags, LocalNameComplete, PeripheralConnectionIntervalRange,
+    ServiceListComplete, Uri,
+};
 use crate::assigned_numbers::{AppearanceValue, CompanyIdentifier, ServiceUuid};
 use crate::uuid::{Uuid128, Uuid32};
 use crate::{DeviceInformation, Error};
@@ -291,10 +293,10 @@ where
     ///
     /// # Arguments
     ///
-    /// * `range` — The Connection Interval value to put in the added Peripheral Connection Range Advertising Structure.
+    /// * `range` — The Peripheral Connection Interval range to put in the added Peripheral Connection Range Advertising Structure.
     pub fn with_peripheral_connection_interval_range(
         self,
-        range: RangeInclusive<ConnectionInterval>,
+        range: PeripheralConnectionIntervalRange,
     ) -> Result<Self, AdvertisingError> {
         self.add_ad_struct(PeripheralConnectionIntervalRangeAdStruct::new(range))
     }
@@ -749,7 +751,11 @@ mod test {
     fn advertising_data_builder_service_uuid128() -> AdvertisingData {
         AdvertisingData::builder()
             .with_peripheral_connection_interval_range(
-                0x0006.try_into().unwrap()..=0x0010.try_into().unwrap(),
+                PeripheralConnectionIntervalRange::try_new(
+                    0x0006.try_into().unwrap(),
+                    0x0010.try_into().unwrap(),
+                )
+                .unwrap(),
             )
             .unwrap()
             .with_service_uuid128(
@@ -1054,7 +1060,11 @@ mod test {
     fn scan_response_data_builder_service_uuid128() -> ScanResponseData {
         ScanResponseData::builder()
             .with_peripheral_connection_interval_range(
-                0x0006.try_into().unwrap()..=0x0010.try_into().unwrap(),
+                PeripheralConnectionIntervalRange::try_new(
+                    0x0006.try_into().unwrap(),
+                    0x0010.try_into().unwrap(),
+                )
+                .unwrap(),
             )
             .unwrap()
             .with_service_uuid128(
@@ -1642,7 +1652,7 @@ mod test {
     #[case(
         &[0x05, 0x12, 0x06, 0x00, 0x80, 0x0C],
         AdStruct::PeripheralConnectionIntervalRange(
-            PeripheralConnectionIntervalRangeAdStruct::new(0x0006.try_into().unwrap()..=0x0C80.try_into().unwrap())
+            PeripheralConnectionIntervalRangeAdStruct::new(PeripheralConnectionIntervalRange::try_new(0x0006.try_into().unwrap(), 0x0C80.try_into().unwrap()).unwrap())
         )
     )]
     #[case(
