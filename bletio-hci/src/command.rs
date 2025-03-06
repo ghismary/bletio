@@ -2,9 +2,9 @@ use bletio_utils::{Buffer, BufferOps, EncodeToBuffer};
 use num_enum::{FromPrimitive, IntoPrimitive};
 
 use crate::{
-    AdvertisingData, AdvertisingEnable, AdvertisingParameters, Error, EventMask, FilterDuplicates,
-    LeEventMask, LeFilterAcceptListAddress, PacketType, RandomStaticDeviceAddress, ScanEnable,
-    ScanParameters,
+    AdvertisingData, AdvertisingEnable, AdvertisingParameters, ConnectionParameters, Error,
+    EventMask, FilterDuplicates, LeEventMask, LeFilterAcceptListAddress, PacketType,
+    RandomStaticDeviceAddress, ScanEnable, ScanParameters,
 };
 
 const NOP_OGF: u16 = 0x00;
@@ -38,6 +38,7 @@ pub(crate) enum CommandOpCode {
     LeSetAdvertisingEnable = opcode(LE_CONTROLLER_OGF, 0x000A),
     LeSetScanParameters = opcode(LE_CONTROLLER_OGF, 0x000B),
     LeSetScanEnable = opcode(LE_CONTROLLER_OGF, 0x000C),
+    LeCreateConnection = opcode(LE_CONTROLLER_OGF, 0x000D),
     LeReadFilterAcceptListSize = opcode(LE_CONTROLLER_OGF, 0x000F),
     LeClearFilterAcceptList = opcode(LE_CONTROLLER_OGF, 0x0010),
     LeAddDeviceToFilterAcceptList = opcode(LE_CONTROLLER_OGF, 0x0011),
@@ -54,6 +55,7 @@ pub(crate) enum CommandOpCode {
 pub(crate) enum Command {
     LeAddDeviceToFilterAcceptList(LeFilterAcceptListAddress),
     LeClearFilterAcceptList,
+    LeCreateConnection(ConnectionParameters),
     // LeEncrypt(Key, Data),
     LeRand,
     LeReadAdvertisingChannelTxPower,
@@ -100,6 +102,9 @@ impl Command {
             | Command::LeRemoveDeviceFromFilterAcceptList(address) => {
                 CommandPacket::new(self.opcode()).encode(address)?
             }
+            Command::LeCreateConnection(parameters) => {
+                CommandPacket::new(self.opcode()).encode(parameters)?
+            }
             Command::LeSetAdvertisingEnable(enable) => {
                 CommandPacket::new(self.opcode()).encode(enable)?
             }
@@ -137,6 +142,7 @@ impl Command {
         match self {
             Self::LeAddDeviceToFilterAcceptList(_) => CommandOpCode::LeAddDeviceToFilterAcceptList,
             Self::LeClearFilterAcceptList => CommandOpCode::LeClearFilterAcceptList,
+            Self::LeCreateConnection(_) => CommandOpCode::LeCreateConnection,
             Self::LeRand => CommandOpCode::LeRand,
             Self::LeReadAdvertisingChannelTxPower => CommandOpCode::LeReadAdvertisingChannelTxPower,
             Self::LeReadBufferSize => CommandOpCode::LeReadBufferSize,
@@ -213,6 +219,7 @@ pub(crate) mod parser {
     use crate::advertising_data::parser::advertising_data;
     use crate::advertising_enable::parser::advertising_enable;
     use crate::advertising_parameters::parser::advertising_parameters;
+    use crate::connection_parameters::parser::connection_parameters;
     use crate::device_address::parser::random_address;
     use crate::event_mask::parser::event_mask;
     use crate::le_event_mask::parser::le_event_mask;
@@ -239,6 +246,10 @@ pub(crate) mod parser {
                     Command::LeAddDeviceToFilterAcceptList(le_filter_accept_list_address)
                 }
                 CommandOpCode::LeClearFilterAcceptList => Command::LeClearFilterAcceptList,
+                CommandOpCode::LeCreateConnection => {
+                    let (_, connection_parameters) = connection_parameters(parameters)?;
+                    Command::LeCreateConnection(connection_parameters)
+                }
                 CommandOpCode::LeRand => Command::LeRand,
                 CommandOpCode::LeReadAdvertisingChannelTxPower => {
                     Command::LeReadAdvertisingChannelTxPower
@@ -347,6 +358,11 @@ mod test {
         &[1, 17, 32, 7, 0, 0x38, 0x5E, 0x43, 0xCA, 0x4C, 0x40]
     )]
     #[case::le_clear_filter_accept_list(Command::LeClearFilterAcceptList, CommandOpCode::LeClearFilterAcceptList, &[1, 16, 32, 0])]
+    #[case::le_create_connection(
+        Command::LeCreateConnection(ConnectionParameters::default()),
+        CommandOpCode::LeCreateConnection,
+        &[1, 13, 32, 25, 16, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 64, 0, 64, 0, 0, 0, 32, 0, 0, 0, 0, 0]
+    )]
     #[case::le_rand(Command::LeRand, CommandOpCode::LeRand, &[1, 24, 32, 0])]
     #[case::le_read_advertising_channel_tx_power(
         Command::LeReadAdvertisingChannelTxPower, CommandOpCode::LeReadAdvertisingChannelTxPower, &[1, 7, 32, 0]
@@ -444,6 +460,7 @@ mod test {
             }
         }
         let object = Object;
+        assert_eq!(object.encoded_size(), 1024);
         assert!(matches!(
             CommandPacket::new(CommandOpCode::Nop).encode(&object),
             Err(Error::DataWillNotFitCommandPacket)
@@ -467,6 +484,10 @@ mod test {
         &[1, 17, 32, 7, 0, 0x38, 0x5E, 0x43, 0xCA, 0x4C, 0x40]
     )]
     #[case::le_clear_filter_accept_list(Command::LeClearFilterAcceptList, &[1, 16, 32, 0])]
+    #[case::le_create_connection(
+        Command::LeCreateConnection(ConnectionParameters::default()),
+        &[1, 13, 32, 25, 16, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 64, 0, 64, 0, 0, 0, 32, 0, 0, 0, 0, 0]
+    )]
     #[case::le_rand(Command::LeRand, &[1, 24, 32, 0])]
     #[case::le_read_advertising_channel_tx_power(Command::LeReadAdvertisingChannelTxPower, &[1, 7, 32, 0])]
     #[case::le_read_buffer_size(Command::LeReadBufferSize, &[1, 2, 32, 0])]

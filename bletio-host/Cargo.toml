@@ -24,4 +24,6 @@ nom = { workspace = true }
 num_enum = { workspace = true }
 
 [dev-dependencies]
+approx = { workspace = true }
+claims = { workspace = true }
 rstest = { workspace = true }

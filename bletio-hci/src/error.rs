@@ -23,20 +23,30 @@ pub enum Error {
     InvalidAdvertisingType(u8),
     /// Invalid HCI command.
     InvalidCommand(u16),
+    /// The provided connection event length range is invalid.
+    InvalidConnectionEventLengthRange,
+    /// The connection interval range is invalid, the first value must be smaller or equal to the second one.
+    InvalidConnectionIntervalRange,
     /// The provided connection interval value is invalid, it needs to be between 0x0006 and 0x0C80.
     InvalidConnectionIntervalValue(u16),
+    /// The connection peer address type value is invalid.
+    InvalidConnectionPeerAddressType(u8),
     /// Invalid or unhandled HCI error code.
     InvalidErrorCode(u8),
     /// Invalid HCI event packet.
     InvalidEventPacket,
     /// The provided filter duplicates value is invalid.
     InvalidFilterDuplicatesValue(u8),
-    /// The provided LE advertising report address type is invalid.
-    InvalidLeAdvertisingReportAddressType(u8),
+    /// The provided initiator filter policy is invalid.
+    InvalidInitiatorFilterPolicy(u8),
     /// The provided LE advertising report event type is invalid.
     InvalidLeAdvertisingReportEventType(u8),
     /// The provided LE advertising report num reports is invalid.
     InvalidLeAdvertisingReportNumReports(u8),
+    /// The provided LE filter accept list address type is invalid.
+    InvalidLeFilterAcceptListAddressType(u8),
+    /// The provided max latency is invalid.
+    InvalidMaxLatency(u16),
     /// The provided own address type is invalid.
     InvalidOwnAddressType(u8),
     /// Invalid HCI packet, either malformed or not expected (e.g. Command received by the Host).
@@ -67,10 +77,15 @@ pub enum Error {
     InvalidScanWindow(u16),
     /// The provided scanning filter policy is invalid.
     InvalidScanningFilterPolicy(u8),
+    /// The provided supervision timeout is invalid.
+    InvalidSupervisionTimeout(u16),
     /// The provided TX power level value is invalid.
     InvalidTxPowerLevelValue(i8),
     /// The scan window must be smaller or equal to the scan interval.
     ScanWindowMustBeSmallerOrEqualToScanInterval,
+    /// The Supervision_Timeout in milliseconds shall be larger than (1 + Max_Latency) ×
+    /// Connection_Interval_Max × 2, where Connection_Interval_Max is given in milliseconds.
+    SupervisionTimeoutIsNotBigEnough,
 }
 
 impl From<HciDriverError> for Error {

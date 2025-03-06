@@ -9,7 +9,7 @@ use crate::{DeviceAddress, Error, PublicDeviceAddress, RandomAddress};
 /// & [Core Specification 6.0, Vol.4, Part E, 7.8.17](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-8f8e1acb-23ba-5c1f-9e05-dc9331a9a86d)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, IntoPrimitive, TryFromPrimitive)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[num_enum(error_type(name = Error, constructor = Error::InvalidLeAdvertisingReportAddressType))]
+#[num_enum(error_type(name = Error, constructor = Error::InvalidLeFilterAcceptListAddressType))]
 #[repr(u8)]
 #[non_exhaustive]
 pub(crate) enum LeFilterAcceptListAddressType {

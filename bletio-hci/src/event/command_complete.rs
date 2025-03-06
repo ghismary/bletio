@@ -10,19 +10,19 @@ use crate::{
 pub struct CommandCompleteEvent {
     pub(crate) num_hci_command_packets: u8,
     pub(crate) opcode: CommandOpCode,
-    pub(crate) parameter: EventParameter,
+    pub(crate) parameter: Option<EventParameter>,
 }
 
 impl CommandCompleteEvent {
     pub(crate) fn new(
         num_hci_command_packets: u8,
         opcode: CommandOpCode,
-        parameter: impl Into<EventParameter>,
+        parameter: Option<impl Into<EventParameter>>,
     ) -> Self {
         Self {
             num_hci_command_packets,
             opcode,
-            parameter: parameter.into(),
+            parameter: parameter.map(Into::into),
         }
     }
 }
@@ -30,7 +30,6 @@ impl CommandCompleteEvent {
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) enum EventParameter {
-    Empty,
     Status(StatusEventParameter),
     StatusAndBdAddr(StatusAndBdAddrEventParameter),
     StatusAndBufferSize(StatusAndBufferSizeEventParameter),
@@ -194,23 +193,16 @@ pub(crate) mod parser {
     use bitflags::Flags;
     use nom::{
         bytes::take,
-        combinator::{eof, fail, map, map_res},
+        combinator::{eof, map, map_res},
         number::{le_i8, le_u16, le_u64, le_u8},
         sequence::pair,
         IResult, Parser,
     };
 
     use crate::command::parser::command_opcode;
+    use crate::event::parser::{hci_error_code, num_hci_command_packets};
 
     use super::*;
-
-    fn num_hci_command_packets(input: &[u8]) -> IResult<&[u8], u8> {
-        le_u8().parse(input)
-    }
-
-    fn hci_error_code(input: &[u8]) -> IResult<&[u8], ErrorCode> {
-        map_res(le_u8(), ErrorCode::try_from).parse(input)
-    }
 
     fn supported_commands(input: &[u8]) -> IResult<&[u8], SupportedCommands> {
         map(map_res(take(64u8), TryInto::try_into), |v: [u8; 64]| {
@@ -268,10 +260,10 @@ pub(crate) mod parser {
     pub(crate) fn command_complete_event(input: &[u8]) -> IResult<&[u8], CommandCompleteEvent> {
         let (return_parameters, (num_hci_command_packets, command_opcode)) =
             pair(num_hci_command_packets, command_opcode).parse(input)?;
-        let event_parameter = match command_opcode {
+        let event_parameter: Option<EventParameter> = match command_opcode {
             CommandOpCode::Nop => {
                 eof(return_parameters)?;
-                EventParameter::Empty
+                None
             }
             CommandOpCode::SetEventMask
             | CommandOpCode::Reset
@@ -288,7 +280,7 @@ pub(crate) mod parser {
             | CommandOpCode::LeSetScanResponseData => {
                 let (rest, status) = hci_error_code(return_parameters)?;
                 eof(rest)?;
-                StatusEventParameter { status }.into()
+                Some(StatusEventParameter { status }.into())
             }
             CommandOpCode::LeRand => {
                 let (rest, status) = hci_error_code(return_parameters)?;
@@ -298,11 +290,13 @@ pub(crate) mod parser {
                     (rest, [0u8; 8])
                 };
                 eof(rest)?;
-                StatusAndRandomNumberEventParameter {
-                    status,
-                    random_number,
-                }
-                .into()
+                Some(
+                    StatusAndRandomNumberEventParameter {
+                        status,
+                        random_number,
+                    }
+                    .into(),
+                )
             }
             CommandOpCode::LeReadAdvertisingChannelTxPower => {
                 let (rest, status) = hci_error_code(return_parameters)?;
@@ -312,11 +306,13 @@ pub(crate) mod parser {
                     (rest, TxPowerLevel::default())
                 };
                 eof(rest)?;
-                StatusAndTxPowerLevelEventParameter {
-                    status,
-                    tx_power_level,
-                }
-                .into()
+                Some(
+                    StatusAndTxPowerLevelEventParameter {
+                        status,
+                        tx_power_level,
+                    }
+                    .into(),
+                )
             }
             CommandOpCode::LeReadBufferSize => {
                 let (rest, status) = hci_error_code(return_parameters)?;
@@ -327,12 +323,14 @@ pub(crate) mod parser {
                         (rest, (0, 0))
                     };
                 eof(rest)?;
-                StatusAndLeBufferSizeEventParameter {
-                    status,
-                    le_acl_data_packet_length,
-                    total_num_le_acl_data_packets,
-                }
-                .into()
+                Some(
+                    StatusAndLeBufferSizeEventParameter {
+                        status,
+                        le_acl_data_packet_length,
+                        total_num_le_acl_data_packets,
+                    }
+                    .into(),
+                )
             }
             CommandOpCode::LeReadFilterAcceptListSize => {
                 let (rest, status) = hci_error_code(return_parameters)?;
@@ -342,11 +340,13 @@ pub(crate) mod parser {
                     (rest, 0)
                 };
                 eof(rest)?;
-                StatusAndFilterAcceptListSizeEventParameter {
-                    status,
-                    filter_accept_list_size,
-                }
-                .into()
+                Some(
+                    StatusAndFilterAcceptListSizeEventParameter {
+                        status,
+                        filter_accept_list_size,
+                    }
+                    .into(),
+                )
             }
             CommandOpCode::LeReadLocalSupportedFeaturesPage0 => {
                 let (rest, status) = hci_error_code(return_parameters)?;
@@ -356,11 +356,13 @@ pub(crate) mod parser {
                     (rest, SupportedLeFeatures::empty())
                 };
                 eof(rest)?;
-                StatusAndSupportedLeFeaturesEventParameter {
-                    status,
-                    supported_le_features,
-                }
-                .into()
+                Some(
+                    StatusAndSupportedLeFeaturesEventParameter {
+                        status,
+                        supported_le_features,
+                    }
+                    .into(),
+                )
             }
             CommandOpCode::LeReadSupportedStates => {
                 let (rest, status) = hci_error_code(return_parameters)?;
@@ -370,11 +372,13 @@ pub(crate) mod parser {
                     (rest, SupportedLeStates::default())
                 };
                 eof(rest)?;
-                StatusAndSupportedLeStatesEventParameter {
-                    status,
-                    supported_le_states,
-                }
-                .into()
+                Some(
+                    StatusAndSupportedLeStatesEventParameter {
+                        status,
+                        supported_le_states,
+                    }
+                    .into(),
+                )
             }
             CommandOpCode::ReadLocalSupportedCommands => {
                 let (rest, status) = hci_error_code(return_parameters)?;
@@ -384,11 +388,13 @@ pub(crate) mod parser {
                     (rest, SupportedCommands::empty())
                 };
                 eof(rest)?;
-                StatusAndSupportedCommandsEventParameter {
-                    status,
-                    supported_commands,
-                }
-                .into()
+                Some(
+                    StatusAndSupportedCommandsEventParameter {
+                        status,
+                        supported_commands,
+                    }
+                    .into(),
+                )
             }
             CommandOpCode::ReadLocalSupportedFeatures => {
                 let (rest, status) = hci_error_code(return_parameters)?;
@@ -398,11 +404,13 @@ pub(crate) mod parser {
                     (rest, SupportedFeatures::empty())
                 };
                 eof(rest)?;
-                StatusAndSupportedFeaturesEventParameter {
-                    status,
-                    supported_features,
-                }
-                .into()
+                Some(
+                    StatusAndSupportedFeaturesEventParameter {
+                        status,
+                        supported_features,
+                    }
+                    .into(),
+                )
             }
             CommandOpCode::ReadBdAddr => {
                 let (rest, status) = hci_error_code(return_parameters)?;
@@ -412,7 +420,7 @@ pub(crate) mod parser {
                     (rest, PublicDeviceAddress::default())
                 };
                 eof(rest)?;
-                StatusAndBdAddrEventParameter { status, bd_addr }.into()
+                Some(StatusAndBdAddrEventParameter { status, bd_addr }.into())
             }
             CommandOpCode::ReadBufferSize => {
                 let (rest, status) = hci_error_code(return_parameters)?;
@@ -430,18 +438,22 @@ pub(crate) mod parser {
                     (rest, (NonZeroU16::MIN, NonZeroU8::MIN, NonZeroU16::MIN, 0))
                 };
                 eof(rest)?;
-                StatusAndBufferSizeEventParameter {
-                    status,
-                    acl_data_packet_length,
-                    synchronous_data_packet_length,
-                    total_num_acl_data_packets,
-                    total_num_synchronous_packets,
-                }
-                .into()
+                Some(
+                    StatusAndBufferSizeEventParameter {
+                        status,
+                        acl_data_packet_length,
+                        synchronous_data_packet_length,
+                        total_num_acl_data_packets,
+                        total_num_synchronous_packets,
+                    }
+                    .into(),
+                )
             }
-            CommandOpCode::Unsupported(_) => {
-                fail::<_, &[u8], _>().parse(return_parameters)?;
-                unreachable!("the fail parser will systematically return an error")
+            CommandOpCode::LeCreateConnection | CommandOpCode::Unsupported(_) => {
+                return Err(nom::Err::Failure(nom::error::Error::new(
+                    return_parameters,
+                    nom::error::ErrorKind::Fail,
+                )));
             }
         };
         Ok((
@@ -462,132 +474,129 @@ mod test {
     #[rstest]
     #[case::le_add_device_to_filter_accept_list(CommandCompleteEvent::new(
             1, CommandOpCode::LeAddDeviceToFilterAcceptList,
-            StatusEventParameter { status: ErrorCode::Success }
+            Some(StatusEventParameter { status: ErrorCode::Success })
         ), &[4, 14, 4, 1, 17, 32, 0])]
     #[case::le_clear_filter_accept_list(CommandCompleteEvent::new(
             1, CommandOpCode::LeClearFilterAcceptList,
-            StatusEventParameter { status: ErrorCode::Success }
+            Some(StatusEventParameter { status: ErrorCode::Success })
         ), &[4, 14, 4, 1, 16, 32, 0])]
     #[case::le_rand(CommandCompleteEvent::new(
             1, CommandOpCode::LeRand,
-            StatusAndRandomNumberEventParameter {
+            Some(StatusAndRandomNumberEventParameter {
                 status: ErrorCode::Success, random_number: [68, 223, 27, 9, 83, 58, 224, 240]
-            }
+            })
         ), &[4, 14, 12, 1, 24, 32, 0, 68, 223, 27, 9, 83, 58, 224, 240])]
     #[case::le_read_advertising_channel_tx_power(CommandCompleteEvent::new(
             1, CommandOpCode::LeReadAdvertisingChannelTxPower,
-            StatusAndTxPowerLevelEventParameter {
+            Some(StatusAndTxPowerLevelEventParameter {
                 status: ErrorCode::Success, tx_power_level: TxPowerLevel::try_new(9).unwrap()
-            }
+            })
         ), &[4, 14, 5, 1, 7, 32, 0, 9])]
     #[case::le_read_buffer_size(CommandCompleteEvent::new(
             1, CommandOpCode::LeReadBufferSize,
-            StatusAndLeBufferSizeEventParameter {
+            Some(StatusAndLeBufferSizeEventParameter {
                 status: ErrorCode::Success, le_acl_data_packet_length: 255, total_num_le_acl_data_packets: 24
-            }
+            })
         ), &[4, 14, 7, 1, 2, 32, 0, 255, 0, 24])]
     #[case::le_read_filter_accept_list_size(CommandCompleteEvent::new(
             1, CommandOpCode::LeReadFilterAcceptListSize,
-            StatusAndFilterAcceptListSizeEventParameter {
+            Some(StatusAndFilterAcceptListSizeEventParameter {
                 status: ErrorCode::Success, filter_accept_list_size: 12
-            }
+            })
         ), &[4, 14, 5, 1, 15, 32, 0, 12])]
     #[case::le_read_local_supported_features_page_0(CommandCompleteEvent::new(
             1, CommandOpCode::LeReadLocalSupportedFeaturesPage0,
-            StatusAndSupportedLeFeaturesEventParameter {
+            Some(StatusAndSupportedLeFeaturesEventParameter {
                 status: ErrorCode::Success,
                 supported_le_features: SupportedLeFeatures::LE_ENCRYPTION | SupportedLeFeatures::LE_EXTENDED_ADVERTISING
-            }
+            })
         ), &[4, 14, 12, 1, 3, 32, 0, 1, 16, 0, 0, 0, 0, 0, 0])]
     #[case::le_read_supported_states(CommandCompleteEvent::new(
             1, CommandOpCode::LeReadSupportedStates,
-            StatusAndSupportedLeStatesEventParameter {
+            Some(StatusAndSupportedLeStatesEventParameter {
                 status: ErrorCode::Success, supported_le_states: 0x0000_03FF_FFFF_FFFF.into()
-            }
+            })
         ), &[4, 14, 12, 1, 28, 32, 0, 255, 255, 255, 255, 255, 3, 0, 0])]
     #[case::le_remove_device_from_filter_accept_list(CommandCompleteEvent::new(
             1, CommandOpCode::LeRemoveDeviceFromFilterAcceptList,
-            StatusEventParameter { status: ErrorCode:: Success }
+            Some(StatusEventParameter { status: ErrorCode:: Success })
         ), &[4, 14, 4, 1, 18, 32, 0])]
     #[case::le_set_advertising_data(CommandCompleteEvent::new(
             1, CommandOpCode::LeSetAdvertisingData,
-            StatusEventParameter { status: ErrorCode::Success }
+            Some(StatusEventParameter { status: ErrorCode::Success })
         ), &[4, 14, 4, 1, 8, 32, 0])]
     #[case::le_set_advertising_enable(CommandCompleteEvent::new(
             1, CommandOpCode::LeSetAdvertisingEnable,
-            StatusEventParameter { status: ErrorCode::Success }
+            Some(StatusEventParameter { status: ErrorCode::Success })
         ), &[4, 14, 4, 1, 10, 32, 0])]
     #[case::le_set_advertising_parameters(CommandCompleteEvent::new(
             1, CommandOpCode::LeSetAdvertisingParameters,
-            StatusEventParameter { status: ErrorCode::Success }
+            Some(StatusEventParameter { status: ErrorCode::Success })
         ), &[4, 14, 4, 1, 6, 32, 0])]
     #[case::le_set_event_mask(CommandCompleteEvent::new(
             1, CommandOpCode::LeSetEventMask,
-            StatusEventParameter { status: ErrorCode::Success }
+            Some(StatusEventParameter { status: ErrorCode::Success })
         ), &[4, 14, 4, 1, 1, 32, 0])]
     #[case::le_set_random_address(CommandCompleteEvent::new(
             1, CommandOpCode::LeSetRandomAddress,
-            StatusEventParameter { status: ErrorCode::Success }
+            Some(StatusEventParameter { status: ErrorCode::Success })
         ), &[4, 14, 4, 1, 5, 32, 0])]
     #[case::le_set_scan_enable(CommandCompleteEvent::new(
             1, CommandOpCode::LeSetScanEnable,
-            StatusEventParameter { status: ErrorCode::Success }
+            Some(StatusEventParameter { status: ErrorCode::Success })
         ), &[4, 14, 4, 1, 12, 32, 0])]
     #[case::le_set_scan_parameters(CommandCompleteEvent::new(
             1, CommandOpCode::LeSetScanParameters,
-            StatusEventParameter { status: ErrorCode::Success }
+            Some(StatusEventParameter { status: ErrorCode::Success })
         ), &[4, 14, 4, 1, 11, 32, 0])]
     #[case::le_set_scan_response_data(CommandCompleteEvent::new(
             1, CommandOpCode::LeSetScanResponseData,
-            StatusEventParameter { status: ErrorCode::Success }
+            Some(StatusEventParameter { status: ErrorCode::Success })
         ), &[4, 14, 4, 1, 9, 32, 0])]
-    #[case::nop(CommandCompleteEvent::new(
-            1, CommandOpCode::Nop,
-            EventParameter::Empty
-        ), &[4, 14, 3, 1, 0, 0])]
+    #[case::nop(CommandCompleteEvent::new(1, CommandOpCode::Nop, None::<EventParameter>), &[4, 14, 3, 1, 0, 0])]
     #[case::read_bd_addr(CommandCompleteEvent::new(
             1, CommandOpCode::ReadBdAddr,
-            StatusAndBdAddrEventParameter {
+            Some(StatusAndBdAddrEventParameter {
                 status: ErrorCode::Success,
                 bd_addr: PublicDeviceAddress::new([0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56])
-            }
+            })
         ), &[4, 14, 10, 1, 9, 16, 0, 0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56])]
     #[case::read_buffer_size(CommandCompleteEvent::new(
             1, CommandOpCode::ReadBufferSize,
-            StatusAndBufferSizeEventParameter {
+            Some(StatusAndBufferSizeEventParameter {
                 status: ErrorCode::Success,
                 acl_data_packet_length: NonZeroU16::new(255).unwrap(),
                 synchronous_data_packet_length: NonZeroU8::new(255).unwrap(),
                 total_num_acl_data_packets: NonZeroU16::new(24).unwrap(),
                 total_num_synchronous_packets: 12,
-            }
+            })
         ), &[4, 14, 11, 1, 5, 16, 0, 255, 0, 255, 24, 0, 12, 0])]
     #[case::read_local_supported_commands(CommandCompleteEvent::new(
             1, CommandOpCode::ReadLocalSupportedCommands,
-            StatusAndSupportedCommandsEventParameter {
+            Some(StatusAndSupportedCommandsEventParameter {
                 status: ErrorCode::Success,
                 supported_commands: SupportedCommands::LE_RAND | SupportedCommands::LE_READ_LOCAL_SUPPORTED_FEATURES_PAGE_0
-            }
+            })
         ), &[
             4, 14, 68, 1, 2, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 128,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ])]
     #[case::read_local_supported_features(CommandCompleteEvent::new(
             1, CommandOpCode::ReadLocalSupportedFeatures,
-            StatusAndSupportedFeaturesEventParameter {
+            Some(StatusAndSupportedFeaturesEventParameter {
                 status: ErrorCode::Success,
                 supported_features: SupportedFeatures::LE_SUPPORTED_CONTROLLER
-            }
+            })
         ), &[4, 14, 12, 1, 3, 16, 0, 0, 0, 0, 0, 64, 0, 0, 0])]
     #[case::reset(CommandCompleteEvent::new(
             1, CommandOpCode::Reset,
-            StatusEventParameter { status: ErrorCode::Success }
+            Some(StatusEventParameter { status: ErrorCode::Success })
         ), &[4, 14, 4, 1, 3, 12, 0])]
     #[case::set_event_mask(CommandCompleteEvent::new(
             1, CommandOpCode::SetEventMask,
-            StatusEventParameter { status: ErrorCode::Success }
+            Some(StatusEventParameter { status: ErrorCode::Success })
         ), &[4, 14, 4, 1, 1, 12, 0])]
-    fn test_command_complete_event_parsing(
+    fn test_command_complete_event_parsing_success(
         #[case] event: CommandCompleteEvent,
         #[case] input: &[u8],
     ) {

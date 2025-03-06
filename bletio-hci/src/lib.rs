@@ -1,13 +1,16 @@
 #![no_std]
 
 pub mod advertising_parameters;
+pub mod connection_interval;
+pub mod connection_parameters;
 pub mod device_address;
-pub mod scan_parameters;
+pub mod scan_interval;
+pub mod scan_window;
 
 mod advertising_data;
 mod advertising_enable;
 mod command;
-mod connection_interval;
+mod connection_peer_address;
 mod error;
 mod error_code;
 mod event;
@@ -21,6 +24,7 @@ mod own_address_type;
 mod packet;
 mod rssi;
 mod scan_enable;
+mod scan_parameters;
 mod supported_commands;
 mod supported_features;
 mod supported_le_features;
@@ -47,7 +51,15 @@ pub use advertising_parameters::{
     advertising_interval_range, AdvertisingChannelMap, AdvertisingFilterPolicy,
     AdvertisingInterval, AdvertisingIntervalRange, AdvertisingParameters, AdvertisingType,
 };
-pub use connection_interval::ConnectionInterval;
+pub use connection_interval::{
+    connection_interval, connection_interval_range, ConnectionInterval, ConnectionIntervalRange,
+};
+pub use connection_parameters::{
+    connection_event_length_range, max_latency, supervision_timeout, ConnectionEventLength,
+    ConnectionEventLengthRange, ConnectionParameters, InitiatorFilterPolicy, MaxLatency,
+    SupervisionTimeout,
+};
+pub use connection_peer_address::ConnectionPeerAddress;
 pub use device_address::{
     DeviceAddress, PublicDeviceAddress, RandomAddress, RandomNonResolvablePrivateAddress,
     RandomResolvablePrivateAddress, RandomStaticDeviceAddress,
@@ -57,8 +69,8 @@ pub use error_code::ErrorCode;
 pub use event::{
     command_complete::CommandCompleteEvent,
     le_advertising_report::{
-        LeAdvertisingReport, LeAdvertisingReportAddress, LeAdvertisingReportData,
-        LeAdvertisingReportEventType, LeAdvertisingReportList,
+        LeAdvertisingReport, LeAdvertisingReportData, LeAdvertisingReportEventType,
+        LeAdvertisingReportList,
     },
     le_meta::LeMetaEvent,
     Event, EventList,
@@ -71,10 +83,9 @@ pub use le_states::{LeCombinedState, LeSingleState, LeState};
 pub use own_address_type::OwnAddressType;
 pub use rssi::Rssi;
 pub use scan_enable::{FilterDuplicates, ScanEnable};
-pub use scan_parameters::{
-    scan_interval, scan_window, ScanInterval, ScanParameters, ScanType, ScanWindow,
-    ScanningFilterPolicy,
-};
+pub use scan_interval::{scan_interval, ScanInterval};
+pub use scan_parameters::{ScanParameters, ScanType, ScanningFilterPolicy};
+pub use scan_window::{scan_window, ScanWindow};
 pub use supported_commands::SupportedCommands;
 pub use supported_features::SupportedFeatures;
 pub use supported_le_features::SupportedLeFeatures;

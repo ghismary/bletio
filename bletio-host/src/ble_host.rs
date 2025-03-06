@@ -3,7 +3,7 @@ use core::num::NonZeroU16;
 use core::ops::Deref;
 
 use bletio_hci::{
-    EventList, EventMask, FilterDuplicates, Hci, HciDriver, LeAdvertisingReportAddress,
+    ConnectionPeerAddress, EventList, EventMask, FilterDuplicates, Hci, HciDriver,
     LeAdvertisingReportEventType, LeEventMask, LeFilterAcceptListAddress, PublicDeviceAddress,
     RandomStaticDeviceAddress, Rssi, ScanEnable, SupportedCommands, SupportedFeatures,
     SupportedLeFeatures, SupportedLeStates,
@@ -14,7 +14,7 @@ use crate::advertising::{
 };
 use crate::assigned_numbers::AppearanceValue;
 use crate::device_information::DeviceInformation;
-use crate::Error;
+use crate::{ConnectionParameters, Error};
 
 pub trait BleHostState {}
 
@@ -35,11 +35,14 @@ pub struct BleHostStateStandby;
 pub struct BleHostStateAdvertising;
 #[derive(Debug, Default)]
 pub struct BleHostStateScanning;
+#[derive(Debug, Default)]
+pub struct BleHostStateInitiating;
 
 impl BleHostState for BleHostStateInitial {}
 impl BleHostState for BleHostStateStandby {}
 impl BleHostState for BleHostStateAdvertising {}
 impl BleHostState for BleHostStateScanning {}
+impl BleHostState for BleHostStateInitiating {}
 
 impl<'a, H> BleHost<'a, H, BleHostStateInitial>
 where
@@ -153,6 +156,20 @@ where
                 SupportedCommands::LE_CLEAR_FILTER_ACCEPT_LIST,
             ))
         }
+    }
+
+    pub async fn connect(
+        mut self,
+        connection_parameters: &ConnectionParameters,
+    ) -> Result<BleHost<'a, H, BleHostStateInitiating>, Error> {
+        self.hci
+            .cmd_le_create_connection(connection_parameters.deref().clone())
+            .await?;
+        Ok(BleHost::<H, BleHostStateInitiating> {
+            hci: self.hci,
+            device_information: self.device_information,
+            phantom: PhantomData,
+        })
     }
 
     pub async fn create_random_address(&mut self) -> Result<(), Error> {
@@ -368,6 +385,7 @@ where
     Standby(BleHost<'a, H, BleHostStateStandby>),
     Advertising(BleHost<'a, H, BleHostStateAdvertising>),
     Scanning(BleHost<'a, H, BleHostStateScanning>),
+    Initiating(BleHost<'a, H, BleHostStateInitiating>),
 }
 
 impl<H> BleHostStates<'_, H>
@@ -379,6 +397,7 @@ where
             Self::Initial(_) | Self::Standby(_) => Err(Error::CannotWaitForEventInThisState),
             Self::Advertising(host) => Ok(host.hci.wait_for_event().await?),
             Self::Scanning(host) => Ok(host.hci.wait_for_event().await?),
+            Self::Initiating(host) => Ok(host.hci.wait_for_event().await?),
         }
     }
 }
@@ -399,7 +418,7 @@ pub trait BleHostObserver {
         &self,
         host: BleHostStates<'a, H>,
         event_type: LeAdvertisingReportEventType,
-        address: &LeAdvertisingReportAddress,
+        address: &ConnectionPeerAddress,
         rssi: Option<Rssi>,
         data: FullAdvertisingData,
     ) -> impl core::future::Future<Output = BleHostStates<'a, H>>

@@ -7,6 +7,7 @@ pub mod advertising;
 pub mod assigned_numbers;
 pub mod ble_device;
 pub mod ble_host;
+pub mod connection_parameters;
 pub mod uuid;
 
 pub use ble_device::BleDevice;
@@ -14,6 +15,7 @@ pub use ble_host::{
     BleHost, BleHostObserver, BleHostState, BleHostStateAdvertising, BleHostStateInitial,
     BleHostStateStandby, BleHostStates,
 };
+pub use connection_parameters::{ConnectionParameters, ConnectionParametersBuilder};
 
 mod device_information;
 
@@ -33,6 +35,8 @@ pub enum Error {
     ControllerDoesNotSupportCommand(SupportedCommands),
     /// HCI related error.
     Hci(HciError),
+    /// The provided connection parameters are invalid.
+    InvalidConnectionParameters,
     /// The Bluetooth controller is not LE capable.
     NonLeCapableController,
     /// The Random Static Device Address has already been created.
@@ -68,5 +72,11 @@ mod test {
             err,
             Error::Hci(HciError::HciDriver(HciDriverError::ReadFailure))
         );
+    }
+
+    #[test]
+    fn test_error_from_hci_error() {
+        let err: Error = HciError::DataWillNotFitCommandPacket.into();
+        assert_eq!(err, Error::Hci(HciError::DataWillNotFitCommandPacket));
     }
 }

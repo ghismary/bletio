@@ -1,5 +1,5 @@
 use bletio_hci::{
-    Event, EventList, Hci, HciDriver, LeAdvertisingReport, LeAdvertisingReportAddress,
+    ConnectionPeerAddress, Event, EventList, Hci, HciDriver, LeAdvertisingReport,
     LeAdvertisingReportEventType, LeMetaEvent,
 };
 
@@ -98,7 +98,7 @@ where
     {
         fn find_corresponding_scan_response(
             event_list: &EventList,
-            address: &LeAdvertisingReportAddress,
+            address: &ConnectionPeerAddress,
         ) -> Option<LeAdvertisingReport> {
             for reports in event_list.iter().filter_map(|e| match e {
                 Event::LeMeta(LeMetaEvent::LeAdvertisingReport(reports)) => Some(reports),
