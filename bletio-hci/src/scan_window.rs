@@ -23,16 +23,11 @@ pub struct ScanWindow {
 impl ScanWindow {
     /// Create a valid scan window.
     pub const fn try_new(value: u16) -> Result<Self, Error> {
-        if check_scan_window_value(value) {
-            Ok(Self::new_unchecked(value))
+        if (value >= 0x0004) && (value <= 0x4000) {
+            Ok(Self { value })
         } else {
             Err(Error::InvalidScanWindow(value))
         }
-    }
-
-    #[doc(hidden)]
-    pub const fn new_unchecked(value: u16) -> Self {
-        Self { value }
     }
 
     /// Get the value of the scan window in milliseconds.
@@ -81,26 +76,6 @@ impl PartialOrd<ScanInterval> for ScanWindow {
     }
 }
 
-#[diagnostic::on_unimplemented(
-    message = "the scan window value is invalid, it needs to be between 0x0004 and 0x4000"
-)]
-#[doc(hidden)]
-pub trait ScanWindowValueValid {}
-
-#[doc(hidden)]
-pub struct ScanWindowValueIsValid<const VALID: bool>;
-
-#[doc(hidden)]
-impl ScanWindowValueValid for ScanWindowValueIsValid<true> {}
-
-#[doc(hidden)]
-pub const fn scan_window_value_is_valid<T: ScanWindowValueValid>() {}
-
-#[doc(hidden)]
-pub const fn check_scan_window_value(value: u16) -> bool {
-    (value >= 0x0004) && (value <= 0x4000)
-}
-
 /// Create a [`ScanWindow`], checking that it is valid at compile-time.
 ///
 /// # Examples
@@ -113,11 +88,12 @@ pub const fn check_scan_window_value(value: u16) -> bool {
 #[doc(hidden)]
 macro_rules! __scan_window__ {
     ($value:expr) => {{
-        const ERR: bool = bletio_hci::scan_window::check_scan_window_value($value);
-        bletio_hci::scan_window::scan_window_value_is_valid::<
-            bletio_hci::scan_window::ScanWindowValueIsValid<ERR>,
-        >();
-        bletio_hci::scan_window::ScanWindow::new_unchecked($value)
+        const {
+            match $crate::scan_window::ScanWindow::try_new($value) {
+                Ok(v) => v,
+                Err(_) => panic!("the scan window value is invalid, it needs to be between 0x0004 and 0x4000")
+            }
+        }
     }};
 }
 
