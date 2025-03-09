@@ -23,16 +23,11 @@ pub struct ScanInterval {
 impl ScanInterval {
     /// Create a valid scan interval.
     pub const fn try_new(value: u16) -> Result<Self, Error> {
-        if check_scan_interval_value(value) {
-            Ok(Self::new_unchecked(value))
+        if (value >= 0x0004) && (value <= 0x4000) {
+            Ok(Self { value })
         } else {
             Err(Error::InvalidScanInterval(value))
         }
-    }
-
-    #[doc(hidden)]
-    pub const fn new_unchecked(value: u16) -> Self {
-        Self { value }
     }
 
     /// Get the value of the scan interval in milliseconds.
@@ -81,26 +76,6 @@ impl PartialOrd<ScanWindow> for ScanInterval {
     }
 }
 
-#[diagnostic::on_unimplemented(
-    message = "the scan interval value is invalid, it needs to be between 0x0004 and 0x4000"
-)]
-#[doc(hidden)]
-pub trait ScanIntervalValueValid {}
-
-#[doc(hidden)]
-pub struct ScanIntervalValueIsValid<const VALID: bool>;
-
-#[doc(hidden)]
-impl ScanIntervalValueValid for ScanIntervalValueIsValid<true> {}
-
-#[doc(hidden)]
-pub const fn scan_interval_value_is_valid<T: ScanIntervalValueValid>() {}
-
-#[doc(hidden)]
-pub const fn check_scan_interval_value(value: u16) -> bool {
-    (value >= 0x0004) && (value <= 0x4000)
-}
-
 /// Create a [`ScanInterval`], checking that it is valid at compile-time.
 ///
 /// # Examples
@@ -113,11 +88,12 @@ pub const fn check_scan_interval_value(value: u16) -> bool {
 #[doc(hidden)]
 macro_rules! __scan_interval__ {
     ($value:expr) => {{
-        const ERR: bool = bletio_hci::scan_interval::check_scan_interval_value($value);
-        bletio_hci::scan_interval::scan_interval_value_is_valid::<
-            bletio_hci::scan_interval::ScanIntervalValueIsValid<ERR>,
-        >();
-        bletio_hci::scan_interval::ScanInterval::new_unchecked($value)
+        const {
+            match $crate::scan_interval::ScanInterval::try_new($value) {
+                Ok(v) => v,
+                Err(_) => panic!("the scan interval value is invalid, it needs to be between 0x0004 and 0x4000")
+            }
+        }
     }};
 }
 
