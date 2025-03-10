@@ -4,11 +4,11 @@ use core::{
 };
 
 use crate::{
-    AdvertisingData, AdvertisingEnable, AdvertisingParameters, Command, CommandOpCode,
-    ConnectionParameters, Error, Event, EventList, EventMask, EventParameter, FilterDuplicates,
-    HciBuffer, HciDriver, LeEventMask, LeFilterAcceptListAddress, Packet, PublicDeviceAddress,
-    RandomStaticDeviceAddress, ScanEnable, ScanParameters, SupportedCommands, SupportedFeatures,
-    SupportedLeFeatures, SupportedLeStates, TxPowerLevel, WithTimeout,
+    AdvertisingData, AdvertisingEnable, AdvertisingParameters, Command, ConnectionParameters,
+    Error, Event, EventList, EventMask, EventParameter, FilterDuplicates, HciBuffer, HciDriver,
+    LeEventMask, LeFilterAcceptListAddress, Packet, PublicDeviceAddress, RandomStaticDeviceAddress,
+    ScanEnable, ScanParameters, SupportedCommands, SupportedFeatures, SupportedLeFeatures,
+    SupportedLeStates, TxPowerLevel, WithTimeout,
 };
 
 const HCI_COMMAND_TIMEOUT: Duration = Duration::from_millis(1000);
@@ -345,7 +345,7 @@ where
                 return Ok(event_list);
             }
 
-            match self.hci_read_and_parse_packet().await {
+            match Self::hci_read_and_parse_packet(&mut self.driver, &mut self.read_buffer).await {
                 Ok((remaining, packet)) => {
                     match packet {
                         Packet::Command(_) => {
@@ -353,15 +353,25 @@ where
                             #[cfg(feature = "defmt")]
                             defmt::warn!("Received command while waiting for event, ignore it!");
                         }
+                        Packet::AclData(_data) => {
+                            #[cfg(feature = "defmt")]
+                            defmt::debug!("Received ACL data packet with data: {:?}", _data);
+                            // TODO
+                        }
                         Packet::Event(event) => {
-                            // INVARIANT: The remaining is known to be shorter than the buffer.
-                            self.read_buffer = remaining.try_into().unwrap();
+                            Self::update_num_hci_command_packets(
+                                &mut self.num_hci_command_packets,
+                                &event,
+                            );
 
                             // INVARIANT: The event list is known to be able to hold this event,
                             // otherwise we would have returned at the beginning of the loop.
                             event_list.push(event).unwrap();
                         }
                     }
+
+                    // INVARIANT: The remaining is known to be shorter than the buffer.
+                    self.read_buffer = remaining.try_into().unwrap();
                 }
                 Err(e) => {
                     self.read_buffer.clear();
@@ -390,15 +400,6 @@ where
             .send_command_and_wait_response(command)
             .with_timeout(HCI_COMMAND_TIMEOUT)
             .await??;
-        match &event {
-            Event::CommandComplete(event) => {
-                self.num_hci_command_packets = event.num_hci_command_packets
-            }
-            Event::CommandStatus(event) => {
-                self.num_hci_command_packets = event.num_hci_command_packets
-            }
-            _ => (),
-        };
         Ok(event)
     }
 
@@ -406,31 +407,54 @@ where
         let command_packet = command.encode()?;
         self.driver.write(command_packet.data()).await?;
         loop {
-            match self.hci_read_and_parse_packet().await {
+            match Self::hci_read_and_parse_packet(&mut self.driver, &mut self.read_buffer).await {
                 Ok((remaining, packet)) => {
-                    match packet {
+                    let result = match packet {
                         Packet::Command(_) => {
                             // The Host is not supposed to receive commands!
-                            return Err(Error::InvalidPacket);
+                            Some(Err(Error::InvalidPacket))
+                        }
+                        Packet::AclData(_) => {
+                            todo!()
                         }
                         Packet::Event(event) => {
-                            // INVARIANT: The remaining is known to be shorter than the buffer.
-                            self.read_buffer = remaining.try_into().unwrap();
+                            Self::update_num_hci_command_packets(
+                                &mut self.num_hci_command_packets,
+                                &event,
+                            );
 
                             match &event {
                                 Event::CommandComplete(command_complete_event)
                                     if command_complete_event.opcode == command.opcode() =>
                                 {
-                                    return Ok(event);
+                                    Some(Ok(event))
                                 }
                                 Event::CommandStatus(command_status_event)
                                     if command_status_event.opcode == command.opcode() =>
                                 {
-                                    return Ok(event)
+                                    Some(Ok(event))
                                 }
-                                _ => self.handle_event(event),
+                                Event::Unsupported(_) => {
+                                    // Ignore unsupported event
+                                    None
+                                }
+                                _ => {
+                                    // Other events will be handled higher in the stack
+                                    if self.event_list.push(event).is_err() {
+                                        #[cfg(feature = "defmt")]
+                                        defmt::warn!("HCI event list is full, cannot add more!");
+                                    }
+                                    None
+                                }
                             }
                         }
+                    };
+
+                    // INVARIANT: The remaining is known to be shorter than the buffer.
+                    self.read_buffer = remaining.try_into().unwrap();
+
+                    if let Some(result) = result {
+                        return result;
                     }
                 }
                 Err(e) => {
@@ -443,18 +467,25 @@ where
 
     async fn wait_controller_ready(&mut self) -> Result<(), Error> {
         while self.num_hci_command_packets == 0 {
-            match self.hci_read_and_parse_packet().await {
+            match Self::hci_read_and_parse_packet(&mut self.driver, &mut self.read_buffer).await {
                 Ok((remaining, packet)) => {
                     match packet {
                         Packet::Command(_) => {
                             // The Host is not supposed to receive commands!
                             return Err(Error::InvalidPacket);
                         }
+                        Packet::AclData(_) => {
+                            // The host is not expecting to receive ACL data now!
+                            return Err(Error::InvalidPacket);
+                        }
                         Packet::Event(event) => {
+                            Self::update_num_hci_command_packets(
+                                &mut self.num_hci_command_packets,
+                                &event,
+                            );
+
                             // INVARIANT: The remaining is known to be shorter than the buffer.
                             self.read_buffer = remaining.try_into().unwrap();
-
-                            self.handle_event(event)
                         }
                     }
                 }
@@ -467,34 +498,31 @@ where
         Ok(())
     }
 
-    async fn hci_read_and_parse_packet(&mut self) -> Result<(&[u8], Packet), Error> {
-        if self.read_buffer.is_empty() {
-            self.read_buffer.read(&mut self.driver).await?;
+    async fn hci_read_and_parse_packet<'a>(
+        driver: &mut H,
+        read_buffer: &'a mut HciBuffer,
+    ) -> Result<(&'a [u8], Packet), Error>
+    where
+        H: HciDriver,
+    {
+        if read_buffer.is_empty() {
+            read_buffer.read(driver).await?;
         }
-        let (remaining, hci_packet) = crate::packet::parser::packet(self.read_buffer.data())
-            .map_err(|_| Error::InvalidPacket)?;
+        let (remaining, hci_packet) =
+            crate::packet::parser::packet(read_buffer.data()).map_err(|_| Error::InvalidPacket)?;
         Ok((remaining, hci_packet))
     }
 
-    fn handle_event(&mut self, event: Event) {
+    fn update_num_hci_command_packets(num_hci_command_packets: &mut u8, event: &Event) {
         match event {
-            Event::CommandComplete(command_complete_event)
-                if command_complete_event.opcode == CommandOpCode::Nop =>
-            {
-                self.num_hci_command_packets = command_complete_event.num_hci_command_packets;
+            Event::CommandComplete(event) => {
+                *num_hci_command_packets = event.num_hci_command_packets;
             }
-            Event::CommandComplete(_) => {
-                unreachable!("an event for an issued command should already have been handled before reaching here")
-            }
-            Event::Unsupported(_) => {
-                // Ignore unsupported event
+            Event::CommandStatus(event) => {
+                *num_hci_command_packets = event.num_hci_command_packets;
             }
             _ => {
-                // Other events will be handled higher in the stack
-                if self.event_list.push(event).is_err() {
-                    #[cfg(feature = "defmt")]
-                    defmt::warn!("HCI event list is full, cannot add more!");
-                }
+                // Ignore other events
             }
         }
     }

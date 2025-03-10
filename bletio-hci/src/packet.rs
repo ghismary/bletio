@@ -1,6 +1,6 @@
 use num_enum::TryFromPrimitive;
 
-use crate::{Command, Error, Event};
+use crate::{AclData, Command, Error, Event};
 
 /// HCI packet type.
 ///
@@ -27,13 +27,17 @@ pub(crate) enum PacketType {
 #[allow(clippy::large_enum_variant)]
 pub(crate) enum Packet {
     Command(Command),
+    AclData(AclData),
     Event(Event),
 }
 
 pub(crate) mod parser {
     use nom::{combinator::map_res, number::le_u8, IResult, Parser};
 
-    use crate::{command::parser::command, event::parser::event, Packet, PacketType};
+    use crate::{
+        acl_data::parser::acl_data, command::parser::command, event::parser::event, Packet,
+        PacketType,
+    };
 
     pub(crate) fn parameter_total_length(input: &[u8]) -> IResult<&[u8], u8> {
         le_u8().parse(input)
@@ -43,9 +47,21 @@ pub(crate) mod parser {
         let (input, packet_type) = map_res(le_u8(), PacketType::try_from).parse(input)?;
         match packet_type {
             PacketType::Command => command.parse(input),
+            PacketType::AclData => acl_data.parse(input),
+            PacketType::SynchronousData => {
+                // TODO: Handle synchronous data parsing.
+                Err(nom::Err::Failure(nom::error::Error::new(
+                    input,
+                    nom::error::ErrorKind::Fail,
+                )))
+            }
             PacketType::Event => event.parse(input),
-            _ => {
-                todo!("ACL data, synchronous data, and ISO data parsing")
+            PacketType::IsoData => {
+                // TODO: Handle ISO data parsing.
+                Err(nom::Err::Failure(nom::error::Error::new(
+                    input,
+                    nom::error::ErrorKind::Fail,
+                )))
             }
         }
     }
@@ -53,7 +69,10 @@ pub(crate) mod parser {
 
 #[cfg(test)]
 mod test {
-    use super::*;
+    use claims::assert_err;
+    use rstest::rstest;
+
+    use super::{parser::*, *};
 
     #[test]
     fn test_valid_packet_type() -> Result<(), Error> {
@@ -66,5 +85,12 @@ mod test {
     fn test_invalid_packet_type() {
         let err: Result<PacketType, Error> = 10u8.try_into();
         assert!(matches!(err, Err(Error::InvalidPacketType(_))));
+    }
+
+    #[rstest]
+    #[case(&[0x03])]
+    #[case(&[0x05])]
+    fn test_unhandled_packet_type_parsing(#[case] input: &[u8]) {
+        assert_err!(packet(input));
     }
 }

@@ -6,10 +6,13 @@ use crate::{ErrorCode, HciDriverError};
 pub enum Error {
     /// At least one channel must be enabled in the advertising channel map.
     AtLeastOneChannelMustBeEnabledInTheAdvertisingChannelMap,
+    /// The provided data is too big to fit in an ACL command packet.
+    DataWillNotFitAclDataPacket,
     /// The provided data is too big to fit in an HCI command packet.
     DataWillNotFitCommandPacket,
     /// HCI error code.
     ErrorCode(ErrorCode),
+    /// An error coming from the HCI driver.
     HciDriver(HciDriverError),
     /// The provided advertising enable value is invalid.
     InvalidAdvertisingEnableValue(u8),
@@ -21,10 +24,14 @@ pub enum Error {
     InvalidAdvertisingIntervalRange,
     /// The provided advertising type is invalid.
     InvalidAdvertisingType(u8),
+    /// The provided broadcast flag is invalid.
+    InvalidBroadcastFlag(u8),
     /// Invalid HCI command.
     InvalidCommand(u16),
     /// The provided connection event length range is invalid.
     InvalidConnectionEventLengthRange,
+    /// The provided connection handle is invalid.
+    InvalidConnectionHandle(u16),
     /// The connection interval range is invalid, the first value must be smaller or equal to the second one.
     InvalidConnectionIntervalRange,
     /// The provided connection interval value is invalid, it needs to be between 0x0006 and 0x0C80.
@@ -51,6 +58,8 @@ pub enum Error {
     InvalidOwnAddressType(u8),
     /// Invalid HCI packet, either malformed or not expected (e.g. Command received by the Host).
     InvalidPacket,
+    /// The provided packet boundary flag is invalid.
+    InvalidPacketBoundaryFlag(u8),
     /// Invalid or unhandled HCI packet type.
     InvalidPacketType(u8),
     /// The provided peer address type is invalid.
