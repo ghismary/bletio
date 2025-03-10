@@ -7,9 +7,11 @@ pub mod device_address;
 pub mod scan_interval;
 pub mod scan_window;
 
+mod acl_data;
 mod advertising_data;
 mod advertising_enable;
 mod command;
+mod connection_handle;
 mod connection_peer_address;
 mod error;
 mod error_code;
@@ -45,12 +47,14 @@ pub(crate) use event::command_complete::EventParameter;
 pub(crate) use hci_buffer::HciBuffer;
 pub(crate) use packet::{Packet, PacketType};
 
+pub use acl_data::{AclData, BroadcastFlag, PacketBoundaryFlag};
 pub use advertising_data::AdvertisingData;
 pub use advertising_enable::AdvertisingEnable;
 pub use advertising_parameters::{
     advertising_interval_range, AdvertisingChannelMap, AdvertisingFilterPolicy,
     AdvertisingInterval, AdvertisingIntervalRange, AdvertisingParameters, AdvertisingType,
 };
+pub use connection_handle::ConnectionHandle;
 pub use connection_interval::{
     connection_interval, connection_interval_range, ConnectionInterval, ConnectionIntervalRange,
 };
