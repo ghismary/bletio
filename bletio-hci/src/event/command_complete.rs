@@ -10,6 +10,7 @@ use crate::{
 pub struct CommandCompleteEvent {
     pub(crate) num_hci_command_packets: u8,
     pub(crate) opcode: CommandOpCode,
+    pub(crate) status: ErrorCode,
     pub(crate) parameter: Option<EventParameter>,
 }
 
@@ -17,11 +18,13 @@ impl CommandCompleteEvent {
     pub(crate) fn new(
         num_hci_command_packets: u8,
         opcode: CommandOpCode,
+        status: ErrorCode,
         parameter: Option<impl Into<EventParameter>>,
     ) -> Self {
         Self {
             num_hci_command_packets,
             opcode,
+            status,
             parameter: parameter.map(Into::into),
         }
     }
@@ -30,162 +33,139 @@ impl CommandCompleteEvent {
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) enum EventParameter {
-    Status(StatusEventParameter),
-    StatusAndBdAddr(StatusAndBdAddrEventParameter),
-    StatusAndBufferSize(StatusAndBufferSizeEventParameter),
-    StatusAndLeBufferSize(StatusAndLeBufferSizeEventParameter),
-    StatusAndRandomNumber(StatusAndRandomNumberEventParameter),
-    StatusAndSupportedCommands(StatusAndSupportedCommandsEventParameter),
-    StatusAndSupportedFeatures(StatusAndSupportedFeaturesEventParameter),
-    StatusAndSupportedLeFeatures(StatusAndSupportedLeFeaturesEventParameter),
-    StatusAndSupportedLeStates(StatusAndSupportedLeStatesEventParameter),
-    StatusAndTxPowerLevel(StatusAndTxPowerLevelEventParameter),
-    StatusAndFilterAcceptListSize(StatusAndFilterAcceptListSizeEventParameter),
+    BdAddr(BdAddrEventParameter),
+    BufferSize(BufferSizeEventParameter),
+    LeBufferSize(LeBufferSizeEventParameter),
+    RandomNumber(RandomNumberEventParameter),
+    SupportedCommands(SupportedCommandsEventParameter),
+    SupportedFeatures(SupportedFeaturesEventParameter),
+    SupportedLeFeatures(SupportedLeFeaturesEventParameter),
+    SupportedLeStates(SupportedLeStatesEventParameter),
+    TxPowerLevel(TxPowerLevelEventParameter),
+    FilterAcceptListSize(FilterAcceptListSizeEventParameter),
 }
 
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct StatusEventParameter {
-    pub(crate) status: ErrorCode,
-}
-
-impl From<StatusEventParameter> for EventParameter {
-    fn from(value: StatusEventParameter) -> Self {
-        Self::Status(value)
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct StatusAndBdAddrEventParameter {
-    pub(crate) status: ErrorCode,
+pub(crate) struct BdAddrEventParameter {
     pub(crate) bd_addr: PublicDeviceAddress,
 }
 
-impl From<StatusAndBdAddrEventParameter> for EventParameter {
-    fn from(value: StatusAndBdAddrEventParameter) -> Self {
-        Self::StatusAndBdAddr(value)
+impl From<BdAddrEventParameter> for EventParameter {
+    fn from(value: BdAddrEventParameter) -> Self {
+        Self::BdAddr(value)
     }
 }
 
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct StatusAndBufferSizeEventParameter {
-    pub(crate) status: ErrorCode,
+pub(crate) struct BufferSizeEventParameter {
     pub(crate) acl_data_packet_length: NonZeroU16,
     pub(crate) synchronous_data_packet_length: NonZeroU8,
     pub(crate) total_num_acl_data_packets: NonZeroU16,
     pub(crate) total_num_synchronous_packets: u16,
 }
 
-impl From<StatusAndBufferSizeEventParameter> for EventParameter {
-    fn from(value: StatusAndBufferSizeEventParameter) -> Self {
-        Self::StatusAndBufferSize(value)
+impl From<BufferSizeEventParameter> for EventParameter {
+    fn from(value: BufferSizeEventParameter) -> Self {
+        Self::BufferSize(value)
     }
 }
 
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct StatusAndLeBufferSizeEventParameter {
-    pub(crate) status: ErrorCode,
+pub(crate) struct LeBufferSizeEventParameter {
     pub(crate) le_acl_data_packet_length: u16,
     pub(crate) total_num_le_acl_data_packets: u8,
 }
 
-impl From<StatusAndLeBufferSizeEventParameter> for EventParameter {
-    fn from(value: StatusAndLeBufferSizeEventParameter) -> Self {
-        Self::StatusAndLeBufferSize(value)
+impl From<LeBufferSizeEventParameter> for EventParameter {
+    fn from(value: LeBufferSizeEventParameter) -> Self {
+        Self::LeBufferSize(value)
     }
 }
 
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct StatusAndRandomNumberEventParameter {
-    pub(crate) status: ErrorCode,
+pub(crate) struct RandomNumberEventParameter {
     pub(crate) random_number: [u8; 8],
 }
 
-impl From<StatusAndRandomNumberEventParameter> for EventParameter {
-    fn from(value: StatusAndRandomNumberEventParameter) -> Self {
-        Self::StatusAndRandomNumber(value)
+impl From<RandomNumberEventParameter> for EventParameter {
+    fn from(value: RandomNumberEventParameter) -> Self {
+        Self::RandomNumber(value)
     }
 }
 
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct StatusAndSupportedCommandsEventParameter {
-    pub(crate) status: ErrorCode,
+pub(crate) struct SupportedCommandsEventParameter {
     pub(crate) supported_commands: SupportedCommands,
 }
 
-impl From<StatusAndSupportedCommandsEventParameter> for EventParameter {
-    fn from(value: StatusAndSupportedCommandsEventParameter) -> Self {
-        Self::StatusAndSupportedCommands(value)
+impl From<SupportedCommandsEventParameter> for EventParameter {
+    fn from(value: SupportedCommandsEventParameter) -> Self {
+        Self::SupportedCommands(value)
     }
 }
 
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct StatusAndSupportedFeaturesEventParameter {
-    pub(crate) status: ErrorCode,
+pub(crate) struct SupportedFeaturesEventParameter {
     pub(crate) supported_features: SupportedFeatures,
 }
 
-impl From<StatusAndSupportedFeaturesEventParameter> for EventParameter {
-    fn from(value: StatusAndSupportedFeaturesEventParameter) -> Self {
-        Self::StatusAndSupportedFeatures(value)
+impl From<SupportedFeaturesEventParameter> for EventParameter {
+    fn from(value: SupportedFeaturesEventParameter) -> Self {
+        Self::SupportedFeatures(value)
     }
 }
 
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct StatusAndSupportedLeFeaturesEventParameter {
-    pub(crate) status: ErrorCode,
+pub(crate) struct SupportedLeFeaturesEventParameter {
     pub(crate) supported_le_features: SupportedLeFeatures,
 }
 
-impl From<StatusAndSupportedLeFeaturesEventParameter> for EventParameter {
-    fn from(value: StatusAndSupportedLeFeaturesEventParameter) -> Self {
-        Self::StatusAndSupportedLeFeatures(value)
+impl From<SupportedLeFeaturesEventParameter> for EventParameter {
+    fn from(value: SupportedLeFeaturesEventParameter) -> Self {
+        Self::SupportedLeFeatures(value)
     }
 }
 
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct StatusAndSupportedLeStatesEventParameter {
-    pub(crate) status: ErrorCode,
+pub(crate) struct SupportedLeStatesEventParameter {
     pub(crate) supported_le_states: SupportedLeStates,
 }
 
-impl From<StatusAndSupportedLeStatesEventParameter> for EventParameter {
-    fn from(value: StatusAndSupportedLeStatesEventParameter) -> Self {
-        Self::StatusAndSupportedLeStates(value)
+impl From<SupportedLeStatesEventParameter> for EventParameter {
+    fn from(value: SupportedLeStatesEventParameter) -> Self {
+        Self::SupportedLeStates(value)
     }
 }
 
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct StatusAndTxPowerLevelEventParameter {
-    pub(crate) status: ErrorCode,
+pub(crate) struct TxPowerLevelEventParameter {
     pub(crate) tx_power_level: TxPowerLevel,
 }
 
-impl From<StatusAndTxPowerLevelEventParameter> for EventParameter {
-    fn from(value: StatusAndTxPowerLevelEventParameter) -> Self {
-        Self::StatusAndTxPowerLevel(value)
+impl From<TxPowerLevelEventParameter> for EventParameter {
+    fn from(value: TxPowerLevelEventParameter) -> Self {
+        Self::TxPowerLevel(value)
     }
 }
 
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct StatusAndFilterAcceptListSizeEventParameter {
-    pub(crate) status: ErrorCode,
+pub(crate) struct FilterAcceptListSizeEventParameter {
     pub(crate) filter_accept_list_size: usize,
 }
 
-impl From<StatusAndFilterAcceptListSizeEventParameter> for EventParameter {
-    fn from(value: StatusAndFilterAcceptListSizeEventParameter) -> Self {
-        Self::StatusAndFilterAcceptListSize(value)
+impl From<FilterAcceptListSizeEventParameter> for EventParameter {
+    fn from(value: FilterAcceptListSizeEventParameter) -> Self {
+        Self::FilterAcceptListSize(value)
     }
 }
 
@@ -260,10 +240,10 @@ pub(crate) mod parser {
     pub(crate) fn command_complete_event(input: &[u8]) -> IResult<&[u8], CommandCompleteEvent> {
         let (return_parameters, (num_hci_command_packets, command_opcode)) =
             pair(num_hci_command_packets, command_opcode).parse(input)?;
-        let event_parameter: Option<EventParameter> = match command_opcode {
+        let (status, event_parameter) = match command_opcode {
             CommandOpCode::Nop => {
                 eof(return_parameters)?;
-                None
+                (ErrorCode::Success, None::<EventParameter>)
             }
             CommandOpCode::SetEventMask
             | CommandOpCode::Reset
@@ -280,7 +260,7 @@ pub(crate) mod parser {
             | CommandOpCode::LeSetScanResponseData => {
                 let (rest, status) = hci_error_code(return_parameters)?;
                 eof(rest)?;
-                Some(StatusEventParameter { status }.into())
+                (status, None::<EventParameter>)
             }
             CommandOpCode::LeRand => {
                 let (rest, status) = hci_error_code(return_parameters)?;
@@ -290,12 +270,9 @@ pub(crate) mod parser {
                     (rest, [0u8; 8])
                 };
                 eof(rest)?;
-                Some(
-                    StatusAndRandomNumberEventParameter {
-                        status,
-                        random_number,
-                    }
-                    .into(),
+                (
+                    status,
+                    Some(RandomNumberEventParameter { random_number }.into()),
                 )
             }
             CommandOpCode::LeReadAdvertisingChannelTxPower => {
@@ -306,12 +283,9 @@ pub(crate) mod parser {
                     (rest, TxPowerLevel::default())
                 };
                 eof(rest)?;
-                Some(
-                    StatusAndTxPowerLevelEventParameter {
-                        status,
-                        tx_power_level,
-                    }
-                    .into(),
+                (
+                    status,
+                    Some(TxPowerLevelEventParameter { tx_power_level }.into()),
                 )
             }
             CommandOpCode::LeReadBufferSize => {
@@ -323,13 +297,15 @@ pub(crate) mod parser {
                         (rest, (0, 0))
                     };
                 eof(rest)?;
-                Some(
-                    StatusAndLeBufferSizeEventParameter {
-                        status,
-                        le_acl_data_packet_length,
-                        total_num_le_acl_data_packets,
-                    }
-                    .into(),
+                (
+                    status,
+                    Some(
+                        LeBufferSizeEventParameter {
+                            le_acl_data_packet_length,
+                            total_num_le_acl_data_packets,
+                        }
+                        .into(),
+                    ),
                 )
             }
             CommandOpCode::LeReadFilterAcceptListSize => {
@@ -340,12 +316,14 @@ pub(crate) mod parser {
                     (rest, 0)
                 };
                 eof(rest)?;
-                Some(
-                    StatusAndFilterAcceptListSizeEventParameter {
-                        status,
-                        filter_accept_list_size,
-                    }
-                    .into(),
+                (
+                    status,
+                    Some(
+                        FilterAcceptListSizeEventParameter {
+                            filter_accept_list_size,
+                        }
+                        .into(),
+                    ),
                 )
             }
             CommandOpCode::LeReadLocalSupportedFeaturesPage0 => {
@@ -356,12 +334,14 @@ pub(crate) mod parser {
                     (rest, SupportedLeFeatures::empty())
                 };
                 eof(rest)?;
-                Some(
-                    StatusAndSupportedLeFeaturesEventParameter {
-                        status,
-                        supported_le_features,
-                    }
-                    .into(),
+                (
+                    status,
+                    Some(
+                        SupportedLeFeaturesEventParameter {
+                            supported_le_features,
+                        }
+                        .into(),
+                    ),
                 )
             }
             CommandOpCode::LeReadSupportedStates => {
@@ -372,12 +352,14 @@ pub(crate) mod parser {
                     (rest, SupportedLeStates::default())
                 };
                 eof(rest)?;
-                Some(
-                    StatusAndSupportedLeStatesEventParameter {
-                        status,
-                        supported_le_states,
-                    }
-                    .into(),
+                (
+                    status,
+                    Some(
+                        SupportedLeStatesEventParameter {
+                            supported_le_states,
+                        }
+                        .into(),
+                    ),
                 )
             }
             CommandOpCode::ReadLocalSupportedCommands => {
@@ -388,12 +370,9 @@ pub(crate) mod parser {
                     (rest, SupportedCommands::empty())
                 };
                 eof(rest)?;
-                Some(
-                    StatusAndSupportedCommandsEventParameter {
-                        status,
-                        supported_commands,
-                    }
-                    .into(),
+                (
+                    status,
+                    Some(SupportedCommandsEventParameter { supported_commands }.into()),
                 )
             }
             CommandOpCode::ReadLocalSupportedFeatures => {
@@ -404,12 +383,9 @@ pub(crate) mod parser {
                     (rest, SupportedFeatures::empty())
                 };
                 eof(rest)?;
-                Some(
-                    StatusAndSupportedFeaturesEventParameter {
-                        status,
-                        supported_features,
-                    }
-                    .into(),
+                (
+                    status,
+                    Some(SupportedFeaturesEventParameter { supported_features }.into()),
                 )
             }
             CommandOpCode::ReadBdAddr => {
@@ -420,7 +396,7 @@ pub(crate) mod parser {
                     (rest, PublicDeviceAddress::default())
                 };
                 eof(rest)?;
-                Some(StatusAndBdAddrEventParameter { status, bd_addr }.into())
+                (status, Some(BdAddrEventParameter { bd_addr }.into()))
             }
             CommandOpCode::ReadBufferSize => {
                 let (rest, status) = hci_error_code(return_parameters)?;
@@ -438,15 +414,17 @@ pub(crate) mod parser {
                     (rest, (NonZeroU16::MIN, NonZeroU8::MIN, NonZeroU16::MIN, 0))
                 };
                 eof(rest)?;
-                Some(
-                    StatusAndBufferSizeEventParameter {
-                        status,
-                        acl_data_packet_length,
-                        synchronous_data_packet_length,
-                        total_num_acl_data_packets,
-                        total_num_synchronous_packets,
-                    }
-                    .into(),
+                (
+                    status,
+                    Some(
+                        BufferSizeEventParameter {
+                            acl_data_packet_length,
+                            synchronous_data_packet_length,
+                            total_num_acl_data_packets,
+                            total_num_synchronous_packets,
+                        }
+                        .into(),
+                    ),
                 )
             }
             CommandOpCode::LeCreateConnection | CommandOpCode::Unsupported(_) => {
@@ -458,7 +436,12 @@ pub(crate) mod parser {
         };
         Ok((
             &[],
-            CommandCompleteEvent::new(num_hci_command_packets, command_opcode, event_parameter),
+            CommandCompleteEvent::new(
+                num_hci_command_packets,
+                command_opcode,
+                status,
+                event_parameter,
+            ),
         ))
     }
 }
@@ -473,98 +456,80 @@ mod test {
 
     #[rstest]
     #[case::le_add_device_to_filter_accept_list(CommandCompleteEvent::new(
-            1, CommandOpCode::LeAddDeviceToFilterAcceptList,
-            Some(StatusEventParameter { status: ErrorCode::Success })
+            1, CommandOpCode::LeAddDeviceToFilterAcceptList, ErrorCode::Success, None::<EventParameter>
         ), &[4, 14, 4, 1, 17, 32, 0])]
     #[case::le_clear_filter_accept_list(CommandCompleteEvent::new(
-            1, CommandOpCode::LeClearFilterAcceptList,
-            Some(StatusEventParameter { status: ErrorCode::Success })
+            1, CommandOpCode::LeClearFilterAcceptList, ErrorCode::Success, None::<EventParameter>
         ), &[4, 14, 4, 1, 16, 32, 0])]
     #[case::le_rand(CommandCompleteEvent::new(
-            1, CommandOpCode::LeRand,
-            Some(StatusAndRandomNumberEventParameter {
-                status: ErrorCode::Success, random_number: [68, 223, 27, 9, 83, 58, 224, 240]
-            })
+            1, CommandOpCode::LeRand, ErrorCode::Success,
+            Some(RandomNumberEventParameter { random_number: [68, 223, 27, 9, 83, 58, 224, 240] })
         ), &[4, 14, 12, 1, 24, 32, 0, 68, 223, 27, 9, 83, 58, 224, 240])]
     #[case::le_read_advertising_channel_tx_power(CommandCompleteEvent::new(
-            1, CommandOpCode::LeReadAdvertisingChannelTxPower,
-            Some(StatusAndTxPowerLevelEventParameter {
-                status: ErrorCode::Success, tx_power_level: TxPowerLevel::try_new(9).unwrap()
+            1, CommandOpCode::LeReadAdvertisingChannelTxPower, ErrorCode::Success,
+            Some(TxPowerLevelEventParameter {
+                tx_power_level: TxPowerLevel::try_new(9).unwrap()
             })
         ), &[4, 14, 5, 1, 7, 32, 0, 9])]
     #[case::le_read_buffer_size(CommandCompleteEvent::new(
-            1, CommandOpCode::LeReadBufferSize,
-            Some(StatusAndLeBufferSizeEventParameter {
-                status: ErrorCode::Success, le_acl_data_packet_length: 255, total_num_le_acl_data_packets: 24
+            1, CommandOpCode::LeReadBufferSize, ErrorCode::Success,
+            Some(LeBufferSizeEventParameter {
+                le_acl_data_packet_length: 255, total_num_le_acl_data_packets: 24
             })
         ), &[4, 14, 7, 1, 2, 32, 0, 255, 0, 24])]
     #[case::le_read_filter_accept_list_size(CommandCompleteEvent::new(
-            1, CommandOpCode::LeReadFilterAcceptListSize,
-            Some(StatusAndFilterAcceptListSizeEventParameter {
-                status: ErrorCode::Success, filter_accept_list_size: 12
-            })
+            1, CommandOpCode::LeReadFilterAcceptListSize, ErrorCode::Success,
+            Some(FilterAcceptListSizeEventParameter { filter_accept_list_size: 12 })
         ), &[4, 14, 5, 1, 15, 32, 0, 12])]
     #[case::le_read_local_supported_features_page_0(CommandCompleteEvent::new(
-            1, CommandOpCode::LeReadLocalSupportedFeaturesPage0,
-            Some(StatusAndSupportedLeFeaturesEventParameter {
-                status: ErrorCode::Success,
+            1, CommandOpCode::LeReadLocalSupportedFeaturesPage0, ErrorCode::Success,
+            Some(SupportedLeFeaturesEventParameter {
                 supported_le_features: SupportedLeFeatures::LE_ENCRYPTION | SupportedLeFeatures::LE_EXTENDED_ADVERTISING
             })
         ), &[4, 14, 12, 1, 3, 32, 0, 1, 16, 0, 0, 0, 0, 0, 0])]
     #[case::le_read_supported_states(CommandCompleteEvent::new(
-            1, CommandOpCode::LeReadSupportedStates,
-            Some(StatusAndSupportedLeStatesEventParameter {
-                status: ErrorCode::Success, supported_le_states: 0x0000_03FF_FFFF_FFFF.into()
+            1, CommandOpCode::LeReadSupportedStates, ErrorCode::Success,
+            Some(SupportedLeStatesEventParameter {
+                supported_le_states: 0x0000_03FF_FFFF_FFFF.into()
             })
         ), &[4, 14, 12, 1, 28, 32, 0, 255, 255, 255, 255, 255, 3, 0, 0])]
     #[case::le_remove_device_from_filter_accept_list(CommandCompleteEvent::new(
-            1, CommandOpCode::LeRemoveDeviceFromFilterAcceptList,
-            Some(StatusEventParameter { status: ErrorCode:: Success })
+            1, CommandOpCode::LeRemoveDeviceFromFilterAcceptList, ErrorCode::Success, None::<EventParameter>
         ), &[4, 14, 4, 1, 18, 32, 0])]
     #[case::le_set_advertising_data(CommandCompleteEvent::new(
-            1, CommandOpCode::LeSetAdvertisingData,
-            Some(StatusEventParameter { status: ErrorCode::Success })
+            1, CommandOpCode::LeSetAdvertisingData, ErrorCode::Success, None::<EventParameter>
         ), &[4, 14, 4, 1, 8, 32, 0])]
     #[case::le_set_advertising_enable(CommandCompleteEvent::new(
-            1, CommandOpCode::LeSetAdvertisingEnable,
-            Some(StatusEventParameter { status: ErrorCode::Success })
+            1, CommandOpCode::LeSetAdvertisingEnable, ErrorCode::Success, None::<EventParameter>
         ), &[4, 14, 4, 1, 10, 32, 0])]
     #[case::le_set_advertising_parameters(CommandCompleteEvent::new(
-            1, CommandOpCode::LeSetAdvertisingParameters,
-            Some(StatusEventParameter { status: ErrorCode::Success })
+            1, CommandOpCode::LeSetAdvertisingParameters, ErrorCode::Success, None::<EventParameter>
         ), &[4, 14, 4, 1, 6, 32, 0])]
     #[case::le_set_event_mask(CommandCompleteEvent::new(
-            1, CommandOpCode::LeSetEventMask,
-            Some(StatusEventParameter { status: ErrorCode::Success })
+            1, CommandOpCode::LeSetEventMask, ErrorCode::Success, None::<EventParameter>
         ), &[4, 14, 4, 1, 1, 32, 0])]
     #[case::le_set_random_address(CommandCompleteEvent::new(
-            1, CommandOpCode::LeSetRandomAddress,
-            Some(StatusEventParameter { status: ErrorCode::Success })
+            1, CommandOpCode::LeSetRandomAddress, ErrorCode::Success, None::<EventParameter>
         ), &[4, 14, 4, 1, 5, 32, 0])]
     #[case::le_set_scan_enable(CommandCompleteEvent::new(
-            1, CommandOpCode::LeSetScanEnable,
-            Some(StatusEventParameter { status: ErrorCode::Success })
+            1, CommandOpCode::LeSetScanEnable, ErrorCode::Success, None::<EventParameter>
         ), &[4, 14, 4, 1, 12, 32, 0])]
     #[case::le_set_scan_parameters(CommandCompleteEvent::new(
-            1, CommandOpCode::LeSetScanParameters,
-            Some(StatusEventParameter { status: ErrorCode::Success })
+            1, CommandOpCode::LeSetScanParameters, ErrorCode::Success, None::<EventParameter>
         ), &[4, 14, 4, 1, 11, 32, 0])]
     #[case::le_set_scan_response_data(CommandCompleteEvent::new(
-            1, CommandOpCode::LeSetScanResponseData,
-            Some(StatusEventParameter { status: ErrorCode::Success })
+            1, CommandOpCode::LeSetScanResponseData, ErrorCode::Success, None::<EventParameter>
         ), &[4, 14, 4, 1, 9, 32, 0])]
-    #[case::nop(CommandCompleteEvent::new(1, CommandOpCode::Nop, None::<EventParameter>), &[4, 14, 3, 1, 0, 0])]
+    #[case::nop(CommandCompleteEvent::new(1, CommandOpCode::Nop, ErrorCode::Success, None::<EventParameter>), &[4, 14, 3, 1, 0, 0])]
     #[case::read_bd_addr(CommandCompleteEvent::new(
-            1, CommandOpCode::ReadBdAddr,
-            Some(StatusAndBdAddrEventParameter {
-                status: ErrorCode::Success,
+            1, CommandOpCode::ReadBdAddr, ErrorCode::Success,
+            Some(BdAddrEventParameter {
                 bd_addr: PublicDeviceAddress::new([0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56])
             })
         ), &[4, 14, 10, 1, 9, 16, 0, 0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56])]
     #[case::read_buffer_size(CommandCompleteEvent::new(
-            1, CommandOpCode::ReadBufferSize,
-            Some(StatusAndBufferSizeEventParameter {
-                status: ErrorCode::Success,
+            1, CommandOpCode::ReadBufferSize, ErrorCode::Success,
+            Some(BufferSizeEventParameter {
                 acl_data_packet_length: NonZeroU16::new(255).unwrap(),
                 synchronous_data_packet_length: NonZeroU8::new(255).unwrap(),
                 total_num_acl_data_packets: NonZeroU16::new(24).unwrap(),
@@ -572,9 +537,8 @@ mod test {
             })
         ), &[4, 14, 11, 1, 5, 16, 0, 255, 0, 255, 24, 0, 12, 0])]
     #[case::read_local_supported_commands(CommandCompleteEvent::new(
-            1, CommandOpCode::ReadLocalSupportedCommands,
-            Some(StatusAndSupportedCommandsEventParameter {
-                status: ErrorCode::Success,
+            1, CommandOpCode::ReadLocalSupportedCommands, ErrorCode::Success,
+            Some(SupportedCommandsEventParameter {
                 supported_commands: SupportedCommands::LE_RAND | SupportedCommands::LE_READ_LOCAL_SUPPORTED_FEATURES_PAGE_0
             })
         ), &[
@@ -582,19 +546,16 @@ mod test {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ])]
     #[case::read_local_supported_features(CommandCompleteEvent::new(
-            1, CommandOpCode::ReadLocalSupportedFeatures,
-            Some(StatusAndSupportedFeaturesEventParameter {
-                status: ErrorCode::Success,
+            1, CommandOpCode::ReadLocalSupportedFeatures, ErrorCode::Success,
+            Some(SupportedFeaturesEventParameter {
                 supported_features: SupportedFeatures::LE_SUPPORTED_CONTROLLER
             })
         ), &[4, 14, 12, 1, 3, 16, 0, 0, 0, 0, 0, 64, 0, 0, 0])]
     #[case::reset(CommandCompleteEvent::new(
-            1, CommandOpCode::Reset,
-            Some(StatusEventParameter { status: ErrorCode::Success })
+            1, CommandOpCode::Reset, ErrorCode::Success, None::<EventParameter>
         ), &[4, 14, 4, 1, 3, 12, 0])]
     #[case::set_event_mask(CommandCompleteEvent::new(
-            1, CommandOpCode::SetEventMask,
-            Some(StatusEventParameter { status: ErrorCode::Success })
+            1, CommandOpCode::SetEventMask, ErrorCode::Success, None::<EventParameter>
         ), &[4, 14, 4, 1, 1, 12, 0])]
     fn test_command_complete_event_parsing_success(
         #[case] event: CommandCompleteEvent,
