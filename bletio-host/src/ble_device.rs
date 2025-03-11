@@ -1,6 +1,6 @@
 use bletio_hci::{
     ConnectionPeerAddress, Event, EventList, Hci, HciDriver, LeAdvertisingReport,
-    LeAdvertisingReportEventType, LeMetaEvent,
+    LeAdvertisingReportEventType, LeConnectionCompleteEvent, LeMetaEvent,
 };
 
 use crate::advertising::FullAdvertisingData;
@@ -71,11 +71,26 @@ where
         loop {
             match host.wait_for_event().await {
                 Ok(event_list) => {
+                    // Specific handling for LE advertising reports that needs to be grouped together.
                     if event_list
                         .iter()
                         .any(|e| matches!(e, Event::LeMeta(LeMetaEvent::LeAdvertisingReport(_))))
                     {
                         host = self.notify_le_advertising_reports(host, &event_list).await;
+                    }
+
+                    // Handling of other events, ignoring the previously handled LE advertising reports.
+                    for event in event_list.iter().filter(|e| {
+                        !matches!(e, Event::LeMeta(LeMetaEvent::LeAdvertisingReport(_)))
+                    }) {
+                        if let Event::LeMeta(LeMetaEvent::LeConnectionComplete(
+                            le_connection_complete_event,
+                        )) = event
+                        {
+                            host = self
+                                .notify_le_connection_complete(host, le_connection_complete_event)
+                                .await?;
+                        }
                     }
                 }
                 Err(Error::Hci(bletio_hci::Error::InvalidPacket)) => {
@@ -86,6 +101,27 @@ where
                 Err(e) => return Err(e),
             }
         }
+    }
+
+    pub async fn notify_le_connection_complete<H>(
+        &self,
+        mut host: BleHostStates<'a, H>,
+        event: &LeConnectionCompleteEvent,
+    ) -> Result<BleHostStates<H>, Error>
+    where
+        H: HciDriver,
+    {
+        if event.status().is_success() {
+            host = match host {
+                BleHostStates::Initiating(h) => BleHostStates::ConnectedCentral(h.change_state()),
+                BleHostStates::Advertising(h) => {
+                    BleHostStates::ConnectedPeripheral(h.stop_advertising().await?.change_state())
+                }
+                _host => _host,
+            }
+        }
+
+        Ok(self.observer.connection_complete(host, event).await)
     }
 
     pub async fn notify_le_advertising_reports<'e, H>(
