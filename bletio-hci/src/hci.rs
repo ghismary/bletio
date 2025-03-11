@@ -5,10 +5,10 @@ use core::{
 
 use crate::{
     AdvertisingData, AdvertisingEnable, AdvertisingParameters, Command, ConnectionParameters,
-    Error, Event, EventList, EventMask, EventParameter, FilterDuplicates, HciBuffer, HciDriver,
-    LeEventMask, LeFilterAcceptListAddress, Packet, PublicDeviceAddress, RandomStaticDeviceAddress,
-    ScanEnable, ScanParameters, SupportedCommands, SupportedFeatures, SupportedLeFeatures,
-    SupportedLeStates, TxPowerLevel, WithTimeout,
+    Error, ErrorCode, Event, EventList, EventMask, EventParameter, FilterDuplicates, HciBuffer,
+    HciDriver, LeEventMask, LeFilterAcceptListAddress, Packet, PublicDeviceAddress,
+    RandomStaticDeviceAddress, ScanEnable, ScanParameters, SupportedCommands, SupportedFeatures,
+    SupportedLeFeatures, SupportedLeStates, TxPowerLevel, WithTimeout,
 };
 
 const HCI_COMMAND_TIMEOUT: Duration = Duration::from_millis(1000);
@@ -41,12 +41,14 @@ where
         &mut self,
         address: impl Into<LeFilterAcceptListAddress>,
     ) -> Result<(), Error> {
-        self.cmd_with_status_response(Command::LeAddDeviceToFilterAcceptList(address.into()))
-            .await
+        self.cmd_with_command_complete_response_without_parameter(
+            Command::LeAddDeviceToFilterAcceptList(address.into()),
+        )
+        .await
     }
 
     pub async fn cmd_le_clear_filter_accept_list(&mut self) -> Result<(), Error> {
-        self.cmd_with_status_response(Command::LeClearFilterAcceptList)
+        self.cmd_with_command_complete_response_without_parameter(Command::LeClearFilterAcceptList)
             .await
     }
 
@@ -54,170 +56,143 @@ where
         &mut self,
         connection_parameters: ConnectionParameters,
     ) -> Result<(), Error> {
-        match self
-            .execute_command(Command::LeCreateConnection(connection_parameters))
-            .await?
-        {
-            Event::CommandStatus(event) if event.status.is_success() => Ok(()),
-            Event::CommandStatus(event) => Err(Error::ErrorCode(event.status)),
-            _ => unreachable!("parsing would have failed"),
-        }
+        self.execute_command_with_command_status_response(Command::LeCreateConnection(
+            connection_parameters,
+        ))
+        .await
     }
 
     pub async fn cmd_le_rand(&mut self) -> Result<[u8; 8], Error> {
-        if let Event::CommandComplete(event) = self.execute_command(Command::LeRand).await? {
-            match event.parameter {
-                Some(EventParameter::StatusAndRandomNumber(param)) if param.status.is_success() => {
-                    return Ok(param.random_number)
-                }
-                Some(EventParameter::StatusAndRandomNumber(param)) => {
-                    return Err(Error::ErrorCode(param.status))
-                }
-                _ => (),
-            }
+        let (status, param) = self
+            .execute_command_with_command_complete_response(Command::LeRand)
+            .await?;
+        if let (ErrorCode::Success, Some(EventParameter::RandomNumber(param))) = (status, param) {
+            Ok(param.random_number)
+        } else {
+            Err(Error::ErrorCode(status))
         }
-        unreachable!("parsing would have failed")
     }
 
     pub async fn cmd_le_read_advertising_channel_tx_power(
         &mut self,
     ) -> Result<TxPowerLevel, Error> {
-        if let Event::CommandComplete(event) = self
-            .execute_command(Command::LeReadAdvertisingChannelTxPower)
-            .await?
-        {
-            match event.parameter {
-                Some(EventParameter::StatusAndTxPowerLevel(param)) if param.status.is_success() => {
-                    return Ok(param.tx_power_level)
-                }
-                Some(EventParameter::StatusAndTxPowerLevel(param)) => {
-                    return Err(Error::ErrorCode(param.status))
-                }
-                _ => (),
-            }
+        let (status, param) = self
+            .execute_command_with_command_complete_response(
+                Command::LeReadAdvertisingChannelTxPower,
+            )
+            .await?;
+        if let (ErrorCode::Success, Some(EventParameter::TxPowerLevel(param))) = (status, param) {
+            Ok(param.tx_power_level)
+        } else {
+            Err(Error::ErrorCode(status))
         }
-        unreachable!("parsing would have failed")
     }
 
     pub async fn cmd_le_read_buffer_size(&mut self) -> Result<(u16, u16), Error> {
-        if let Event::CommandComplete(event) =
-            self.execute_command(Command::LeReadBufferSize).await?
-        {
-            match event.parameter {
-                Some(EventParameter::StatusAndLeBufferSize(param)) if param.status.is_success() => {
-                    return Ok((
-                        param.le_acl_data_packet_length,
-                        param.total_num_le_acl_data_packets as u16,
-                    ))
-                }
-                Some(EventParameter::StatusAndLeBufferSize(param)) => {
-                    return Err(Error::ErrorCode(param.status))
-                }
-                _ => (),
-            }
+        let (status, param) = self
+            .execute_command_with_command_complete_response(Command::LeReadBufferSize)
+            .await?;
+        if let (ErrorCode::Success, Some(EventParameter::LeBufferSize(param))) = (status, param) {
+            Ok((
+                param.le_acl_data_packet_length,
+                param.total_num_le_acl_data_packets as u16,
+            ))
+        } else {
+            Err(Error::ErrorCode(status))
         }
-        unreachable!("parsing would have failed")
     }
 
     pub async fn cmd_le_read_filter_accept_list_size(&mut self) -> Result<usize, Error> {
-        if let Event::CommandComplete(event) = self
-            .execute_command(Command::LeReadFilterAcceptListSize)
-            .await?
+        let (status, param) = self
+            .execute_command_with_command_complete_response(Command::LeReadFilterAcceptListSize)
+            .await?;
+        if let (ErrorCode::Success, Some(EventParameter::FilterAcceptListSize(param))) =
+            (status, param)
         {
-            match event.parameter {
-                Some(EventParameter::StatusAndFilterAcceptListSize(param))
-                    if param.status.is_success() =>
-                {
-                    return Ok(param.filter_accept_list_size)
-                }
-                Some(EventParameter::StatusAndFilterAcceptListSize(param)) => {
-                    return Err(Error::ErrorCode(param.status))
-                }
-                _ => (),
-            }
+            Ok(param.filter_accept_list_size)
+        } else {
+            Err(Error::ErrorCode(status))
         }
-        unreachable!("parsing would have failed")
     }
 
     pub async fn cmd_le_read_local_supported_features_page_0(
         &mut self,
     ) -> Result<SupportedLeFeatures, Error> {
-        if let Event::CommandComplete(event) = self
-            .execute_command(Command::LeReadLocalSupportedFeaturesPage0)
-            .await?
+        let (status, param) = self
+            .execute_command_with_command_complete_response(
+                Command::LeReadLocalSupportedFeaturesPage0,
+            )
+            .await?;
+        if let (ErrorCode::Success, Some(EventParameter::SupportedLeFeatures(param))) =
+            (status, param)
         {
-            match event.parameter {
-                Some(EventParameter::StatusAndSupportedLeFeatures(param))
-                    if param.status.is_success() =>
-                {
-                    return Ok(param.supported_le_features)
-                }
-                Some(EventParameter::StatusAndSupportedLeFeatures(param)) => {
-                    return Err(Error::ErrorCode(param.status))
-                }
-                _ => (),
-            }
+            Ok(param.supported_le_features)
+        } else {
+            Err(Error::ErrorCode(status))
         }
-        unreachable!("parsing would have failed")
     }
 
     pub async fn cmd_le_read_supported_states(&mut self) -> Result<SupportedLeStates, Error> {
-        if let Event::CommandComplete(event) =
-            self.execute_command(Command::LeReadSupportedStates).await?
+        let (status, param) = self
+            .execute_command_with_command_complete_response(Command::LeReadSupportedStates)
+            .await?;
+        if let (ErrorCode::Success, Some(EventParameter::SupportedLeStates(param))) =
+            (status, param)
         {
-            match event.parameter {
-                Some(EventParameter::StatusAndSupportedLeStates(param))
-                    if param.status.is_success() =>
-                {
-                    return Ok(param.supported_le_states)
-                }
-                Some(EventParameter::StatusAndSupportedLeStates(param)) => {
-                    return Err(Error::ErrorCode(param.status))
-                }
-                _ => (),
-            }
+            Ok(param.supported_le_states)
+        } else {
+            Err(Error::ErrorCode(status))
         }
-        unreachable!("parsing would have failed")
     }
 
     pub async fn cmd_le_remove_device_from_filter_accept_list(
         &mut self,
         address: impl Into<LeFilterAcceptListAddress>,
     ) -> Result<(), Error> {
-        self.cmd_with_status_response(Command::LeRemoveDeviceFromFilterAcceptList(address.into()))
-            .await
+        self.cmd_with_command_complete_response_without_parameter(
+            Command::LeRemoveDeviceFromFilterAcceptList(address.into()),
+        )
+        .await
     }
 
     pub async fn cmd_le_set_advertising_data(
         &mut self,
         data: AdvertisingData,
     ) -> Result<(), Error> {
-        self.cmd_with_status_response(Command::LeSetAdvertisingData(data))
-            .await
+        self.cmd_with_command_complete_response_without_parameter(Command::LeSetAdvertisingData(
+            data,
+        ))
+        .await
     }
 
     pub async fn cmd_le_set_advertising_enable(
         &mut self,
         enable: AdvertisingEnable,
     ) -> Result<(), Error> {
-        self.cmd_with_status_response(Command::LeSetAdvertisingEnable(enable))
-            .await
+        self.cmd_with_command_complete_response_without_parameter(Command::LeSetAdvertisingEnable(
+            enable,
+        ))
+        .await
     }
 
     pub async fn cmd_le_set_advertising_parameters(
         &mut self,
         parameters: AdvertisingParameters,
     ) -> Result<(), Error> {
-        self.cmd_with_status_response(Command::LeSetAdvertisingParameters(parameters))
-            .await
+        self.cmd_with_command_complete_response_without_parameter(
+            Command::LeSetAdvertisingParameters(parameters),
+        )
+        .await
     }
 
     pub async fn cmd_le_set_random_address(
         &mut self,
         address: RandomStaticDeviceAddress,
     ) -> Result<(), Error> {
-        self.cmd_with_status_response(Command::LeSetRandomAddress(address))
-            .await
+        self.cmd_with_command_complete_response_without_parameter(Command::LeSetRandomAddress(
+            address,
+        ))
+        .await
     }
 
     pub async fn cmd_le_set_scan_enable(
@@ -225,115 +200,100 @@ where
         scan_enable: ScanEnable,
         filter_duplicates: FilterDuplicates,
     ) -> Result<(), Error> {
-        self.cmd_with_status_response(Command::LeSetScanEnable(scan_enable, filter_duplicates))
-            .await
+        self.cmd_with_command_complete_response_without_parameter(Command::LeSetScanEnable(
+            scan_enable,
+            filter_duplicates,
+        ))
+        .await
     }
 
     pub async fn cmd_le_set_scan_parameters(
         &mut self,
         parameters: ScanParameters,
     ) -> Result<(), Error> {
-        self.cmd_with_status_response(Command::LeSetScanParameters(parameters))
-            .await
+        self.cmd_with_command_complete_response_without_parameter(Command::LeSetScanParameters(
+            parameters,
+        ))
+        .await
     }
 
     pub async fn cmd_le_set_scan_response_data(
         &mut self,
         data: AdvertisingData,
     ) -> Result<(), Error> {
-        self.cmd_with_status_response(Command::LeSetScanResponseData(data))
-            .await
+        self.cmd_with_command_complete_response_without_parameter(Command::LeSetScanResponseData(
+            data,
+        ))
+        .await
     }
 
     pub async fn cmd_le_set_event_mask(&mut self, data: LeEventMask) -> Result<(), Error> {
-        self.cmd_with_status_response(Command::LeSetEventMask(data))
+        self.cmd_with_command_complete_response_without_parameter(Command::LeSetEventMask(data))
             .await
     }
 
     pub async fn cmd_read_bd_addr(&mut self) -> Result<PublicDeviceAddress, Error> {
-        if let Event::CommandComplete(event) = self.execute_command(Command::ReadBdAddr).await? {
-            match event.parameter {
-                Some(EventParameter::StatusAndBdAddr(param)) if param.status.is_success() => {
-                    return Ok(param.bd_addr)
-                }
-                Some(EventParameter::StatusAndBdAddr(param)) => {
-                    return Err(Error::ErrorCode(param.status))
-                }
-                _ => (),
-            }
+        let (status, param) = self
+            .execute_command_with_command_complete_response(Command::ReadBdAddr)
+            .await?;
+        if let (ErrorCode::Success, Some(EventParameter::BdAddr(param))) = (status, param) {
+            Ok(param.bd_addr)
+        } else {
+            Err(Error::ErrorCode(status))
         }
-        unreachable!("parsing would have failed")
     }
 
     pub async fn cmd_read_buffer_size(
         &mut self,
     ) -> Result<(NonZeroU16, NonZeroU8, NonZeroU16, u16), Error> {
-        if let Event::CommandComplete(event) = self.execute_command(Command::ReadBufferSize).await?
-        {
-            match event.parameter {
-                Some(EventParameter::StatusAndBufferSize(param)) if param.status.is_success() => {
-                    return Ok((
-                        param.acl_data_packet_length,
-                        param.synchronous_data_packet_length,
-                        param.total_num_acl_data_packets,
-                        param.total_num_synchronous_packets,
-                    ))
-                }
-                Some(EventParameter::StatusAndBufferSize(param)) => {
-                    return Err(Error::ErrorCode(param.status))
-                }
-                _ => (),
-            }
+        let (status, param) = self
+            .execute_command_with_command_complete_response(Command::ReadBufferSize)
+            .await?;
+        if let (ErrorCode::Success, Some(EventParameter::BufferSize(param))) = (status, param) {
+            Ok((
+                param.acl_data_packet_length,
+                param.synchronous_data_packet_length,
+                param.total_num_acl_data_packets,
+                param.total_num_synchronous_packets,
+            ))
+        } else {
+            Err(Error::ErrorCode(status))
         }
-        unreachable!("parsing would have failed")
     }
 
     pub async fn cmd_read_local_supported_commands(&mut self) -> Result<SupportedCommands, Error> {
-        if let Event::CommandComplete(event) = self
-            .execute_command(Command::ReadLocalSupportedCommands)
-            .await?
+        let (status, param) = self
+            .execute_command_with_command_complete_response(Command::ReadLocalSupportedCommands)
+            .await?;
+        if let (ErrorCode::Success, Some(EventParameter::SupportedCommands(param))) =
+            (status, param)
         {
-            match event.parameter {
-                Some(EventParameter::StatusAndSupportedCommands(param))
-                    if param.status.is_success() =>
-                {
-                    return Ok(param.supported_commands)
-                }
-                Some(EventParameter::StatusAndSupportedCommands(param)) => {
-                    return Err(Error::ErrorCode(param.status))
-                }
-                _ => (),
-            }
+            Ok(param.supported_commands)
+        } else {
+            Err(Error::ErrorCode(status))
         }
-        unreachable!("parsing would have failed")
     }
 
     pub async fn cmd_read_local_supported_features(&mut self) -> Result<SupportedFeatures, Error> {
-        if let Event::CommandComplete(event) = self
-            .execute_command(Command::ReadLocalSupportedFeatures)
-            .await?
+        let (status, param) = self
+            .execute_command_with_command_complete_response(Command::ReadLocalSupportedFeatures)
+            .await?;
+        if let (ErrorCode::Success, Some(EventParameter::SupportedFeatures(param))) =
+            (status, param)
         {
-            match event.parameter {
-                Some(EventParameter::StatusAndSupportedFeatures(param))
-                    if param.status.is_success() =>
-                {
-                    return Ok(param.supported_features)
-                }
-                Some(EventParameter::StatusAndSupportedFeatures(param)) => {
-                    return Err(Error::ErrorCode(param.status))
-                }
-                _ => (),
-            }
+            Ok(param.supported_features)
+        } else {
+            Err(Error::ErrorCode(status))
         }
-        unreachable!("parsing would have failed")
     }
 
     pub async fn cmd_reset(&mut self) -> Result<(), Error> {
-        self.cmd_with_status_response(Command::Reset).await
+        self.cmd_with_command_complete_response_without_parameter(Command::Reset)
+            .await
     }
 
     pub async fn cmd_set_event_mask(&mut self, event_mask: EventMask) -> Result<(), Error> {
-        self.cmd_with_status_response(Command::SetEventMask(event_mask))
+        self.cmd_with_command_complete_response_without_parameter(Command::SetEventMask(event_mask))
             .await
     }
 
@@ -381,15 +341,18 @@ where
         }
     }
 
-    async fn cmd_with_status_response(&mut self, command: Command) -> Result<(), Error> {
-        if let Event::CommandComplete(event) = self.execute_command(command).await? {
-            match event.parameter {
-                Some(EventParameter::Status(param)) if param.status.is_success() => return Ok(()),
-                Some(EventParameter::Status(param)) => return Err(Error::ErrorCode(param.status)),
-                _ => (),
-            }
+    async fn cmd_with_command_complete_response_without_parameter(
+        &mut self,
+        command: Command,
+    ) -> Result<(), Error> {
+        let (status, _) = self
+            .execute_command_with_command_complete_response(command)
+            .await?;
+        if status.is_success() {
+            Ok(())
+        } else {
+            Err(Error::ErrorCode(status))
         }
-        unreachable!("parsing would have failed")
     }
 
     async fn execute_command(&mut self, command: Command) -> Result<Event, Error> {
@@ -401,6 +364,28 @@ where
             .with_timeout(HCI_COMMAND_TIMEOUT)
             .await??;
         Ok(event)
+    }
+
+    async fn execute_command_with_command_complete_response(
+        &mut self,
+        command: Command,
+    ) -> Result<(ErrorCode, Option<EventParameter>), Error> {
+        if let Event::CommandComplete(event) = self.execute_command(command).await? {
+            Ok((event.status, event.parameter))
+        } else {
+            Err(Error::UnexpectedEvent)
+        }
+    }
+
+    async fn execute_command_with_command_status_response(
+        &mut self,
+        command: Command,
+    ) -> Result<(), Error> {
+        match self.execute_command(command).await? {
+            Event::CommandStatus(event) if event.status.is_success() => Ok(()),
+            Event::CommandStatus(event) => Err(Error::ErrorCode(event.status)),
+            _ => Err(Error::UnexpectedEvent), // Actually, not reachable
+        }
     }
 
     async fn send_command_and_wait_response(&mut self, command: Command) -> Result<Event, Error> {
@@ -1681,8 +1666,33 @@ mod test {
     }
 
     #[fixture]
+    fn mock_cmd_reset_receive_command_status_event_instead_of_command_complete_event() -> Mock {
+        tokio_test::io::Builder::new()
+            .read(&[4, 14, 3, 1, 0, 0])
+            .write(&[1, 3, 12, 0])
+            .read(&[4, 15, 4, 0, 1, 3, 12])
+            .build()
+    }
+
+    #[fixture]
     fn mock_cmd_reset_receive_command_instead_of_event_while_waiting_for_controller() -> Mock {
         tokio_test::io::Builder::new().read(&[1, 3, 12, 0]).build()
+    }
+
+    #[fixture]
+    fn mock_cmd_reset_receive_acl_data_instead_of_event_while_waiting_for_controller() -> Mock {
+        tokio_test::io::Builder::new()
+            .read(&[
+                2, 0, 32, 16, 0, 12, 0, 5, 0, 18, 1, 8, 0, 24, 0, 40, 0, 0, 0, 42, 0,
+            ])
+            .build()
+    }
+
+    #[fixture]
+    fn mock_cmd_reset_receive_invalid_packet_while_waiting_for_controller() -> Mock {
+        tokio_test::io::Builder::new()
+            .read(&[7, 0, 16, 31, 2, 15])
+            .build()
     }
 
     #[fixture]
@@ -1713,8 +1723,20 @@ mod test {
         mock_cmd_reset_receive_other_event_before_command_complete_event(),
         Ok(())
     )]
+    #[case::receive_command_status_event_instead_of_command_complete_event(
+        mock_cmd_reset_receive_command_status_event_instead_of_command_complete_event(),
+        Err(Error::UnexpectedEvent)
+    )]
     #[case::receive_command_instead_of_event_while_waiting_for_controller(
         mock_cmd_reset_receive_command_instead_of_event_while_waiting_for_controller(),
+        Err(Error::InvalidPacket)
+    )]
+    #[case::receive_acl_data_instead_of_event_while_waiting_for_controller(
+        mock_cmd_reset_receive_acl_data_instead_of_event_while_waiting_for_controller(),
+        Err(Error::InvalidPacket)
+    )]
+    #[case::receive_invalid_packet_while_waiting_for_controller(
+        mock_cmd_reset_receive_invalid_packet_while_waiting_for_controller(),
         Err(Error::InvalidPacket)
     )]
     #[case::receive_unhandled_event(

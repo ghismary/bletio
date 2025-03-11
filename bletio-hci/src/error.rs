@@ -95,6 +95,8 @@ pub enum Error {
     /// The Supervision_Timeout in milliseconds shall be larger than (1 + Max_Latency) ×
     /// Connection_Interval_Max × 2, where Connection_Interval_Max is given in milliseconds.
     SupervisionTimeoutIsNotBigEnough,
+    /// The controller sent an unexpected event in response to a command.
+    UnexpectedEvent,
 }
 
 impl From<HciDriverError> for Error {
