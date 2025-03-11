@@ -4,9 +4,9 @@ use core::ops::Deref;
 
 use bletio_hci::{
     ConnectionPeerAddress, EventList, EventMask, FilterDuplicates, Hci, HciDriver,
-    LeAdvertisingReportEventType, LeEventMask, LeFilterAcceptListAddress, PublicDeviceAddress,
-    RandomStaticDeviceAddress, Rssi, ScanEnable, SupportedCommands, SupportedFeatures,
-    SupportedLeFeatures, SupportedLeStates,
+    LeAdvertisingReportEventType, LeConnectionCompleteEvent, LeEventMask,
+    LeFilterAcceptListAddress, PublicDeviceAddress, RandomStaticDeviceAddress, Rssi, ScanEnable,
+    SupportedCommands, SupportedFeatures, SupportedLeFeatures, SupportedLeStates,
 };
 
 use crate::advertising::{
@@ -37,12 +37,18 @@ pub struct BleHostStateAdvertising;
 pub struct BleHostStateScanning;
 #[derive(Debug, Default)]
 pub struct BleHostStateInitiating;
+#[derive(Debug, Default)]
+pub struct BleHostStateConnectedCentral;
+#[derive(Debug, Default)]
+pub struct BleHostStateConnectedPeripheral;
 
 impl BleHostState for BleHostStateInitial {}
 impl BleHostState for BleHostStateStandby {}
 impl BleHostState for BleHostStateAdvertising {}
 impl BleHostState for BleHostStateScanning {}
 impl BleHostState for BleHostStateInitiating {}
+impl BleHostState for BleHostStateConnectedCentral {}
+impl BleHostState for BleHostStateConnectedPeripheral {}
 
 impl<'a, H> BleHost<'a, H, BleHostStateInitial>
 where
@@ -165,11 +171,7 @@ where
         self.hci
             .cmd_le_create_connection(connection_parameters.deref().clone())
             .await?;
-        Ok(BleHost::<H, BleHostStateInitiating> {
-            hci: self.hci,
-            device_information: self.device_information,
-            phantom: PhantomData,
-        })
+        Ok(self.change_state())
     }
 
     pub async fn create_random_address(&mut self) -> Result<(), Error> {
@@ -266,11 +268,7 @@ where
         )
         .await
         {
-            Ok(()) => Ok(BleHost::<H, BleHostStateAdvertising> {
-                hci: self.hci,
-                device_information: self.device_information,
-                phantom: PhantomData,
-            }),
+            Ok(()) => Ok(self.change_state()),
             Err(e) => Err((e, self)),
         }
     }
@@ -295,11 +293,7 @@ where
             Ok(())
         }
         match inner(&mut self.hci, scan_params, filter_duplicates).await {
-            Ok(()) => Ok(BleHost::<H, BleHostStateScanning> {
-                hci: self.hci,
-                device_information: self.device_information,
-                phantom: PhantomData,
-            }),
+            Ok(()) => Ok(self.change_state()),
             Err(e) => Err((e, self)),
         }
     }
@@ -313,11 +307,7 @@ where
         self.hci
             .cmd_le_set_advertising_enable(AdvertisingEnable::Disabled)
             .await?;
-        Ok(BleHost::<H, BleHostStateStandby> {
-            hci: self.hci,
-            device_information: self.device_information,
-            phantom: PhantomData,
-        })
+        Ok(self.change_state())
     }
 }
 
@@ -329,15 +319,11 @@ where
         self.hci
             .cmd_le_set_scan_enable(ScanEnable::Disabled, FilterDuplicates::Disabled)
             .await?;
-        Ok(BleHost::<H, BleHostStateStandby> {
-            hci: self.hci,
-            device_information: self.device_information,
-            phantom: PhantomData,
-        })
+        Ok(self.change_state())
     }
 }
 
-impl<H, S> BleHost<'_, H, S>
+impl<'a, H, S> BleHost<'a, H, S>
 where
     H: HciDriver,
     S: BleHostState,
@@ -375,6 +361,17 @@ where
     pub fn supported_le_states(&self) -> &SupportedLeStates {
         &self.device_information.supported_le_states
     }
+
+    pub(crate) fn change_state<NS>(self) -> BleHost<'a, H, NS>
+    where
+        NS: BleHostState,
+    {
+        BleHost::<'a, H, NS> {
+            hci: self.hci,
+            device_information: self.device_information,
+            phantom: PhantomData,
+        }
+    }
 }
 
 pub enum BleHostStates<'a, H>
@@ -386,6 +383,8 @@ where
     Advertising(BleHost<'a, H, BleHostStateAdvertising>),
     Scanning(BleHost<'a, H, BleHostStateScanning>),
     Initiating(BleHost<'a, H, BleHostStateInitiating>),
+    ConnectedCentral(BleHost<'a, H, BleHostStateConnectedCentral>),
+    ConnectedPeripheral(BleHost<'a, H, BleHostStateConnectedPeripheral>),
 }
 
 impl<H> BleHostStates<'_, H>
@@ -398,21 +397,13 @@ where
             Self::Advertising(host) => Ok(host.hci.wait_for_event().await?),
             Self::Scanning(host) => Ok(host.hci.wait_for_event().await?),
             Self::Initiating(host) => Ok(host.hci.wait_for_event().await?),
+            Self::ConnectedCentral(host) => Ok(host.hci.wait_for_event().await?),
+            Self::ConnectedPeripheral(host) => Ok(host.hci.wait_for_event().await?),
         }
     }
 }
 
 pub trait BleHostObserver {
-    fn ready<'a, H>(
-        &self,
-        host: BleHost<'a, H, BleHostStateStandby>,
-    ) -> impl core::future::Future<Output = BleHostStates<'a, H>>
-    where
-        H: HciDriver,
-    {
-        async { BleHostStates::Standby(host) }
-    }
-
     #[allow(unused_variables)]
     fn advertising_report_received<'a, H>(
         &self,
@@ -426,5 +417,27 @@ pub trait BleHostObserver {
         H: HciDriver,
     {
         async { host }
+    }
+
+    #[allow(unused_variables)]
+    fn connection_complete<'a, H>(
+        &self,
+        host: BleHostStates<'a, H>,
+        event: &LeConnectionCompleteEvent,
+    ) -> impl core::future::Future<Output = BleHostStates<'a, H>>
+    where
+        H: HciDriver,
+    {
+        async { host }
+    }
+
+    fn ready<'a, H>(
+        &self,
+        host: BleHost<'a, H, BleHostStateStandby>,
+    ) -> impl core::future::Future<Output = BleHostStates<'a, H>>
+    where
+        H: HciDriver,
+    {
+        async { BleHostStates::Standby(host) }
     }
 }

@@ -29,6 +29,16 @@ impl TryFrom<u16> for ConnectionHandle {
     }
 }
 
+pub(crate) mod parser {
+    use nom::{combinator::map_res, number::complete::le_u16, IResult, Parser};
+
+    use super::*;
+
+    pub(crate) fn connection_handle(input: &[u8]) -> IResult<&[u8], ConnectionHandle> {
+        map_res(le_u16, TryFrom::try_from).parse(input)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;

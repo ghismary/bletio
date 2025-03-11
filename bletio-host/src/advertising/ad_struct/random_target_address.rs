@@ -64,7 +64,7 @@ impl EncodeToBuffer for RandomTargetAddressAdStruct {
 }
 
 pub(crate) mod parser {
-    use bletio_hci::device_address::parser::address;
+    use bletio_hci::common::device_address::parser::address;
     use nom::{
         combinator::{fail, map_res},
         IResult, Parser,

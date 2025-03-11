@@ -216,17 +216,20 @@ impl CommandPacket {
 pub(crate) mod parser {
     use nom::{bytes::take, combinator::map, number::le_u16, sequence::pair, IResult, Parser};
 
-    use crate::advertising_data::parser::advertising_data;
-    use crate::advertising_enable::parser::advertising_enable;
-    use crate::advertising_parameters::parser::advertising_parameters;
-    use crate::connection_parameters::parser::connection_parameters;
-    use crate::device_address::parser::random_address;
-    use crate::event_mask::parser::event_mask;
-    use crate::le_event_mask::parser::le_event_mask;
-    use crate::le_filter_accept_list_address::parser::le_filter_accept_list_address;
+    use crate::advertising::{
+        advertising_data::parser::advertising_data, advertising_enable::parser::advertising_enable,
+        advertising_parameters::parser::advertising_parameters,
+    };
+    use crate::common::{
+        device_address::parser::random_address, event_mask::parser::event_mask,
+        le_event_mask::parser::le_event_mask,
+        le_filter_accept_list_address::parser::le_filter_accept_list_address,
+    };
+    use crate::connection::connection_parameters::parser::connection_parameters;
     use crate::packet::parser::parameter_total_length;
-    use crate::scan_enable::parser::scan_enable_parameters;
-    use crate::scan_parameters::parser::scan_parameters;
+    use crate::scanning::{
+        scan_enable::parser::scan_enable_parameters, scan_parameters::parser::scan_parameters,
+    };
     use crate::{Command, CommandOpCode, Packet};
 
     pub(crate) fn command_opcode(input: &[u8]) -> IResult<&[u8], CommandOpCode> {

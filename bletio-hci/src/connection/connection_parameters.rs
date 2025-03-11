@@ -5,7 +5,8 @@ use bletio_utils::{BufferOps, EncodeToBuffer};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 use crate::{
-    ConnectionIntervalRange, ConnectionPeerAddress, Error, OwnAddressType, ScanInterval, ScanWindow,
+    ConnectionIntervalRange, ConnectionPeerAddress, Error, Latency, OwnAddressType, ScanInterval,
+    ScanWindow, SupervisionTimeout,
 };
 
 /// Initiator filter policy to determine whether the Filter Accept List is used when creating a
@@ -34,162 +35,6 @@ impl EncodeToBuffer for InitiatorFilterPolicy {
         size_of::<InitiatorFilterPolicy>()
     }
 }
-
-/// Max latency.
-///
-/// Maximum Peripheral latency for the connection in number of connection events.
-///
-/// Here are the characteristics of this max latency:
-///  - Range: 0x0000 to 0x01F3
-///
-/// See [Core Specification 6.0, Vol.4, Part E, 7.8.12](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-18ff009e-8e3a-a32c-160f-23e297c0fc9d).
-#[derive(Debug, Copy, Clone, Default, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct MaxLatency {
-    value: u16,
-}
-
-impl MaxLatency {
-    /// Create a valid max latency.
-    pub const fn try_new(value: u16) -> Result<Self, Error> {
-        if value <= 0x01F3 {
-            Ok(Self { value })
-        } else {
-            Err(Error::InvalidMaxLatency(value))
-        }
-    }
-
-    pub const fn value(&self) -> u16 {
-        self.value
-    }
-}
-
-impl TryFrom<u16> for MaxLatency {
-    type Error = Error;
-
-    fn try_from(value: u16) -> Result<Self, Self::Error> {
-        Self::try_new(value)
-    }
-}
-
-impl EncodeToBuffer for MaxLatency {
-    fn encode<B: BufferOps>(&self, buffer: &mut B) -> Result<usize, UtilsError> {
-        buffer.encode_le_u16(self.value)
-    }
-
-    fn encoded_size(&self) -> usize {
-        size_of::<u16>()
-    }
-}
-
-/// Create a `MaxLatency`, checking that it is valid at compile-time.
-///
-/// # Examples
-///
-/// ```
-/// # use bletio_hci::max_latency;
-/// let latency = max_latency!(0x0100);
-/// ```
-#[macro_export]
-#[doc(hidden)]
-macro_rules! __max_latency__ {
-    ($value:expr) => {{
-        const {
-            match $crate::connection_parameters::MaxLatency::try_new($value) {
-                Ok(v) => v,
-                Err(_) => panic!("the max latency value is invalid, it needs to be between 0x0000 and 0x01F3")
-            }
-        }
-    }};
-}
-
-#[doc(inline)]
-pub use __max_latency__ as max_latency;
-
-/// Supervision timeout.
-///
-/// Supervision timeout for the LE Link (See [Core Specification 6.0, Vol.6, Part B, 4.5.2](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/low-energy-controller/link-layer-specification.html#UUID-741a7d39-97ed-b38f-d802-ba2f7a516703)).
-///
-/// Here are the characteristics of this supervision timeout:
-///  - Range: 0x000A to 0x0C80
-///  - Default: 0x000A (100 ms)
-///  - Time = N × 10 ms
-///  - Time Range: 100 ms to 32 s
-///
-/// See [Core Specification 6.0, Vol.4, Part E, 7.8.12](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-18ff009e-8e3a-a32c-160f-23e297c0fc9d).
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct SupervisionTimeout {
-    value: u16,
-}
-
-impl SupervisionTimeout {
-    /// Create a valid supervision timeout.
-    pub const fn try_new(value: u16) -> Result<Self, Error> {
-        if (value >= 0x000A) && (value <= 0x0C80) {
-            Ok(Self { value })
-        } else {
-            Err(Error::InvalidSupervisionTimeout(value))
-        }
-    }
-
-    /// Get the value of the supervision timeout in milliseconds.
-    pub const fn milliseconds(&self) -> f32 {
-        (self.value as f32) * 10.0
-    }
-
-    pub const fn value(&self) -> u16 {
-        self.value
-    }
-}
-
-impl Default for SupervisionTimeout {
-    fn default() -> Self {
-        Self { value: 0x0020 }
-    }
-}
-
-impl TryFrom<u16> for SupervisionTimeout {
-    type Error = Error;
-
-    fn try_from(value: u16) -> Result<Self, Self::Error> {
-        Self::try_new(value)
-    }
-}
-
-impl EncodeToBuffer for SupervisionTimeout {
-    fn encode<B: BufferOps>(&self, buffer: &mut B) -> Result<usize, UtilsError> {
-        buffer.encode_le_u16(self.value)
-    }
-
-    fn encoded_size(&self) -> usize {
-        size_of::<u16>()
-    }
-}
-
-/// Create a `SupervisionTimeout`, checking that it is valid at compile-time.
-///
-/// # Examples
-///
-/// ```
-/// # use bletio_hci::supervision_timeout;
-/// let timeout = supervision_timeout!(0x0050);
-/// ```
-#[macro_export]
-#[doc(hidden)]
-macro_rules! __supervision_timeout__ {
-    ($value:expr) => {{
-        const {
-            match $crate::connection_parameters::SupervisionTimeout::try_new($value) {
-                Ok(v) => v,
-                Err(_) => panic!("the supervision timeout value is invalid, it needs to be between 0x000A and 0x0C80")
-            }
-        }
-    }};
-}
-
-#[doc(inline)]
-pub use __supervision_timeout__ as supervision_timeout;
 
 /// Connection Event Length.
 ///
@@ -298,7 +143,7 @@ impl EncodeToBuffer for ConnectionEventLengthRange {
 macro_rules! __connection_event_length_range__ {
     ($min:expr, $max:expr) => {{
         const {
-            match $crate::connection_parameters::ConnectionEventLengthRange::try_new($min, $max) {
+            match $crate::ConnectionEventLengthRange::try_new($min, $max) {
                 Ok(v) => v,
                 Err(_) => panic!("the connection event length range minimum value must be smaller or equal to the maximum value")
             }
@@ -318,7 +163,7 @@ pub struct ConnectionParameters {
     peer_address: ConnectionPeerAddress,
     own_address_type: OwnAddressType,
     connection_interval_range: ConnectionIntervalRange,
-    max_latency: MaxLatency,
+    max_latency: Latency,
     supervision_timeout: SupervisionTimeout,
     connection_event_length_range: ConnectionEventLengthRange,
 }
@@ -332,7 +177,7 @@ impl ConnectionParameters {
         peer_address: ConnectionPeerAddress,
         own_address_type: OwnAddressType,
         connection_interval_range: ConnectionIntervalRange,
-        max_latency: MaxLatency,
+        max_latency: Latency,
         supervision_timeout: SupervisionTimeout,
         connection_event_length_range: ConnectionEventLengthRange,
     ) -> Result<Self, Error> {
@@ -383,7 +228,7 @@ impl ConnectionParameters {
         &self.connection_interval_range
     }
 
-    pub fn max_latency(&self) -> MaxLatency {
+    pub fn max_latency(&self) -> Latency {
         self.max_latency
     }
 
@@ -431,11 +276,12 @@ pub(crate) mod parser {
         IResult, Parser,
     };
 
-    use crate::connection_interval::parser::connection_interval_range;
-    use crate::connection_peer_address::parser::connection_peer_address;
-    use crate::own_address_type::parser::own_address_type;
-    use crate::scan_interval::parser::scan_interval;
-    use crate::scan_window::parser::scan_window;
+    use crate::common::own_address_type::parser::own_address_type;
+    use crate::connection::{
+        connection_interval::parser::connection_interval_range,
+        connection_peer_address::parser::connection_peer_address,
+    };
+    use crate::scanning::{scan_interval::parser::scan_interval, scan_window::parser::scan_window};
 
     use super::*;
 
@@ -443,7 +289,7 @@ pub(crate) mod parser {
         map_res(le_u8(), TryInto::try_into).parse(input)
     }
 
-    fn max_latency(input: &[u8]) -> IResult<&[u8], MaxLatency> {
+    fn max_latency(input: &[u8]) -> IResult<&[u8], Latency> {
         map_res(le_u16(), TryInto::try_into).parse(input)
     }
 
@@ -505,53 +351,7 @@ mod test {
     use rstest::rstest;
 
     use super::*;
-    use crate::{connection_interval_range, scan_interval, scan_window};
-
-    #[rstest]
-    #[case(0x0000)]
-    #[case(0x0020)]
-    #[case(0x01F3)]
-    fn test_max_latency_success(#[case] input: u16) -> Result<(), Error> {
-        let latency = MaxLatency::try_new(input)?;
-        assert_eq!(latency.value(), input);
-        Ok(())
-    }
-
-    #[rstest]
-    #[case(0x01F4)]
-    #[case(0x4000)]
-    #[case(0xFFFF)]
-    fn test_max_latency_failure(#[case] input: u16) {
-        let err = MaxLatency::try_new(input);
-        assert_eq!(err, Err(Error::InvalidMaxLatency(input)));
-    }
-
-    #[rstest]
-    #[case(0x000A, 100f32)]
-    #[case(0x0020, 320f32)]
-    #[case(0x0C80, 32000f32)]
-    fn test_supervision_timeout_success(
-        #[case] input: u16,
-        #[case] expected_milliseconds: f32,
-    ) -> Result<(), Error> {
-        let timeout = SupervisionTimeout::try_new(input)?;
-        assert_eq!(timeout.value(), input);
-        assert_relative_eq!(
-            timeout.milliseconds(),
-            expected_milliseconds,
-            epsilon = 1.0e-6
-        );
-        Ok(())
-    }
-
-    #[rstest]
-    #[case(0x0009)]
-    #[case(0x0C81)]
-    #[case(0x4000)]
-    fn test_supervision_timeout_failure(#[case] input: u16) {
-        let err = SupervisionTimeout::try_new(input);
-        assert_eq!(err, Err(Error::InvalidSupervisionTimeout(input)));
-    }
+    use crate::{connection_interval_range, scan_interval, scan_window, supervision_timeout};
 
     #[rstest]
     #[case(0x0000, 0f32)]
@@ -611,7 +411,7 @@ mod test {
         let peer_address = ConnectionPeerAddress::default();
         let own_address_type = OwnAddressType::default();
         let connection_interval_range = ConnectionIntervalRange::default();
-        let max_latency = MaxLatency::default();
+        let max_latency = Latency::default();
         let supervision_timeout = SupervisionTimeout::default();
         let connection_event_length_range = ConnectionEventLengthRange::default();
         let params = ConnectionParameters::try_new(
@@ -645,18 +445,18 @@ mod test {
 
     #[rstest]
     #[case(
-        scan_interval!(0x0020), scan_window!(0x0030), connection_interval_range!(0x0020, 0x0020), MaxLatency::default(), SupervisionTimeout::default(),
+        scan_interval!(0x0020), scan_window!(0x0030), connection_interval_range!(0x0020, 0x0020), Latency::default(), SupervisionTimeout::default(),
         Error::ScanWindowMustBeSmallerOrEqualToScanInterval
     )]
     #[case(
-        scan_interval!(0x0030), scan_window!(0x0020), connection_interval_range!(0x0030, 0x0050), MaxLatency::default(), supervision_timeout!(0x0010),
+        scan_interval!(0x0030), scan_window!(0x0020), connection_interval_range!(0x0030, 0x0050), Latency::default(), supervision_timeout!(0x0010),
         Error::SupervisionTimeoutIsNotBigEnough
     )]
     fn test_connection_parameters_failure(
         #[case] scan_interval: ScanInterval,
         #[case] scan_window: ScanWindow,
         #[case] connection_interval_range: ConnectionIntervalRange,
-        #[case] max_latency: MaxLatency,
+        #[case] max_latency: Latency,
         #[case] supervision_timeout: SupervisionTimeout,
         #[case] expected_error: Error,
     ) {

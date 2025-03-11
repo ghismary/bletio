@@ -522,7 +522,13 @@ mod test {
 
     use super::*;
     use crate::test::*;
-    use crate::{DeviceAddress, ErrorCode, HciDriverError};
+    use crate::{
+        connection_event_length_range, connection_interval, latency, supervision_timeout,
+        CentralClockAccuracy, ConnectionHandle, ConnectionIntervalRange, ConnectionPeerAddress,
+        DeviceAddress, ErrorCode, HciDriverError, InitiatorFilterPolicy, Latency,
+        LeConnectionCompleteEvent, LeMetaEvent, OwnAddressType, RandomResolvablePrivateAddress,
+        Role, ScanInterval, ScanWindow, SupervisionTimeout,
+    };
 
     #[fixture]
     fn mock_cmd_le_add_device_to_filter_accept_list_success() -> Mock {
@@ -637,10 +643,14 @@ mod test {
     fn mock_cmd_le_create_connection_success() -> Mock {
         tokio_test::io::Builder::new()
             .write(&[
-                1, 13, 32, 25, 16, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 64, 0, 64, 0, 0, 0, 32, 0,
-                0, 0, 0, 0,
+                1, 13, 32, 25, 16, 0, 16, 0, 0, 1, 83, 251, 125, 93, 119, 88, 0, 64, 0, 64, 0, 0,
+                0, 32, 0, 10, 0, 100, 0,
             ])
             .read(&[4, 15, 4, 0, 1, 13, 32])
+            .wait(Duration::from_millis(10))
+            .read(&[
+                4, 62, 19, 1, 0, 0, 0, 0, 1, 83, 251, 125, 93, 119, 88, 64, 0, 0, 0, 32, 0, 0,
+            ])
             .build()
     }
 
@@ -648,23 +658,38 @@ mod test {
     fn mock_cmd_le_create_connection_command_disallowed() -> Mock {
         tokio_test::io::Builder::new()
             .write(&[
-                1, 13, 32, 25, 16, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 64, 0, 64, 0, 0, 0, 32, 0,
-                0, 0, 0, 0,
+                1, 13, 32, 25, 16, 0, 16, 0, 0, 1, 83, 251, 125, 93, 119, 88, 0, 64, 0, 64, 0, 0,
+                0, 32, 0, 10, 0, 100, 0,
             ])
             .read(&[4, 15, 4, 12, 1, 13, 32])
             .build()
     }
 
     #[rstest]
-    #[case::success(mock_cmd_le_create_connection_success(), Ok(()))]
+    #[case::success(
+        mock_cmd_le_create_connection_success(),
+        Ok(()),
+        Some(Event::LeMeta(LeMetaEvent::LeConnectionComplete(LeConnectionCompleteEvent {
+            status: ErrorCode::Success,
+            connection_handle: ConnectionHandle::try_new(0).unwrap(),
+            role: Role::Central,
+            peer_address: RandomResolvablePrivateAddress::try_new([83, 251, 125, 93, 119, 88]).unwrap().into(),
+            connection_interval: connection_interval!(64),
+            peripheral_latency: latency!(0),
+            supervision_timeout: supervision_timeout!(32),
+            central_clock_accuracy: CentralClockAccuracy::Ppm500
+        })))
+    )]
     #[case::command_disallowed(
         mock_cmd_le_create_connection_command_disallowed(),
-        Err(Error::ErrorCode(ErrorCode::CommandDisallowed))
+        Err(Error::ErrorCode(ErrorCode::CommandDisallowed)),
+        None
     )]
     #[tokio::test(flavor = "current_thread", start_paused = true)]
     async fn test_cmd_le_create_connection(
         #[case] mock: Mock,
-        #[case] expected: Result<(), Error>,
+        #[case] expected_cmd_result: Result<(), Error>,
+        #[case] expected_event: Option<Event>,
     ) {
         let hci_driver = TokioHciDriver { hci: mock };
         let mut hci = Hci {
@@ -673,11 +698,31 @@ mod test {
             read_buffer: Default::default(),
             event_list: Default::default(),
         };
+        let connection_params = ConnectionParameters::try_new(
+            ScanInterval::default(),
+            ScanWindow::default(),
+            InitiatorFilterPolicy::FilterAcceptListNotUsed,
+            ConnectionPeerAddress::RandomDevice(
+                RandomResolvablePrivateAddress::try_new([83, 251, 125, 93, 119, 88])
+                    .unwrap()
+                    .into(),
+            ),
+            OwnAddressType::PublicDeviceAddress,
+            ConnectionIntervalRange::default(),
+            Latency::default(),
+            SupervisionTimeout::default(),
+            connection_event_length_range!(10, 100),
+        )
+        .unwrap();
         assert_eq!(
-            hci.cmd_le_create_connection(ConnectionParameters::default())
-                .await,
-            expected
+            hci.cmd_le_create_connection(connection_params).await,
+            expected_cmd_result
         );
+        if expected_event.is_some() {
+            let mut event_list = hci.wait_for_event().await.unwrap();
+            assert_eq!(event_list.len(), 1);
+            assert_eq!(event_list.pop(), expected_event);
+        }
     }
 
     #[fixture]

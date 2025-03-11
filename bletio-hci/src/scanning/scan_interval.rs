@@ -89,7 +89,7 @@ impl PartialOrd<ScanWindow> for ScanInterval {
 macro_rules! __scan_interval__ {
     ($value:expr) => {{
         const {
-            match $crate::scan_interval::ScanInterval::try_new($value) {
+            match $crate::ScanInterval::try_new($value) {
                 Ok(v) => v,
                 Err(_) => panic!("the scan interval value is invalid, it needs to be between 0x0004 and 0x4000")
             }

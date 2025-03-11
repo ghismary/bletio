@@ -94,7 +94,7 @@ pub(crate) mod parser {
     use nom::{combinator::map_res, number::le_u8, IResult, Parser};
 
     use super::*;
-    use crate::device_address::parser::address;
+    use crate::common::device_address::parser::address;
 
     fn connection_peer_address_type(input: &[u8]) -> IResult<&[u8], ConnectionPeerAddressType> {
         map_res(le_u8(), TryInto::try_into).parse(input)

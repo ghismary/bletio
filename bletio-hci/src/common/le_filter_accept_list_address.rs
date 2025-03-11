@@ -95,7 +95,7 @@ pub(crate) mod parser {
         IResult, Parser,
     };
 
-    use crate::device_address::parser::address;
+    use crate::common::device_address::parser::address;
 
     use super::*;
 

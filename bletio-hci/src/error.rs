@@ -26,6 +26,8 @@ pub enum Error {
     InvalidAdvertisingType(u8),
     /// The provided broadcast flag is invalid.
     InvalidBroadcastFlag(u8),
+    /// The provided central clock accuracy is invalid.
+    InvalidCentralClockAccuracy(u8),
     /// Invalid HCI command.
     InvalidCommand(u16),
     /// The provided connection event length range is invalid.
@@ -53,7 +55,7 @@ pub enum Error {
     /// The provided LE filter accept list address type is invalid.
     InvalidLeFilterAcceptListAddressType(u8),
     /// The provided max latency is invalid.
-    InvalidMaxLatency(u16),
+    InvalidLatency(u16),
     /// The provided own address type is invalid.
     InvalidOwnAddressType(u8),
     /// Invalid HCI packet, either malformed or not expected (e.g. Command received by the Host).
@@ -74,6 +76,8 @@ pub enum Error {
     InvalidRandomResolvablePrivateAddress,
     /// The provided random static device address is invalid.
     InvalidRandomStaticDeviceAddress,
+    /// The provided role is invalid.
+    InvalidRole(u8),
     /// The provided RSSI value is invalid.
     InvalidRssiValue(i8),
     /// The provided scan enable value is invalid.

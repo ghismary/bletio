@@ -1,11 +1,12 @@
 use num_enum::{FromPrimitive, IntoPrimitive};
 
-use crate::LeAdvertisingReportList;
+use crate::{LeAdvertisingReportList, LeConnectionCompleteEvent};
 
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[allow(clippy::large_enum_variant)]
 pub enum LeMetaEvent {
+    LeConnectionComplete(LeConnectionCompleteEvent),
     LeAdvertisingReport(LeAdvertisingReportList),
     Unsupported(u8),
 }
@@ -14,6 +15,7 @@ pub enum LeMetaEvent {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[repr(u8)]
 enum LeMetaEventCode {
+    LeConnectionComplete = 0x01,
     LeAdvertisingReport = 0x02,
     #[num_enum(catch_all)]
     Unsupported(u8),
@@ -22,9 +24,9 @@ enum LeMetaEventCode {
 pub(crate) mod parser {
     use nom::{combinator::map_res, number::le_u8, IResult, Parser};
 
-    use crate::event::le_advertising_report::parser::le_advertising_report_event;
-
     use super::*;
+    use crate::event::le_advertising_report::parser::le_advertising_report_event;
+    use crate::event::le_connection_complete::parser::le_connection_complete_event;
 
     fn le_meta_event_code(input: &[u8]) -> IResult<&[u8], LeMetaEventCode> {
         map_res(le_u8(), LeMetaEventCode::try_from).parse(input)
@@ -33,6 +35,7 @@ pub(crate) mod parser {
     pub(crate) fn le_meta_event(input: &[u8]) -> IResult<&[u8], LeMetaEvent> {
         let (parameters, le_meta_event_code) = le_meta_event_code(input)?;
         match le_meta_event_code {
+            LeMetaEventCode::LeConnectionComplete => le_connection_complete_event(parameters),
             LeMetaEventCode::LeAdvertisingReport => le_advertising_report_event(parameters),
             LeMetaEventCode::Unsupported(event_code) => {
                 Ok((&[], LeMetaEvent::Unsupported(event_code)))

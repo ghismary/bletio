@@ -151,9 +151,8 @@ pub(crate) mod parser {
         IResult, Parser,
     };
 
-    use crate::own_address_type::parser::own_address_type;
-    use crate::scan_interval::parser::scan_interval;
-    use crate::scan_window::parser::scan_window;
+    use crate::common::own_address_type::parser::own_address_type;
+    use crate::scanning::{scan_interval::parser::scan_interval, scan_window::parser::scan_window};
 
     use super::*;
 

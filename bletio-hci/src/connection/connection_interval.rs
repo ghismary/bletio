@@ -81,7 +81,7 @@ impl EncodeToBuffer for ConnectionInterval {
 macro_rules! __connection_interval__ {
     ($value:expr) => {{
         const {
-            match $crate::connection_interval::ConnectionInterval::try_new($value) {
+            match $crate::ConnectionInterval::try_new($value) {
                 Ok(v) => v,
                 Err(_) => panic!("the connection interval value is invalid, it needs to be between 0x0006 and 0x0C80")
             }
@@ -157,7 +157,7 @@ impl EncodeToBuffer for ConnectionIntervalRange {
 macro_rules! __connection_interval_range__ {
     ($min:expr, $max:expr) => {{
         const {
-            match $crate::connection_interval::ConnectionIntervalRange::try_new($min, $max) {
+            match $crate::ConnectionIntervalRange::try_new($min, $max) {
                 Ok(v) => v,
                 Err($crate::Error::InvalidConnectionIntervalRange) => panic!("the connection interval minimum value must be smaller or equal to the maximum value"),
                 Err(_) => panic!("the connection interval value is invalid, it needs to be between 0x0006 and 0x0C80")
@@ -170,12 +170,16 @@ macro_rules! __connection_interval_range__ {
 pub use __connection_interval_range__ as connection_interval_range;
 
 pub mod parser {
-    use nom::{combinator::map_res, number::le_u16, IResult, Parser};
+    use nom::{combinator::map_res, number::complete::le_u16, IResult, Parser};
 
     use super::*;
 
+    pub(crate) fn connection_interval(input: &[u8]) -> IResult<&[u8], ConnectionInterval> {
+        map_res(le_u16, TryInto::try_into).parse(input)
+    }
+
     pub fn connection_interval_range(input: &[u8]) -> IResult<&[u8], ConnectionIntervalRange> {
-        map_res((le_u16(), le_u16()), |(start, end)| {
+        map_res((le_u16, le_u16), |(start, end)| {
             ConnectionIntervalRange::try_new(start, end)
         })
         .parse(input)

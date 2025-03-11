@@ -1,7 +1,9 @@
 use bletio_utils::{Buffer, BufferOps};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
-use crate::{advertising_data::ADVERTISING_DATA_SIZE, ConnectionPeerAddress, Error, Rssi};
+use crate::{
+    advertising::advertising_data::ADVERTISING_DATA_SIZE, ConnectionPeerAddress, Error, Rssi,
+};
 
 const LE_ADVERTISING_REPORT_EVENT_MAX_SIZE: usize = 251;
 
@@ -173,7 +175,7 @@ pub(crate) mod parser {
     };
 
     use super::*;
-    use crate::connection_peer_address::parser::connection_peer_address;
+    use crate::connection::connection_peer_address::parser::connection_peer_address;
     use crate::LeMetaEvent;
 
     fn le_advertising_report_num_reports(

@@ -2,8 +2,7 @@ use core::ops::Deref;
 
 use bletio_hci::{
     ConnectionEventLengthRange, ConnectionIntervalRange, ConnectionPeerAddress,
-    InitiatorFilterPolicy, MaxLatency, OwnAddressType, ScanInterval, ScanWindow,
-    SupervisionTimeout,
+    InitiatorFilterPolicy, Latency, OwnAddressType, ScanInterval, ScanWindow, SupervisionTimeout,
 };
 
 use crate::Error;
@@ -17,7 +16,7 @@ pub struct ConnectionParametersBuilder {
     peer_address: ConnectionPeerAddress,
     own_address_type: OwnAddressType,
     connection_interval_range: ConnectionIntervalRange,
-    max_latency: MaxLatency,
+    max_latency: Latency,
     supervision_timeout: SupervisionTimeout,
     connection_event_length_range: ConnectionEventLengthRange,
 }
@@ -74,7 +73,7 @@ impl ConnectionParametersBuilder {
     }
 
     /// Define the max latency to be used.
-    pub fn with_max_latency(mut self, max_latency: MaxLatency) -> Self {
+    pub fn with_max_latency(mut self, max_latency: Latency) -> Self {
         self.max_latency = max_latency;
         self
     }
@@ -151,7 +150,7 @@ impl Deref for ConnectionParameters {
 #[cfg(test)]
 mod test {
     use bletio_hci::{
-        connection_event_length_range, connection_interval_range, max_latency, scan_interval,
+        connection_event_length_range, connection_interval_range, latency, scan_interval,
         scan_window, supervision_timeout,
     };
 
@@ -169,7 +168,7 @@ mod test {
         let connection_event_length_range = connection_event_length_range!(16, 16);
         let connection_interval_range = connection_interval_range!(16, 32);
         let initiator_filter_policy = InitiatorFilterPolicy::FilterAcceptListNotUsed;
-        let max_latency = max_latency!(0);
+        let max_latency = latency!(0);
         let own_address_type = OwnAddressType::PublicDeviceAddress;
         let peer_address =
             ConnectionPeerAddress::PublicDevice([0xCD, 0x2E, 0x0B, 0x04, 0x32, 0x56].into());

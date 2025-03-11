@@ -9,6 +9,7 @@ use crate::{CommandCompleteEvent, LeMetaEvent};
 pub(crate) mod command_complete;
 pub(crate) mod command_status;
 pub(crate) mod le_advertising_report;
+pub(crate) mod le_connection_complete;
 pub(crate) mod le_meta;
 
 const EVENT_LIST_NB_EVENTS: usize = 4;
