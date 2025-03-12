@@ -66,6 +66,7 @@ pub use connection::{
     },
     connection_peer_address::ConnectionPeerAddress,
     latency::{latency, Latency},
+    reason::Reason,
     supervision_timeout::{supervision_timeout, SupervisionTimeout},
 };
 pub use error::Error;

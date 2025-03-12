@@ -57,6 +57,7 @@ mod test {
     #[rstest]
     #[case(CommandStatusEvent::new(ErrorCode::Success, 1, CommandOpCode::LeCreateConnection), &[4, 15, 4, 0, 1, 13, 32])]
     #[case(CommandStatusEvent::new(ErrorCode::CommandDisallowed, 1, CommandOpCode::LeCreateConnection), &[4, 15, 4, 12, 1, 13, 32])]
+    #[case(CommandStatusEvent::new(ErrorCode::Success, 1, CommandOpCode::Disconnect), &[4, 15, 4, 0, 1, 6, 4])]
     fn test_command_status_event_parsing_success(
         #[case] event: CommandStatusEvent,
         #[case] input: &[u8],
