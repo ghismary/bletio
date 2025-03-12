@@ -64,7 +64,7 @@ pub(crate) mod parser {
     use nom::{
         bytes::take,
         combinator::{fail, map_res},
-        number::le_u16,
+        number::complete::le_u16,
         IResult, Parser,
     };
 
@@ -73,7 +73,7 @@ pub(crate) mod parser {
     use super::*;
 
     fn company_identifier(input: &[u8]) -> IResult<&[u8], CompanyIdentifier> {
-        map_res(le_u16(), TryFrom::try_from).parse(input)
+        map_res(le_u16, TryFrom::try_from).parse(input)
     }
 
     pub(crate) fn manufacturer_specific_data_ad_struct(input: &[u8]) -> IResult<&[u8], AdStruct> {

@@ -161,14 +161,14 @@ impl Default for LeEventMask {
 pub(crate) mod parser {
     use nom::{
         combinator::{all_consuming, map},
-        number::le_u64,
+        number::complete::le_u64,
         IResult, Parser,
     };
 
     use super::*;
 
     pub(crate) fn le_event_mask(input: &[u8]) -> IResult<&[u8], LeEventMask> {
-        all_consuming(map(le_u64(), LeEventMask::from_bits_truncate)).parse(input)
+        all_consuming(map(le_u64, LeEventMask::from_bits_truncate)).parse(input)
     }
 }
 

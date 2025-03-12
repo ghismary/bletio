@@ -39,11 +39,11 @@ impl EncodeToBuffer for OwnAddressType {
 }
 
 pub(crate) mod parser {
-    use nom::{combinator::map_res, number::le_u8, IResult, Parser};
+    use nom::{combinator::map_res, number::complete::le_u8, IResult, Parser};
 
     use super::*;
 
     pub(crate) fn own_address_type(input: &[u8]) -> IResult<&[u8], OwnAddressType> {
-        map_res(le_u8(), TryInto::try_into).parse(input)
+        map_res(le_u8, TryInto::try_into).parse(input)
     }
 }

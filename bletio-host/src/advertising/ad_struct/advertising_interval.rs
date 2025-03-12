@@ -46,7 +46,7 @@ impl EncodeToBuffer for AdvertisingIntervalAdStruct {
 pub(crate) mod parser {
     use nom::{
         combinator::{map, map_res},
-        number::le_u16,
+        number::complete::le_u16,
         IResult, Parser,
     };
 
@@ -55,7 +55,7 @@ pub(crate) mod parser {
     use super::*;
 
     pub(crate) fn advertising_interval_ad_struct(input: &[u8]) -> IResult<&[u8], AdStruct> {
-        map(map_res(le_u16(), TryInto::try_into), |interval| {
+        map(map_res(le_u16, TryInto::try_into), |interval| {
             AdStruct::AdvertisingInterval(AdvertisingIntervalAdStruct::new(interval))
         })
         .parse(input)

@@ -32,14 +32,14 @@ impl EncodeToBuffer for AdvertisingEnable {
 pub(crate) mod parser {
     use nom::{
         combinator::{all_consuming, map_res},
-        number::le_u8,
+        number::complete::le_u8,
         IResult, Parser,
     };
 
     use super::AdvertisingEnable;
 
     pub(crate) fn advertising_enable(input: &[u8]) -> IResult<&[u8], AdvertisingEnable> {
-        all_consuming(map_res(le_u8(), TryInto::try_into)).parse(input)
+        all_consuming(map_res(le_u8, TryInto::try_into)).parse(input)
     }
 }
 

@@ -566,7 +566,7 @@ impl FullAdvertisingData {
 pub(crate) mod parser {
     use nom::{
         combinator::{map, map_res},
-        number::{le_u128, le_u16, le_u32, le_u8},
+        number::complete::{le_u128, le_u16, le_u32, le_u8},
         IResult, Parser,
     };
 
@@ -607,27 +607,27 @@ pub(crate) mod parser {
     };
 
     pub(crate) fn advertising_data_length(input: &[u8]) -> IResult<&[u8], u8> {
-        le_u8().parse(input)
+        le_u8.parse(input)
     }
 
     pub(crate) fn ad_struct_length(input: &[u8]) -> IResult<&[u8], usize> {
-        map(le_u8(), |v| v as usize).parse(input)
+        map(le_u8, |v| v as usize).parse(input)
     }
 
     fn ad_type(input: &[u8]) -> IResult<&[u8], AdType> {
-        map_res(le_u8(), TryInto::try_into).parse(input)
+        map_res(le_u8, TryInto::try_into).parse(input)
     }
 
     pub(crate) fn service_uuid(input: &[u8]) -> IResult<&[u8], ServiceUuid> {
-        map_res(le_u16(), TryFrom::try_from).parse(input)
+        map_res(le_u16, TryFrom::try_from).parse(input)
     }
 
     pub(crate) fn uuid32(input: &[u8]) -> IResult<&[u8], Uuid32> {
-        map(le_u32(), Into::into).parse(input)
+        map(le_u32, Into::into).parse(input)
     }
 
     pub(crate) fn uuid128(input: &[u8]) -> IResult<&[u8], Uuid128> {
-        map(le_u128(), Into::into).parse(input)
+        map(le_u128, Into::into).parse(input)
     }
 
     pub(crate) fn ad_struct(input: &[u8]) -> IResult<&[u8], (usize, AdStruct)> {

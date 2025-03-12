@@ -214,7 +214,9 @@ impl CommandPacket {
 }
 
 pub(crate) mod parser {
-    use nom::{bytes::take, combinator::map, number::le_u16, sequence::pair, IResult, Parser};
+    use nom::{
+        bytes::take, combinator::map, number::complete::le_u16, sequence::pair, IResult, Parser,
+    };
 
     use crate::advertising::{
         advertising_data::parser::advertising_data, advertising_enable::parser::advertising_enable,
@@ -233,7 +235,7 @@ pub(crate) mod parser {
     use crate::{Command, CommandOpCode, Packet};
 
     pub(crate) fn command_opcode(input: &[u8]) -> IResult<&[u8], CommandOpCode> {
-        map(le_u16(), CommandOpCode::from).parse(input)
+        map(le_u16, CommandOpCode::from).parse(input)
     }
 
     pub(crate) fn command(input: &[u8]) -> IResult<&[u8], Packet> {

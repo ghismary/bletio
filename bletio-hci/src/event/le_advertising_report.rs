@@ -170,7 +170,7 @@ pub(crate) mod parser {
     use nom::{
         bytes::take,
         combinator::{consumed, eof, map, map_res},
-        number::le_u8,
+        number::complete::le_u8,
         IResult, Parser,
     };
 
@@ -181,17 +181,17 @@ pub(crate) mod parser {
     fn le_advertising_report_num_reports(
         input: &[u8],
     ) -> IResult<&[u8], LeAdvertisingReportNumReports> {
-        map_res(le_u8(), LeAdvertisingReportNumReports::try_from).parse(input)
+        map_res(le_u8, LeAdvertisingReportNumReports::try_from).parse(input)
     }
 
     fn le_advertising_report_event_type(
         input: &[u8],
     ) -> IResult<&[u8], LeAdvertisingReportEventType> {
-        map_res(le_u8(), LeAdvertisingReportEventType::try_from).parse(input)
+        map_res(le_u8, LeAdvertisingReportEventType::try_from).parse(input)
     }
 
     fn le_advertising_report_data_length(input: &[u8]) -> IResult<&[u8], u8> {
-        le_u8().parse(input)
+        le_u8.parse(input)
     }
 
     fn le_advertising_report_data(input: &[u8]) -> IResult<&[u8], LeAdvertisingReportData> {
@@ -200,7 +200,7 @@ pub(crate) mod parser {
     }
 
     fn le_advertising_report_rssi(input: &[u8]) -> IResult<&[u8], Option<Rssi>> {
-        map_res(le_u8(), |v| match v {
+        map_res(le_u8, |v| match v {
             0x7F => Ok::<_, Error>(None),
             _ => Ok(Some(Rssi::try_new(v as i8)?)),
         })

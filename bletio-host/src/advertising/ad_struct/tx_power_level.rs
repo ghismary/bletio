@@ -47,7 +47,7 @@ pub(crate) mod parser {
     use bletio_hci::TxPowerLevel;
     use nom::{
         combinator::{map, map_res},
-        number::le_i8,
+        number::complete::le_i8,
         IResult, Parser,
     };
 
@@ -56,7 +56,7 @@ pub(crate) mod parser {
     use super::*;
 
     fn tx_power_level(input: &[u8]) -> IResult<&[u8], TxPowerLevel> {
-        map_res(le_i8(), TryInto::try_into).parse(input)
+        map_res(le_i8, TryInto::try_into).parse(input)
     }
 
     pub(crate) fn tx_power_level_ad_struct(input: &[u8]) -> IResult<&[u8], AdStruct> {

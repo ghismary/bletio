@@ -101,12 +101,12 @@ macro_rules! __scan_window__ {
 pub use __scan_window__ as scan_window;
 
 pub(crate) mod parser {
-    use nom::{combinator::map_res, number::le_u16, IResult, Parser};
+    use nom::{combinator::map_res, number::complete::le_u16, IResult, Parser};
 
     use super::*;
 
     pub(crate) fn scan_window(input: &[u8]) -> IResult<&[u8], ScanWindow> {
-        map_res(le_u16(), TryInto::try_into).parse(input)
+        map_res(le_u16, TryInto::try_into).parse(input)
     }
 }
 
