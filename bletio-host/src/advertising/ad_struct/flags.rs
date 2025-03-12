@@ -78,14 +78,14 @@ impl From<u8> for Flags {
 }
 
 pub(crate) mod parser {
-    use nom::{combinator::map, number::le_u8, IResult, Parser};
+    use nom::{combinator::map, number::complete::le_u8, IResult, Parser};
 
     use crate::advertising::ad_struct::AdStruct;
 
     use super::*;
 
     pub(crate) fn flags_ad_struct(input: &[u8]) -> IResult<&[u8], AdStruct> {
-        map(le_u8(), |v| AdStruct::Flags(FlagsAdStruct::new(v.into()))).parse(input)
+        map(le_u8, |v| AdStruct::Flags(FlagsAdStruct::new(v.into()))).parse(input)
     }
 }
 

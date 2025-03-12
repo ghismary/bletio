@@ -39,13 +39,13 @@ impl EncodeToBuffer for PeerAddressType {
 }
 
 pub(crate) mod parser {
-    use nom::{bytes::take, combinator::map_res, number::le_u8, IResult, Parser};
+    use nom::{bytes::take, combinator::map_res, number::complete::le_u8, IResult, Parser};
 
     use crate::common::peer_address_type::PeerAddressType;
     use crate::{DeviceAddress, Error, PublicDeviceAddress, RandomAddress};
 
     fn peer_address_type(input: &[u8]) -> IResult<&[u8], PeerAddressType> {
-        map_res(le_u8(), TryInto::try_into).parse(input)
+        map_res(le_u8, TryInto::try_into).parse(input)
     }
 
     pub(crate) fn peer_address(input: &[u8]) -> IResult<&[u8], DeviceAddress> {

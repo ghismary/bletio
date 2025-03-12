@@ -91,7 +91,7 @@ pub(crate) mod parser {
     use nom::{
         bytes::take,
         combinator::{all_consuming, map, map_res},
-        number::le_u8,
+        number::complete::le_u8,
         IResult, Parser,
     };
 
@@ -102,7 +102,7 @@ pub(crate) mod parser {
     fn le_filter_accept_list_address_type(
         input: &[u8],
     ) -> IResult<&[u8], LeFilterAcceptListAddressType> {
-        map_res(le_u8(), TryFrom::try_from).parse(input)
+        map_res(le_u8, TryFrom::try_from).parse(input)
     }
 
     fn le_filter_accept_list_address_public(

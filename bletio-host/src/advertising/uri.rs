@@ -313,7 +313,7 @@ pub(crate) mod parser {
         branch::alt,
         bytes::{tag, take, take_till1},
         combinator::{map, map_res, verify},
-        number::le_u16,
+        number::complete::le_u16,
         IResult, Parser,
     };
 
@@ -323,7 +323,7 @@ pub(crate) mod parser {
         map(
             map_res(
                 (
-                    verify(le_u16(), |value| *value == EMPTY_SCHEME_NAME_VALUE),
+                    verify(le_u16, |value| *value == EMPTY_SCHEME_NAME_VALUE),
                     map_res(take_till1(|b| b == b':'), core::str::from_utf8),
                     tag([b':'].as_slice()),
                 ),
@@ -336,7 +336,7 @@ pub(crate) mod parser {
 
     fn provisioned_uri_scheme(input: &[u8]) -> IResult<&[u8], UriScheme> {
         map(
-            map_res(le_u16(), TryFrom::try_from),
+            map_res(le_u16, TryFrom::try_from),
             |scheme: ProvisionedUriScheme| scheme.into(),
         )
         .parse(input)

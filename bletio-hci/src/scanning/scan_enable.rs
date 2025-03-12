@@ -58,18 +58,18 @@ impl EncodeToBuffer for FilterDuplicates {
 pub(crate) mod parser {
     use nom::{
         combinator::{all_consuming, map_res},
-        number::le_u8,
+        number::complete::le_u8,
         IResult, Parser,
     };
 
     use super::{FilterDuplicates, ScanEnable};
 
     fn scan_enable(input: &[u8]) -> IResult<&[u8], ScanEnable> {
-        map_res(le_u8(), TryInto::try_into).parse(input)
+        map_res(le_u8, TryInto::try_into).parse(input)
     }
 
     fn filter_duplicates(input: &[u8]) -> IResult<&[u8], FilterDuplicates> {
-        map_res(le_u8(), TryInto::try_into).parse(input)
+        map_res(le_u8, TryInto::try_into).parse(input)
     }
 
     pub(crate) fn scan_enable_parameters(

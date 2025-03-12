@@ -22,14 +22,14 @@ enum LeMetaEventCode {
 }
 
 pub(crate) mod parser {
-    use nom::{combinator::map_res, number::le_u8, IResult, Parser};
+    use nom::{combinator::map_res, number::complete::le_u8, IResult, Parser};
 
     use super::*;
     use crate::event::le_advertising_report::parser::le_advertising_report_event;
     use crate::event::le_connection_complete::parser::le_connection_complete_event;
 
     fn le_meta_event_code(input: &[u8]) -> IResult<&[u8], LeMetaEventCode> {
-        map_res(le_u8(), LeMetaEventCode::try_from).parse(input)
+        map_res(le_u8, LeMetaEventCode::try_from).parse(input)
     }
 
     pub(crate) fn le_meta_event(input: &[u8]) -> IResult<&[u8], LeMetaEvent> {

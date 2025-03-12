@@ -147,7 +147,7 @@ impl EncodeToBuffer for ScanParameters {
 pub(crate) mod parser {
     use nom::{
         combinator::{all_consuming, map_res},
-        number::le_u8,
+        number::complete::le_u8,
         IResult, Parser,
     };
 
@@ -157,11 +157,11 @@ pub(crate) mod parser {
     use super::*;
 
     fn scan_type(input: &[u8]) -> IResult<&[u8], ScanType> {
-        map_res(le_u8(), TryInto::try_into).parse(input)
+        map_res(le_u8, TryInto::try_into).parse(input)
     }
 
     fn filter_policy(input: &[u8]) -> IResult<&[u8], ScanningFilterPolicy> {
-        map_res(le_u8(), TryInto::try_into).parse(input)
+        map_res(le_u8, TryInto::try_into).parse(input)
     }
 
     pub(crate) fn scan_parameters(input: &[u8]) -> IResult<&[u8], ScanParameters> {

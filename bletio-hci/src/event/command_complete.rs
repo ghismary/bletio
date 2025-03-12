@@ -174,7 +174,7 @@ pub(crate) mod parser {
     use nom::{
         bytes::take,
         combinator::{eof, map, map_res},
-        number::{le_i8, le_u16, le_u64, le_u8},
+        number::complete::{le_i8, le_u16, le_u64, le_u8},
         sequence::pair,
         IResult, Parser,
     };
@@ -192,7 +192,7 @@ pub(crate) mod parser {
     }
 
     fn supported_features(input: &[u8]) -> IResult<&[u8], SupportedFeatures> {
-        map(le_u64(), SupportedFeatures::from_bits_truncate).parse(input)
+        map(le_u64, SupportedFeatures::from_bits_truncate).parse(input)
     }
 
     fn bd_addr(input: &[u8]) -> IResult<&[u8], PublicDeviceAddress> {
@@ -205,16 +205,16 @@ pub(crate) mod parser {
 
     fn buffer_size(input: &[u8]) -> IResult<&[u8], (NonZeroU16, NonZeroU8, NonZeroU16, u16)> {
         (
-            map_res(le_u16(), TryInto::try_into),
-            map_res(le_u8(), TryInto::try_into),
-            map_res(le_u16(), TryInto::try_into),
-            le_u16(),
+            map_res(le_u16, TryInto::try_into),
+            map_res(le_u8, TryInto::try_into),
+            map_res(le_u16, TryInto::try_into),
+            le_u16,
         )
             .parse(input)
     }
 
     fn le_buffer_size(input: &[u8]) -> IResult<&[u8], (u16, u8)> {
-        (le_u16(), le_u8()).parse(input)
+        (le_u16, le_u8).parse(input)
     }
 
     fn le_supported_features_page_0(input: &[u8]) -> IResult<&[u8], SupportedLeFeatures> {
@@ -222,11 +222,11 @@ pub(crate) mod parser {
     }
 
     fn le_supported_states(input: &[u8]) -> IResult<&[u8], SupportedLeStates> {
-        map(le_u64(), Into::into).parse(input)
+        map(le_u64, Into::into).parse(input)
     }
 
     fn tx_power_level(input: &[u8]) -> IResult<&[u8], TxPowerLevel> {
-        map_res(le_i8(), TryInto::try_into).parse(input)
+        map_res(le_i8, TryInto::try_into).parse(input)
     }
 
     fn random_number(input: &[u8]) -> IResult<&[u8], [u8; 8]> {
@@ -234,7 +234,7 @@ pub(crate) mod parser {
     }
 
     fn filter_accept_list_size(input: &[u8]) -> IResult<&[u8], usize> {
-        map(le_u8(), |v| v as usize).parse(input)
+        map(le_u8, |v| v as usize).parse(input)
     }
 
     pub(crate) fn command_complete_event(input: &[u8]) -> IResult<&[u8], CommandCompleteEvent> {

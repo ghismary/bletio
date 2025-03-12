@@ -257,14 +257,14 @@ pub(crate) mod parser {
     use crate::advertising::ad_struct::AdStruct;
     use nom::{
         combinator::{map, map_res},
-        number::le_u16,
+        number::complete::le_u16,
         IResult, Parser,
     };
 
     fn peripheral_connection_interval_range(
         input: &[u8],
     ) -> IResult<&[u8], PeripheralConnectionIntervalRange> {
-        map_res((le_u16(), le_u16()), |(start, end)| {
+        map_res((le_u16, le_u16), |(start, end)| {
             PeripheralConnectionIntervalRange::try_new(start, end)
         })
         .parse(input)

@@ -32,7 +32,7 @@ pub(crate) enum Packet {
 }
 
 pub(crate) mod parser {
-    use nom::{combinator::map_res, number::le_u8, IResult, Parser};
+    use nom::{combinator::map_res, number::complete::le_u8, IResult, Parser};
 
     use crate::{
         acl_data::parser::acl_data, command::parser::command, event::parser::event, Packet,
@@ -40,11 +40,11 @@ pub(crate) mod parser {
     };
 
     pub(crate) fn parameter_total_length(input: &[u8]) -> IResult<&[u8], u8> {
-        le_u8().parse(input)
+        le_u8.parse(input)
     }
 
     pub(crate) fn packet(input: &[u8]) -> IResult<&[u8], Packet> {
-        let (input, packet_type) = map_res(le_u8(), PacketType::try_from).parse(input)?;
+        let (input, packet_type) = map_res(le_u8, PacketType::try_from).parse(input)?;
         match packet_type {
             PacketType::Command => command.parse(input),
             PacketType::AclData => acl_data.parse(input),

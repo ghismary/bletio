@@ -272,7 +272,7 @@ pub(crate) mod parser {
     use nom::combinator::{all_consuming, map};
     use nom::{
         combinator::map_res,
-        number::{le_u16, le_u8},
+        number::complete::{le_u16, le_u8},
         IResult, Parser,
     };
 
@@ -286,19 +286,19 @@ pub(crate) mod parser {
     use super::*;
 
     fn initiator_filter_policy(input: &[u8]) -> IResult<&[u8], InitiatorFilterPolicy> {
-        map_res(le_u8(), TryInto::try_into).parse(input)
+        map_res(le_u8, TryInto::try_into).parse(input)
     }
 
     fn max_latency(input: &[u8]) -> IResult<&[u8], Latency> {
-        map_res(le_u16(), TryInto::try_into).parse(input)
+        map_res(le_u16, TryInto::try_into).parse(input)
     }
 
     fn supervision_timeout(input: &[u8]) -> IResult<&[u8], SupervisionTimeout> {
-        map_res(le_u16(), TryInto::try_into).parse(input)
+        map_res(le_u16, TryInto::try_into).parse(input)
     }
 
     fn connection_event_length_range(input: &[u8]) -> IResult<&[u8], ConnectionEventLengthRange> {
-        map_res((le_u16(), le_u16()), |(start, end)| {
+        map_res((le_u16, le_u16), |(start, end)| {
             ConnectionEventLengthRange::try_new(start, end)
         })
         .parse(input)

@@ -91,14 +91,14 @@ pub(crate) mod parser {
     use nom::{
         bytes::take,
         combinator::{all_consuming, map_res, verify},
-        number::le_u8,
+        number::complete::le_u8,
         IResult, Parser,
     };
 
     use super::*;
 
     fn advertising_data_length(input: &[u8]) -> IResult<&[u8], u8> {
-        verify(le_u8(), |v| (*v as usize) < ADVERTISING_DATA_TOTAL_SIZE).parse(input)
+        verify(le_u8, |v| (*v as usize) < ADVERTISING_DATA_TOTAL_SIZE).parse(input)
     }
 
     pub(crate) fn advertising_data(input: &[u8]) -> IResult<&[u8], AdvertisingData> {

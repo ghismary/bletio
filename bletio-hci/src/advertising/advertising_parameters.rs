@@ -348,7 +348,7 @@ impl EncodeToBuffer for AdvertisingParameters {
 pub(crate) mod parser {
     use nom::{
         combinator::{all_consuming, map, map_res},
-        number::{le_u16, le_u8},
+        number::complete::{le_u16, le_u8},
         sequence::pair,
         IResult, Parser,
     };
@@ -358,7 +358,7 @@ pub(crate) mod parser {
     use crate::common::peer_address_type::parser::peer_address;
 
     fn advertising_interval(input: &[u8]) -> IResult<&[u8], AdvertisingInterval> {
-        map_res(le_u16(), TryInto::try_into).parse(input)
+        map_res(le_u16, TryInto::try_into).parse(input)
     }
 
     fn advertising_interval_range(input: &[u8]) -> IResult<&[u8], AdvertisingIntervalRange> {
@@ -370,15 +370,15 @@ pub(crate) mod parser {
     }
 
     fn advertising_type(input: &[u8]) -> IResult<&[u8], AdvertisingType> {
-        map_res(le_u8(), TryInto::try_into).parse(input)
+        map_res(le_u8, TryInto::try_into).parse(input)
     }
 
     fn channel_map(input: &[u8]) -> IResult<&[u8], AdvertisingChannelMap> {
-        map(le_u8(), AdvertisingChannelMap::from_bits_truncate).parse(input)
+        map(le_u8, AdvertisingChannelMap::from_bits_truncate).parse(input)
     }
 
     fn filter_policy(input: &[u8]) -> IResult<&[u8], AdvertisingFilterPolicy> {
-        map_res(le_u8(), TryInto::try_into).parse(input)
+        map_res(le_u8, TryInto::try_into).parse(input)
     }
 
     pub(crate) fn advertising_parameters(input: &[u8]) -> IResult<&[u8], AdvertisingParameters> {

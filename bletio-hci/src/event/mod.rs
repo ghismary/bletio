@@ -56,7 +56,9 @@ enum EventCode {
 }
 
 pub(crate) mod parser {
-    use nom::{bytes::take, combinator::map_res, number::le_u8, sequence::pair, IResult, Parser};
+    use nom::{
+        bytes::take, combinator::map_res, number::complete::le_u8, sequence::pair, IResult, Parser,
+    };
 
     use super::*;
     use crate::event::command_status::parser::command_status_event;
@@ -70,15 +72,15 @@ pub(crate) mod parser {
     };
 
     fn event_code(input: &[u8]) -> IResult<&[u8], EventCode> {
-        map_res(le_u8(), EventCode::try_from).parse(input)
+        map_res(le_u8, EventCode::try_from).parse(input)
     }
 
     pub(crate) fn num_hci_command_packets(input: &[u8]) -> IResult<&[u8], u8> {
-        le_u8().parse(input)
+        le_u8.parse(input)
     }
 
     pub(crate) fn hci_error_code(input: &[u8]) -> IResult<&[u8], ErrorCode> {
-        map_res(le_u8(), ErrorCode::try_from).parse(input)
+        map_res(le_u8, ErrorCode::try_from).parse(input)
     }
 
     pub(crate) fn event(input: &[u8]) -> IResult<&[u8], Packet> {
