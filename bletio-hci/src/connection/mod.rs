@@ -5,3 +5,4 @@ pub mod supervision_timeout;
 
 pub(crate) mod connection_handle;
 pub(crate) mod connection_peer_address;
+pub(crate) mod reason;

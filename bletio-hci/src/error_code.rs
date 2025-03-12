@@ -196,19 +196,29 @@ impl ErrorCode {
 
 #[cfg(test)]
 mod test {
+    use rstest::rstest;
+
     use super::*;
 
-    #[test]
-    fn test_hci_error_code_creation_success() -> Result<(), Error> {
-        let value: ErrorCode = 0x3A.try_into()?;
-        assert_eq!(value, ErrorCode::ControllerBusy);
+    #[rstest]
+    #[case(0x00, ErrorCode::Success)]
+    #[case(0x0C, ErrorCode::CommandDisallowed)]
+    #[case(0x3A, ErrorCode::ControllerBusy)]
+    fn test_hci_error_code_success(
+        #[case] input: u8,
+        #[case] expected_error_code: ErrorCode,
+    ) -> Result<(), Error> {
+        let error_code: ErrorCode = input.try_into()?;
+        assert_eq!(error_code, expected_error_code);
         Ok(())
     }
 
-    #[test]
-    fn test_hci_error_code_creation_failure() {
-        let err = ErrorCode::try_from(0x93).expect_err("Invalid HCI error code");
-        assert!(matches!(err, Error::InvalidErrorCode(0x93)));
+    #[rstest]
+    #[case(0x49)]
+    #[case(0xFF)]
+    fn test_hci_error_code_failure(#[case] input: u8) {
+        let err = ErrorCode::try_from(input);
+        assert_eq!(err, Err(Error::InvalidErrorCode(input)));
     }
 
     #[test]

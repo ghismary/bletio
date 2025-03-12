@@ -2,12 +2,14 @@ use bletio_utils::{Buffer, BufferOps, EncodeToBuffer};
 use num_enum::{FromPrimitive, IntoPrimitive};
 
 use crate::{
-    AdvertisingData, AdvertisingEnable, AdvertisingParameters, ConnectionParameters, Error,
-    EventMask, FilterDuplicates, LeEventMask, LeFilterAcceptListAddress, PacketType,
-    RandomStaticDeviceAddress, ScanEnable, ScanParameters,
+    AdvertisingData, AdvertisingEnable, AdvertisingParameters, ConnectionHandle,
+    ConnectionParameters, Error, EventMask, FilterDuplicates, LeEventMask,
+    LeFilterAcceptListAddress, PacketType, RandomStaticDeviceAddress, Reason, ScanEnable,
+    ScanParameters,
 };
 
 const NOP_OGF: u16 = 0x00;
+const LINK_CONTROL_OGF: u16 = 0x01;
 const CONTROLLER_AND_BASEBAND_OGF: u16 = 0x03;
 const INFORMATIONAL_PARAMETERS_OGF: u16 = 0x04;
 const LE_CONTROLLER_OGF: u16 = 0x08;
@@ -21,6 +23,7 @@ const fn opcode(ogf: u16, ocf: u16) -> u16 {
 #[repr(u16)]
 pub(crate) enum CommandOpCode {
     Nop = opcode(NOP_OGF, 0x0000),
+    Disconnect = opcode(LINK_CONTROL_OGF, 0x0006),
     SetEventMask = opcode(CONTROLLER_AND_BASEBAND_OGF, 0x0001),
     Reset = opcode(CONTROLLER_AND_BASEBAND_OGF, 0x0003),
     ReadLocalSupportedCommands = opcode(INFORMATIONAL_PARAMETERS_OGF, 0x0002),
@@ -54,6 +57,7 @@ pub(crate) enum CommandOpCode {
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) enum Command {
+    Disconnect(ConnectionHandle, Reason),
     LeAddDeviceToFilterAcceptList(LeFilterAcceptListAddress),
     LeClearFilterAcceptList,
     LeCreateConnection(ConnectionParameters),
@@ -101,6 +105,9 @@ impl Command {
             | Command::ReadLocalSupportedCommands
             | Command::ReadLocalSupportedFeatures
             | Command::Reset => CommandPacket::new(self.opcode()),
+            Command::Disconnect(connection_handle, reason) => CommandPacket::new(self.opcode())
+                .encode(connection_handle)?
+                .encode(reason)?,
             Command::LeAddDeviceToFilterAcceptList(address)
             | Command::LeRemoveDeviceFromFilterAcceptList(address) => {
                 CommandPacket::new(self.opcode()).encode(address)?
@@ -143,6 +150,7 @@ impl Command {
 
     pub(crate) const fn opcode(&self) -> CommandOpCode {
         match self {
+            Self::Disconnect(_, _) => CommandOpCode::Disconnect,
             Self::LeAddDeviceToFilterAcceptList(_) => CommandOpCode::LeAddDeviceToFilterAcceptList,
             Self::LeClearFilterAcceptList => CommandOpCode::LeClearFilterAcceptList,
             Self::LeCreateConnection(_) => CommandOpCode::LeCreateConnection,
@@ -231,15 +239,21 @@ pub(crate) mod parser {
         le_event_mask::parser::le_event_mask,
         le_filter_accept_list_address::parser::le_filter_accept_list_address,
     };
+    use crate::connection::connection_handle::parser::connection_handle;
     use crate::connection::connection_parameters::parser::connection_parameters;
+    use crate::connection::reason::parser::reason;
     use crate::packet::parser::parameter_total_length;
     use crate::scanning::{
         scan_enable::parser::scan_enable_parameters, scan_parameters::parser::scan_parameters,
     };
-    use crate::{Command, CommandOpCode, Packet};
+    use crate::{Command, CommandOpCode, ConnectionHandle, Packet, Reason};
 
     pub(crate) fn command_opcode(input: &[u8]) -> IResult<&[u8], CommandOpCode> {
         map(le_u16, CommandOpCode::from).parse(input)
+    }
+
+    fn disconnect(input: &[u8]) -> IResult<&[u8], (ConnectionHandle, Reason)> {
+        (connection_handle, reason).parse(input)
     }
 
     pub(crate) fn command(input: &[u8]) -> IResult<&[u8], Packet> {
@@ -249,6 +263,10 @@ pub(crate) mod parser {
         Ok((
             input,
             Packet::Command(match command_opcode {
+                CommandOpCode::Disconnect => {
+                    let (_, (connection_handle, reason)) = disconnect(parameters)?;
+                    Command::Disconnect(connection_handle, reason)
+                }
                 CommandOpCode::LeAddDeviceToFilterAcceptList => {
                     let (_, le_filter_accept_list_address) =
                         le_filter_accept_list_address(parameters)?;
@@ -361,7 +379,11 @@ mod test {
     }
 
     #[rstest]
-    #[case::nop(Command::Nop, CommandOpCode::Nop, &[1, 0, 0, 0])]
+    #[case::disconnect(
+        Command::Disconnect(ConnectionHandle::try_new(0).unwrap(), Reason::RemoteUserTerminatedConnection),
+        CommandOpCode::Disconnect,
+        &[1, 6, 4, 3, 0, 0, 19]
+    )]
     #[case::le_add_device_to_filter_accept_list(
         Command::LeAddDeviceToFilterAcceptList(PublicDeviceAddress::from([0x38, 0x5E, 0x43, 0xCA, 0x4C, 0x40]).into()),
         CommandOpCode::LeAddDeviceToFilterAcceptList,
@@ -425,6 +447,7 @@ mod test {
         CommandOpCode::LeSetScanResponseData,
         &[1, 9, 32, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     )]
+    #[case::nop(Command::Nop, CommandOpCode::Nop, &[1, 0, 0, 0])]
     #[case::read_bd_addr(Command::ReadBdAddr, CommandOpCode::ReadBdAddr, &[1, 9, 16, 0])]
     #[case::read_buffer_size(Command::ReadBufferSize, CommandOpCode::ReadBufferSize, &[1, 5, 16, 0])]
     #[case::read_local_supported_commands(
@@ -492,6 +515,10 @@ mod test {
     }
 
     #[rstest]
+    #[case::disconnect(
+        Command::Disconnect(ConnectionHandle::try_new(0).unwrap(), Reason::RemoteUserTerminatedConnection),
+        &[1, 6, 4, 3, 0, 0, 19]
+    )]
     #[case::le_add_device_to_filter_accept_list(
         Command::LeAddDeviceToFilterAcceptList(PublicDeviceAddress::from([0x38, 0x5E, 0x43, 0xCA, 0x4C, 0x40]).into()),
         &[1, 17, 32, 7, 0, 0x38, 0x5E, 0x43, 0xCA, 0x4C, 0x40]

@@ -76,6 +76,8 @@ pub enum Error {
     InvalidRandomResolvablePrivateAddress,
     /// The provided random static device address is invalid.
     InvalidRandomStaticDeviceAddress,
+    /// The provided reason is invalid.
+    InvalidReason(u8),
     /// The provided role is invalid.
     InvalidRole(u8),
     /// The provided RSSI value is invalid.

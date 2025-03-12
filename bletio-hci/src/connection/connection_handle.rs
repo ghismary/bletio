@@ -1,4 +1,5 @@
 use crate::Error;
+use bletio_utils::{BufferOps, EncodeToBuffer};
 
 /// Connection handle to be used for transmitting a data packet over a Controller.
 ///
@@ -18,6 +19,17 @@ impl ConnectionHandle {
         } else {
             Err(Error::InvalidConnectionHandle(handle))
         }
+    }
+}
+
+impl EncodeToBuffer for ConnectionHandle {
+    fn encode<B: BufferOps>(&self, buffer: &mut B) -> Result<usize, bletio_utils::Error> {
+        buffer.encode_le_u16(self.value)?;
+        Ok(self.encoded_size())
+    }
+
+    fn encoded_size(&self) -> usize {
+        size_of::<u16>()
     }
 }
 
@@ -41,17 +53,21 @@ pub(crate) mod parser {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use bletio_utils::Buffer;
     use rstest::rstest;
 
-    use super::*;
-
     #[rstest]
-    #[case(0x0000)]
-    #[case(0x0010)]
-    #[case(0x0EFF)]
-    fn test_connection_handle_success(#[case] input: u16) {
+    #[case(0x0000, &[0x00, 0x00])]
+    #[case(0x0010, &[0x10, 0x00])]
+    #[case(0x0EFF, &[0xFF, 0x0E])]
+    fn test_connection_handle_success(#[case] input: u16, #[case] encoded_data: &[u8]) {
         let handle: ConnectionHandle = input.try_into().unwrap();
         assert_eq!(handle.value, input);
+        let mut buffer = Buffer::<2>::default();
+        assert_eq!(handle.encoded_size(), encoded_data.len());
+        handle.encode(&mut buffer).unwrap();
+        assert_eq!(buffer.data(), encoded_data);
     }
 
     #[rstest]

@@ -4,11 +4,12 @@ use core::{
 };
 
 use crate::{
-    AdvertisingData, AdvertisingEnable, AdvertisingParameters, Command, ConnectionParameters,
-    Error, ErrorCode, Event, EventList, EventMask, EventParameter, FilterDuplicates, HciBuffer,
-    HciDriver, LeEventMask, LeFilterAcceptListAddress, Packet, PublicDeviceAddress,
-    RandomStaticDeviceAddress, ScanEnable, ScanParameters, SupportedCommands, SupportedFeatures,
-    SupportedLeFeatures, SupportedLeStates, TxPowerLevel, WithTimeout,
+    AdvertisingData, AdvertisingEnable, AdvertisingParameters, Command, ConnectionHandle,
+    ConnectionParameters, Error, ErrorCode, Event, EventList, EventMask, EventParameter,
+    FilterDuplicates, HciBuffer, HciDriver, LeEventMask, LeFilterAcceptListAddress, Packet,
+    PublicDeviceAddress, RandomStaticDeviceAddress, Reason, ScanEnable, ScanParameters,
+    SupportedCommands, SupportedFeatures, SupportedLeFeatures, SupportedLeStates, TxPowerLevel,
+    WithTimeout,
 };
 
 const HCI_COMMAND_TIMEOUT: Duration = Duration::from_millis(1000);
@@ -35,6 +36,18 @@ where
             read_buffer: Default::default(),
             event_list: Default::default(),
         }
+    }
+
+    pub async fn cmd_disconnect(
+        &mut self,
+        connection_handle: ConnectionHandle,
+        reason: Reason,
+    ) -> Result<(), Error> {
+        self.execute_command_with_command_status_response(Command::Disconnect(
+            connection_handle,
+            reason,
+        ))
+        .await
     }
 
     pub async fn cmd_le_add_device_to_filter_accept_list(
@@ -534,6 +547,46 @@ mod test {
         LeConnectionCompleteEvent, LeMetaEvent, OwnAddressType, RandomResolvablePrivateAddress,
         Role, ScanInterval, ScanWindow, SupervisionTimeout,
     };
+
+    fn mock_cmd_disconnect_success() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 6, 4, 3, 0, 0, 19])
+            .read(&[4, 15, 4, 0, 1, 6, 4])
+            .build()
+    }
+
+    #[fixture]
+    fn mock_cmd_disconnect_command_disallowed() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 6, 4, 3, 0, 0, 19])
+            .read(&[4, 15, 4, 12, 1, 6, 4])
+            .build()
+    }
+
+    #[rstest]
+    #[case::success(mock_cmd_disconnect_success(), Ok(()))]
+    #[case::command_disallowed(
+        mock_cmd_disconnect_command_disallowed(),
+        Err(Error::ErrorCode(ErrorCode::CommandDisallowed))
+    )]
+    #[tokio::test(flavor = "current_thread", start_paused = true)]
+    async fn test_cmd_disconnect_mask(#[case] mock: Mock, #[case] expected: Result<(), Error>) {
+        let hci_driver = TokioHciDriver { hci: mock };
+        let mut hci = Hci {
+            driver: hci_driver,
+            num_hci_command_packets: 1,
+            read_buffer: Default::default(),
+            event_list: Default::default(),
+        };
+        assert_eq!(
+            hci.cmd_disconnect(
+                ConnectionHandle::try_new(0).unwrap(),
+                Reason::RemoteUserTerminatedConnection
+            )
+            .await,
+            expected
+        );
+    }
 
     #[fixture]
     fn mock_cmd_le_add_device_to_filter_accept_list_success() -> Mock {
