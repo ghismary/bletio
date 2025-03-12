@@ -249,6 +249,7 @@ pub(crate) mod parser {
             | CommandOpCode::Reset
             | CommandOpCode::LeAddDeviceToFilterAcceptList
             | CommandOpCode::LeClearFilterAcceptList
+            | CommandOpCode::LeCreateConnectionCancel
             | CommandOpCode::LeRemoveDeviceFromFilterAcceptList
             | CommandOpCode::LeSetAdvertisingEnable
             | CommandOpCode::LeSetAdvertisingData
@@ -458,6 +459,9 @@ mod test {
     #[case::le_add_device_to_filter_accept_list(CommandCompleteEvent::new(
             1, CommandOpCode::LeAddDeviceToFilterAcceptList, ErrorCode::Success, None::<EventParameter>
         ), &[4, 14, 4, 1, 17, 32, 0])]
+    #[case::le_create_connection_cancel(CommandCompleteEvent::new(
+            1, CommandOpCode::LeCreateConnectionCancel, ErrorCode::Success, None::<EventParameter>
+        ), &[4, 14, 4, 1, 14, 32, 0])]
     #[case::le_clear_filter_accept_list(CommandCompleteEvent::new(
             1, CommandOpCode::LeClearFilterAcceptList, ErrorCode::Success, None::<EventParameter>
         ), &[4, 14, 4, 1, 16, 32, 0])]

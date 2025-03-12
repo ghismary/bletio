@@ -62,6 +62,11 @@ where
         .await
     }
 
+    pub async fn cmd_le_create_connection_cancel(&mut self) -> Result<(), Error> {
+        self.cmd_with_command_complete_response_without_parameter(Command::LeCreateConnectionCancel)
+            .await
+    }
+
     pub async fn cmd_le_rand(&mut self) -> Result<[u8; 8], Error> {
         let (status, param) = self
             .execute_command_with_command_complete_response(Command::LeRand)
@@ -723,6 +728,55 @@ mod test {
             assert_eq!(event_list.len(), 1);
             assert_eq!(event_list.pop(), expected_event);
         }
+    }
+
+    #[fixture]
+    fn mock_cmd_le_create_connection_cancel_success() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 14, 32, 0])
+            .read(&[4, 14, 4, 1, 14, 32, 0])
+            .build()
+    }
+
+    #[fixture]
+    fn mock_cmd_le_create_connection_cancel_command_disallowed() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 14, 32, 0])
+            .read(&[4, 14, 4, 1, 14, 32, 12])
+            .build()
+    }
+
+    #[fixture]
+    fn mock_cmd_le_create_connection_cancel_invalid_event_packet() -> Mock {
+        tokio_test::io::Builder::new()
+            .write(&[1, 14, 32, 0])
+            .read(&[4, 14, 7, 1, 14, 32, 0, 8, 74, 108])
+            .build()
+    }
+
+    #[rstest]
+    #[case::success(mock_cmd_le_create_connection_cancel_success(), Ok(()))]
+    #[case::command_disallowed(
+        mock_cmd_le_create_connection_cancel_command_disallowed(),
+        Err(Error::ErrorCode(ErrorCode::CommandDisallowed))
+    )]
+    #[case::invalid_event_packet(
+        mock_cmd_le_create_connection_cancel_invalid_event_packet(),
+        Err(Error::InvalidPacket)
+    )]
+    #[tokio::test(flavor = "current_thread", start_paused = true)]
+    async fn test_cmd_le_create_connection_cancel(
+        #[case] mock: Mock,
+        #[case] expected: Result<(), Error>,
+    ) {
+        let hci_driver = TokioHciDriver { hci: mock };
+        let mut hci = Hci {
+            driver: hci_driver,
+            num_hci_command_packets: 1,
+            read_buffer: Default::default(),
+            event_list: Default::default(),
+        };
+        assert_eq!(hci.cmd_le_create_connection_cancel().await, expected);
     }
 
     #[fixture]

@@ -323,6 +323,16 @@ where
     }
 }
 
+impl<'a, H> BleHost<'a, H, BleHostStateInitiating>
+where
+    H: HciDriver,
+{
+    pub async fn cancel_connection(mut self) -> Result<BleHost<'a, H, BleHostStateStandby>, Error> {
+        self.hci.cmd_le_create_connection_cancel().await?;
+        Ok(self.change_state())
+    }
+}
+
 impl<'a, H, S> BleHost<'a, H, S>
 where
     H: HciDriver,
