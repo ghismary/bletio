@@ -39,6 +39,7 @@ pub(crate) enum CommandOpCode {
     LeSetScanParameters = opcode(LE_CONTROLLER_OGF, 0x000B),
     LeSetScanEnable = opcode(LE_CONTROLLER_OGF, 0x000C),
     LeCreateConnection = opcode(LE_CONTROLLER_OGF, 0x000D),
+    LeCreateConnectionCancel = opcode(LE_CONTROLLER_OGF, 0x000E),
     LeReadFilterAcceptListSize = opcode(LE_CONTROLLER_OGF, 0x000F),
     LeClearFilterAcceptList = opcode(LE_CONTROLLER_OGF, 0x0010),
     LeAddDeviceToFilterAcceptList = opcode(LE_CONTROLLER_OGF, 0x0011),
@@ -56,6 +57,7 @@ pub(crate) enum Command {
     LeAddDeviceToFilterAcceptList(LeFilterAcceptListAddress),
     LeClearFilterAcceptList,
     LeCreateConnection(ConnectionParameters),
+    LeCreateConnectionCancel,
     // LeEncrypt(Key, Data),
     LeRand,
     LeReadAdvertisingChannelTxPower,
@@ -86,6 +88,7 @@ impl Command {
     pub(crate) fn encode(&self) -> Result<CommandPacket, Error> {
         Ok(match self {
             Command::LeClearFilterAcceptList
+            | Command::LeCreateConnectionCancel
             | Command::LeReadAdvertisingChannelTxPower
             | Command::LeReadBufferSize
             | Command::LeReadFilterAcceptListSize
@@ -143,6 +146,7 @@ impl Command {
             Self::LeAddDeviceToFilterAcceptList(_) => CommandOpCode::LeAddDeviceToFilterAcceptList,
             Self::LeClearFilterAcceptList => CommandOpCode::LeClearFilterAcceptList,
             Self::LeCreateConnection(_) => CommandOpCode::LeCreateConnection,
+            Self::LeCreateConnectionCancel => CommandOpCode::LeCreateConnectionCancel,
             Self::LeRand => CommandOpCode::LeRand,
             Self::LeReadAdvertisingChannelTxPower => CommandOpCode::LeReadAdvertisingChannelTxPower,
             Self::LeReadBufferSize => CommandOpCode::LeReadBufferSize,
@@ -255,6 +259,7 @@ pub(crate) mod parser {
                     let (_, connection_parameters) = connection_parameters(parameters)?;
                     Command::LeCreateConnection(connection_parameters)
                 }
+                CommandOpCode::LeCreateConnectionCancel => Command::LeCreateConnectionCancel,
                 CommandOpCode::LeRand => Command::LeRand,
                 CommandOpCode::LeReadAdvertisingChannelTxPower => {
                     Command::LeReadAdvertisingChannelTxPower
@@ -367,6 +372,9 @@ mod test {
         Command::LeCreateConnection(ConnectionParameters::default()),
         CommandOpCode::LeCreateConnection,
         &[1, 13, 32, 25, 16, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 64, 0, 64, 0, 0, 0, 32, 0, 0, 0, 0, 0]
+    )]
+    #[case::le_create_connection_cancel(
+        Command::LeCreateConnectionCancel, CommandOpCode::LeCreateConnectionCancel, &[1, 14, 32, 0]
     )]
     #[case::le_rand(Command::LeRand, CommandOpCode::LeRand, &[1, 24, 32, 0])]
     #[case::le_read_advertising_channel_tx_power(
@@ -493,6 +501,7 @@ mod test {
         Command::LeCreateConnection(ConnectionParameters::default()),
         &[1, 13, 32, 25, 16, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 64, 0, 64, 0, 0, 0, 32, 0, 0, 0, 0, 0]
     )]
+    #[case::le_create_connection_cancel(Command::LeCreateConnectionCancel, &[1, 14, 32, 0])]
     #[case::le_rand(Command::LeRand, &[1, 24, 32, 0])]
     #[case::le_read_advertising_channel_tx_power(Command::LeReadAdvertisingChannelTxPower, &[1, 7, 32, 0])]
     #[case::le_read_buffer_size(Command::LeReadBufferSize, &[1, 2, 32, 0])]
