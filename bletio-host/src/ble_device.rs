@@ -1,6 +1,6 @@
 use bletio_hci::{
-    ConnectionPeerAddress, Event, EventList, Hci, HciDriver, LeAdvertisingReport,
-    LeAdvertisingReportEventType, LeConnectionCompleteEvent, LeMetaEvent,
+    ConnectionPeerAddress, DisconnectionCompleteEvent, Event, EventList, Hci, HciDriver,
+    LeAdvertisingReport, LeAdvertisingReportEventType, LeConnectionCompleteEvent, LeMetaEvent,
 };
 
 use crate::advertising::FullAdvertisingData;
@@ -83,13 +83,26 @@ where
                     for event in event_list.iter().filter(|e| {
                         !matches!(e, Event::LeMeta(LeMetaEvent::LeAdvertisingReport(_)))
                     }) {
-                        if let Event::LeMeta(LeMetaEvent::LeConnectionComplete(
-                            le_connection_complete_event,
-                        )) = event
-                        {
-                            host = self
-                                .notify_le_connection_complete(host, le_connection_complete_event)
-                                .await?;
+                        match event {
+                            Event::DisconnectionComplete(disconnection_complete_event) => {
+                                host = self
+                                    .notify_disconnection_complete(
+                                        host,
+                                        disconnection_complete_event,
+                                    )
+                                    .await?;
+                            }
+                            Event::LeMeta(LeMetaEvent::LeConnectionComplete(
+                                le_connection_complete_event,
+                            )) => {
+                                host = self
+                                    .notify_le_connection_complete(
+                                        host,
+                                        le_connection_complete_event,
+                                    )
+                                    .await?;
+                            }
+                            _ => (),
                         }
                     }
                 }
@@ -101,6 +114,23 @@ where
                 Err(e) => return Err(e),
             }
         }
+    }
+
+    pub async fn notify_disconnection_complete<H>(
+        &self,
+        mut host: BleHostStates<'a, H>,
+        event: &DisconnectionCompleteEvent,
+    ) -> Result<BleHostStates<H>, Error>
+    where
+        H: HciDriver,
+    {
+        host = match host {
+            BleHostStates::ConnectedCentral(h) => BleHostStates::Standby(h.change_state()),
+            BleHostStates::ConnectedPeripheral(h) => BleHostStates::Standby(h.change_state()),
+            _host => _host,
+        };
+
+        Ok(self.observer.disconnection_complete(host, event).await)
     }
 
     pub async fn notify_le_connection_complete<H>(

@@ -543,15 +543,17 @@ mod test {
     use crate::{
         connection_event_length_range, connection_interval, latency, supervision_timeout,
         CentralClockAccuracy, ConnectionHandle, ConnectionIntervalRange, ConnectionPeerAddress,
-        DeviceAddress, ErrorCode, HciDriverError, InitiatorFilterPolicy, Latency,
-        LeConnectionCompleteEvent, LeMetaEvent, OwnAddressType, RandomResolvablePrivateAddress,
-        Role, ScanInterval, ScanWindow, SupervisionTimeout,
+        DeviceAddress, DisconnectionCompleteEvent, ErrorCode, HciDriverError,
+        InitiatorFilterPolicy, Latency, LeConnectionCompleteEvent, LeMetaEvent, OwnAddressType,
+        RandomResolvablePrivateAddress, Role, ScanInterval, ScanWindow, SupervisionTimeout,
     };
 
     fn mock_cmd_disconnect_success() -> Mock {
         tokio_test::io::Builder::new()
             .write(&[1, 6, 4, 3, 0, 0, 19])
             .read(&[4, 15, 4, 0, 1, 6, 4])
+            .wait(Duration::from_millis(10))
+            .read(&[4, 5, 4, 0, 0, 0, 22])
             .build()
     }
 
@@ -564,13 +566,26 @@ mod test {
     }
 
     #[rstest]
-    #[case::success(mock_cmd_disconnect_success(), Ok(()))]
+    #[case::success(
+        mock_cmd_disconnect_success(),
+        Ok(()),
+        Some(Event::DisconnectionComplete(DisconnectionCompleteEvent {
+            status: ErrorCode::Success,
+            connection_handle: ConnectionHandle::try_new(0).unwrap(),
+            reason: ErrorCode::ConnectionTerminatedByLocalHost
+        }))
+    )]
     #[case::command_disallowed(
         mock_cmd_disconnect_command_disallowed(),
-        Err(Error::ErrorCode(ErrorCode::CommandDisallowed))
+        Err(Error::ErrorCode(ErrorCode::CommandDisallowed)),
+        None
     )]
     #[tokio::test(flavor = "current_thread", start_paused = true)]
-    async fn test_cmd_disconnect_mask(#[case] mock: Mock, #[case] expected: Result<(), Error>) {
+    async fn test_cmd_disconnect_mask(
+        #[case] mock: Mock,
+        #[case] expected_cmd_result: Result<(), Error>,
+        #[case] expected_event: Option<Event>,
+    ) {
         let hci_driver = TokioHciDriver { hci: mock };
         let mut hci = Hci {
             driver: hci_driver,
@@ -584,8 +599,13 @@ mod test {
                 Reason::RemoteUserTerminatedConnection
             )
             .await,
-            expected
+            expected_cmd_result
         );
+        if expected_event.is_some() {
+            let mut event_list = hci.wait_for_event().await.unwrap();
+            assert_eq!(event_list.len(), 1);
+            assert_eq!(event_list.pop(), expected_event);
+        }
     }
 
     #[fixture]

@@ -73,6 +73,7 @@ pub use error::Error;
 pub use error_code::ErrorCode;
 pub use event::{
     command_complete::CommandCompleteEvent,
+    disconnection_complete::DisconnectionCompleteEvent,
     le_advertising_report::{
         LeAdvertisingReport, LeAdvertisingReportData, LeAdvertisingReportEventType,
         LeAdvertisingReportList,
