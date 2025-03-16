@@ -3,9 +3,9 @@ use num_enum::{FromPrimitive, IntoPrimitive};
 
 use crate::{
     AdvertisingData, AdvertisingEnable, AdvertisingParameters, ConnectionHandle,
-    ConnectionParameters, Error, EventMask, FilterDuplicates, LeEventMask,
-    LeFilterAcceptListAddress, PacketType, RandomStaticDeviceAddress, Reason, ScanEnable,
-    ScanParameters,
+    ConnectionParameters, ConnectionUpdateParameters, Error, EventMask, FilterDuplicates,
+    LeEventMask, LeFilterAcceptListAddress, PacketType, RandomStaticDeviceAddress, Reason,
+    ScanEnable, ScanParameters,
 };
 
 const NOP_OGF: u16 = 0x00;
@@ -47,6 +47,7 @@ pub(crate) enum CommandOpCode {
     LeClearFilterAcceptList = opcode(LE_CONTROLLER_OGF, 0x0010),
     LeAddDeviceToFilterAcceptList = opcode(LE_CONTROLLER_OGF, 0x0011),
     LeRemoveDeviceFromFilterAcceptList = opcode(LE_CONTROLLER_OGF, 0x0012),
+    LeConnectionUpdate = opcode(LE_CONTROLLER_OGF, 0x0013),
     // LeEncrypt = opcode(LE_CONTROLLER_OGF, 0x0017),
     LeRand = opcode(LE_CONTROLLER_OGF, 0x0018),
     LeReadSupportedStates = opcode(LE_CONTROLLER_OGF, 0x001C),
@@ -62,6 +63,7 @@ pub(crate) enum Command {
     LeClearFilterAcceptList,
     LeCreateConnection(ConnectionParameters),
     LeCreateConnectionCancel,
+    LeConnectionUpdate(ConnectionUpdateParameters),
     // LeEncrypt(Key, Data),
     LeRand,
     LeReadAdvertisingChannelTxPower,
@@ -112,6 +114,9 @@ impl Command {
             | Command::LeRemoveDeviceFromFilterAcceptList(address) => {
                 CommandPacket::new(self.opcode()).encode(address)?
             }
+            Command::LeConnectionUpdate(parameters) => {
+                CommandPacket::new(self.opcode()).encode(parameters)?
+            }
             Command::LeCreateConnection(parameters) => {
                 CommandPacket::new(self.opcode()).encode(parameters)?
             }
@@ -153,6 +158,7 @@ impl Command {
             Self::Disconnect(_, _) => CommandOpCode::Disconnect,
             Self::LeAddDeviceToFilterAcceptList(_) => CommandOpCode::LeAddDeviceToFilterAcceptList,
             Self::LeClearFilterAcceptList => CommandOpCode::LeClearFilterAcceptList,
+            Self::LeConnectionUpdate(_) => CommandOpCode::LeConnectionUpdate,
             Self::LeCreateConnection(_) => CommandOpCode::LeCreateConnection,
             Self::LeCreateConnectionCancel => CommandOpCode::LeCreateConnectionCancel,
             Self::LeRand => CommandOpCode::LeRand,
@@ -241,6 +247,7 @@ pub(crate) mod parser {
     };
     use crate::connection::connection_handle::parser::connection_handle;
     use crate::connection::connection_parameters::parser::connection_parameters;
+    use crate::connection::connection_update_parameters::parser::connection_update_parameters;
     use crate::connection::reason::parser::reason;
     use crate::packet::parser::parameter_total_length;
     use crate::scanning::{
@@ -273,6 +280,11 @@ pub(crate) mod parser {
                     Command::LeAddDeviceToFilterAcceptList(le_filter_accept_list_address)
                 }
                 CommandOpCode::LeClearFilterAcceptList => Command::LeClearFilterAcceptList,
+                CommandOpCode::LeConnectionUpdate => {
+                    let (_, connection_update_parameters) =
+                        connection_update_parameters(parameters)?;
+                    Command::LeConnectionUpdate(connection_update_parameters)
+                }
                 CommandOpCode::LeCreateConnection => {
                     let (_, connection_parameters) = connection_parameters(parameters)?;
                     Command::LeCreateConnection(connection_parameters)
@@ -390,6 +402,11 @@ mod test {
         &[1, 17, 32, 7, 0, 0x38, 0x5E, 0x43, 0xCA, 0x4C, 0x40]
     )]
     #[case::le_clear_filter_accept_list(Command::LeClearFilterAcceptList, CommandOpCode::LeClearFilterAcceptList, &[1, 16, 32, 0])]
+    #[case::le_connection_update(
+        Command::LeConnectionUpdate(ConnectionUpdateParameters::default()),
+        CommandOpCode::LeConnectionUpdate,
+        &[1, 19, 32, 14, 0, 0, 64, 0, 64, 0, 0, 0, 32, 0, 0, 0, 0, 0]
+    )]
     #[case::le_create_connection(
         Command::LeCreateConnection(ConnectionParameters::default()),
         CommandOpCode::LeCreateConnection,
@@ -524,6 +541,10 @@ mod test {
         &[1, 17, 32, 7, 0, 0x38, 0x5E, 0x43, 0xCA, 0x4C, 0x40]
     )]
     #[case::le_clear_filter_accept_list(Command::LeClearFilterAcceptList, &[1, 16, 32, 0])]
+    #[case::le_connection_update(
+        Command::LeConnectionUpdate(ConnectionUpdateParameters::default()),
+        &[1, 19, 32, 14, 0, 0, 64, 0, 64, 0, 0, 0, 32, 0, 0, 0, 0, 0]
+    )]
     #[case::le_create_connection(
         Command::LeCreateConnection(ConnectionParameters::default()),
         &[1, 13, 32, 25, 16, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 64, 0, 64, 0, 0, 0, 32, 0, 0, 0, 0, 0]

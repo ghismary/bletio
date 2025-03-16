@@ -429,6 +429,7 @@ pub(crate) mod parser {
                 )
             }
             CommandOpCode::Disconnect
+            | CommandOpCode::LeConnectionUpdate
             | CommandOpCode::LeCreateConnection
             | CommandOpCode::Unsupported(_) => {
                 return Err(nom::Err::Failure(nom::error::Error::new(

@@ -8,6 +8,7 @@ pub mod assigned_numbers;
 pub mod ble_device;
 pub mod ble_host;
 pub mod connection_parameters;
+pub mod connection_update_parameters;
 pub mod uuid;
 
 pub use ble_device::BleDevice;
@@ -16,6 +17,9 @@ pub use ble_host::{
     BleHostStateStandby, BleHostStates,
 };
 pub use connection_parameters::{ConnectionParameters, ConnectionParametersBuilder};
+pub use connection_update_parameters::{
+    ConnectionUpdateParameters, ConnectionUpdateParametersBuilder,
+};
 
 mod device_information;
 
@@ -37,6 +41,8 @@ pub enum Error {
     Hci(HciError),
     /// The provided connection parameters are invalid.
     InvalidConnectionParameters,
+    /// The provided connection update parameters are invalid.
+    InvalidConnectionUpdateParameters,
     /// The Bluetooth controller is not LE capable.
     NonLeCapableController,
     /// The Random Static Device Address has already been created.

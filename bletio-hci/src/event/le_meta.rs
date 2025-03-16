@@ -1,6 +1,6 @@
 use num_enum::{FromPrimitive, IntoPrimitive};
 
-use crate::{LeAdvertisingReportList, LeConnectionCompleteEvent};
+use crate::{LeAdvertisingReportList, LeConnectionCompleteEvent, LeConnectionUpdateCompleteEvent};
 
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -8,6 +8,7 @@ use crate::{LeAdvertisingReportList, LeConnectionCompleteEvent};
 pub enum LeMetaEvent {
     LeConnectionComplete(LeConnectionCompleteEvent),
     LeAdvertisingReport(LeAdvertisingReportList),
+    LeConnectionUpdateComplete(LeConnectionUpdateCompleteEvent),
     Unsupported(u8),
 }
 
@@ -17,6 +18,7 @@ pub enum LeMetaEvent {
 enum LeMetaEventCode {
     LeConnectionComplete = 0x01,
     LeAdvertisingReport = 0x02,
+    LeConnectionUpdateComplete = 0x03,
     #[num_enum(catch_all)]
     Unsupported(u8),
 }
@@ -27,6 +29,7 @@ pub(crate) mod parser {
     use super::*;
     use crate::event::le_advertising_report::parser::le_advertising_report_event;
     use crate::event::le_connection_complete::parser::le_connection_complete_event;
+    use crate::event::le_connection_update_complete::parser::le_connection_update_complete_event;
 
     fn le_meta_event_code(input: &[u8]) -> IResult<&[u8], LeMetaEventCode> {
         map_res(le_u8, LeMetaEventCode::try_from).parse(input)
@@ -37,6 +40,9 @@ pub(crate) mod parser {
         match le_meta_event_code {
             LeMetaEventCode::LeConnectionComplete => le_connection_complete_event(parameters),
             LeMetaEventCode::LeAdvertisingReport => le_advertising_report_event(parameters),
+            LeMetaEventCode::LeConnectionUpdateComplete => {
+                le_connection_update_complete_event(parameters)
+            }
             LeMetaEventCode::Unsupported(event_code) => {
                 Ok((&[], LeMetaEvent::Unsupported(event_code)))
             }

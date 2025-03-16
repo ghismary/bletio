@@ -56,15 +56,16 @@ pub use common::{
     tx_power_level::TxPowerLevel,
 };
 pub use connection::{
+    connection_event_length::{
+        connection_event_length_range, ConnectionEventLength, ConnectionEventLengthRange,
+    },
     connection_handle::ConnectionHandle,
     connection_interval::{
         connection_interval, connection_interval_range, ConnectionInterval, ConnectionIntervalRange,
     },
-    connection_parameters::{
-        connection_event_length_range, ConnectionEventLength, ConnectionEventLengthRange,
-        ConnectionParameters, InitiatorFilterPolicy,
-    },
+    connection_parameters::{ConnectionParameters, InitiatorFilterPolicy},
     connection_peer_address::ConnectionPeerAddress,
+    connection_update_parameters::ConnectionUpdateParameters,
     latency::{latency, Latency},
     reason::Reason,
     supervision_timeout::{supervision_timeout, SupervisionTimeout},
@@ -79,6 +80,7 @@ pub use event::{
         LeAdvertisingReportList,
     },
     le_connection_complete::{CentralClockAccuracy, LeConnectionCompleteEvent, Role},
+    le_connection_update_complete::LeConnectionUpdateCompleteEvent,
     le_meta::LeMetaEvent,
     Event, EventList,
 };

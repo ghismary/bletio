@@ -123,7 +123,7 @@ mod tests {
     #[case(
         &[2, 0, 32, 16, 0, 12, 0, 5, 0, 18, 1, 8, 0, 24, 0, 40, 0, 0, 0, 42, 0],
         Packet::AclData(AclData::try_new(
-            0.try_into().unwrap(),
+            ConnectionHandle::try_new(0).unwrap(),
             PacketBoundaryFlag::FirstAutomaticallyFlushablePacket,
             BroadcastFlag::PointToPoint,
             &[12, 0, 5, 0, 18, 1, 8, 0, 24, 0, 40, 0, 0, 0, 42, 0]
