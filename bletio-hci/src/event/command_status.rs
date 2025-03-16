@@ -55,6 +55,7 @@ mod test {
     };
 
     #[rstest]
+    #[case(CommandStatusEvent::new(ErrorCode::Success, 1, CommandOpCode::LeConnectionUpdate), &[4, 15, 4, 0, 1, 19, 32])]
     #[case(CommandStatusEvent::new(ErrorCode::Success, 1, CommandOpCode::LeCreateConnection), &[4, 15, 4, 0, 1, 13, 32])]
     #[case(CommandStatusEvent::new(ErrorCode::CommandDisallowed, 1, CommandOpCode::LeCreateConnection), &[4, 15, 4, 12, 1, 13, 32])]
     #[case(CommandStatusEvent::new(ErrorCode::Success, 1, CommandOpCode::Disconnect), &[4, 15, 4, 0, 1, 6, 4])]

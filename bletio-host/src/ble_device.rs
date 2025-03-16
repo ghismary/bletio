@@ -1,6 +1,7 @@
 use bletio_hci::{
     ConnectionPeerAddress, DisconnectionCompleteEvent, Event, EventList, Hci, HciDriver,
-    LeAdvertisingReport, LeAdvertisingReportEventType, LeConnectionCompleteEvent, LeMetaEvent,
+    LeAdvertisingReport, LeAdvertisingReportEventType, LeConnectionCompleteEvent,
+    LeConnectionUpdateCompleteEvent, LeMetaEvent,
 };
 
 use crate::advertising::FullAdvertisingData;
@@ -102,6 +103,16 @@ where
                                     )
                                     .await?;
                             }
+                            Event::LeMeta(LeMetaEvent::LeConnectionUpdateComplete(
+                                le_connection_update_complete_event,
+                            )) => {
+                                host = self
+                                    .notify_le_connection_update_complete(
+                                        host,
+                                        le_connection_update_complete_event,
+                                    )
+                                    .await?;
+                            }
                             _ => (),
                         }
                     }
@@ -152,6 +163,17 @@ where
         }
 
         Ok(self.observer.connection_complete(host, event).await)
+    }
+
+    pub async fn notify_le_connection_update_complete<H>(
+        &self,
+        host: BleHostStates<'a, H>,
+        event: &LeConnectionUpdateCompleteEvent,
+    ) -> Result<BleHostStates<H>, Error>
+    where
+        H: HciDriver,
+    {
+        Ok(self.observer.connection_update_complete(host, event).await)
     }
 
     pub async fn notify_le_advertising_reports<'e, H>(

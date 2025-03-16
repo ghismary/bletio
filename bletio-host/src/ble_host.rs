@@ -5,8 +5,9 @@ use core::ops::Deref;
 use bletio_hci::{
     ConnectionHandle, ConnectionPeerAddress, DisconnectionCompleteEvent, EventList, EventMask,
     FilterDuplicates, Hci, HciDriver, LeAdvertisingReportEventType, LeConnectionCompleteEvent,
-    LeEventMask, LeFilterAcceptListAddress, PublicDeviceAddress, RandomStaticDeviceAddress, Reason,
-    Rssi, ScanEnable, SupportedCommands, SupportedFeatures, SupportedLeFeatures, SupportedLeStates,
+    LeConnectionUpdateCompleteEvent, LeEventMask, LeFilterAcceptListAddress, PublicDeviceAddress,
+    RandomStaticDeviceAddress, Reason, Rssi, ScanEnable, SupportedCommands, SupportedFeatures,
+    SupportedLeFeatures, SupportedLeStates,
 };
 
 use crate::advertising::{
@@ -14,7 +15,7 @@ use crate::advertising::{
 };
 use crate::assigned_numbers::AppearanceValue;
 use crate::device_information::DeviceInformation;
-use crate::{ConnectionParameters, Error};
+use crate::{ConnectionParameters, ConnectionUpdateParameters, Error};
 
 pub trait BleHostState {}
 
@@ -345,6 +346,16 @@ where
         self.hci.cmd_disconnect(connection_handle, reason).await?;
         Ok(())
     }
+
+    pub async fn update_connection(
+        &mut self,
+        connection_update_parameters: ConnectionUpdateParameters,
+    ) -> Result<(), Error> {
+        self.hci
+            .cmd_le_connection_update(connection_update_parameters.deref().clone())
+            .await?;
+        Ok(())
+    }
 }
 
 impl<H> BleHost<'_, H, BleHostStateConnectedPeripheral>
@@ -357,6 +368,16 @@ where
         reason: Reason,
     ) -> Result<(), Error> {
         self.hci.cmd_disconnect(connection_handle, reason).await?;
+        Ok(())
+    }
+
+    pub async fn update_connection(
+        &mut self,
+        connection_update_parameters: ConnectionUpdateParameters,
+    ) -> Result<(), Error> {
+        self.hci
+            .cmd_le_connection_update(connection_update_parameters.deref().clone())
+            .await?;
         Ok(())
     }
 }
@@ -463,6 +484,18 @@ pub trait BleHostObserver {
         &self,
         host: BleHostStates<'a, H>,
         event: &LeConnectionCompleteEvent,
+    ) -> impl core::future::Future<Output = BleHostStates<'a, H>>
+    where
+        H: HciDriver,
+    {
+        async { host }
+    }
+
+    #[allow(unused_variables)]
+    fn connection_update_complete<'a, H>(
+        &self,
+        host: BleHostStates<'a, H>,
+        event: &LeConnectionUpdateCompleteEvent,
     ) -> impl core::future::Future<Output = BleHostStates<'a, H>>
     where
         H: HciDriver,

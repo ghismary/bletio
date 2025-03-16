@@ -6,7 +6,7 @@ use bletio_utils::{BufferOps, EncodeToBuffer};
 /// Range: 0x000 to 0xEFF
 ///
 /// See [Core Specification 6.0, Vol. 4, Part E, 5.4.2](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-bc4ffa33-44ef-e93c-16c8-14aa99597cfc).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ConnectionHandle {
     value: u16,
@@ -19,6 +19,10 @@ impl ConnectionHandle {
         } else {
             Err(Error::InvalidConnectionHandle(handle))
         }
+    }
+
+    pub fn value(&self) -> u16 {
+        self.value
     }
 }
 
@@ -33,21 +37,13 @@ impl EncodeToBuffer for ConnectionHandle {
     }
 }
 
-impl TryFrom<u16> for ConnectionHandle {
-    type Error = Error;
-
-    fn try_from(value: u16) -> Result<Self, Error> {
-        Self::try_new(value)
-    }
-}
-
 pub(crate) mod parser {
     use nom::{combinator::map_res, number::complete::le_u16, IResult, Parser};
 
     use super::*;
 
     pub(crate) fn connection_handle(input: &[u8]) -> IResult<&[u8], ConnectionHandle> {
-        map_res(le_u16, TryFrom::try_from).parse(input)
+        map_res(le_u16, ConnectionHandle::try_new).parse(input)
     }
 }
 
@@ -62,7 +58,7 @@ mod tests {
     #[case(0x0010, &[0x10, 0x00])]
     #[case(0x0EFF, &[0xFF, 0x0E])]
     fn test_connection_handle_success(#[case] input: u16, #[case] encoded_data: &[u8]) {
-        let handle: ConnectionHandle = input.try_into().unwrap();
+        let handle = ConnectionHandle::try_new(input).unwrap();
         assert_eq!(handle.value, input);
         let mut buffer = Buffer::<2>::default();
         assert_eq!(handle.encoded_size(), encoded_data.len());
