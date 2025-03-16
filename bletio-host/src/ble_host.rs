@@ -3,10 +3,10 @@ use core::num::NonZeroU16;
 use core::ops::Deref;
 
 use bletio_hci::{
-    ConnectionPeerAddress, EventList, EventMask, FilterDuplicates, Hci, HciDriver,
-    LeAdvertisingReportEventType, LeConnectionCompleteEvent, LeEventMask,
-    LeFilterAcceptListAddress, PublicDeviceAddress, RandomStaticDeviceAddress, Rssi, ScanEnable,
-    SupportedCommands, SupportedFeatures, SupportedLeFeatures, SupportedLeStates,
+    ConnectionHandle, ConnectionPeerAddress, DisconnectionCompleteEvent, EventList, EventMask,
+    FilterDuplicates, Hci, HciDriver, LeAdvertisingReportEventType, LeConnectionCompleteEvent,
+    LeEventMask, LeFilterAcceptListAddress, PublicDeviceAddress, RandomStaticDeviceAddress, Reason,
+    Rssi, ScanEnable, SupportedCommands, SupportedFeatures, SupportedLeFeatures, SupportedLeStates,
 };
 
 use crate::advertising::{
@@ -333,6 +333,34 @@ where
     }
 }
 
+impl<H> BleHost<'_, H, BleHostStateConnectedCentral>
+where
+    H: HciDriver,
+{
+    pub async fn disconnect(
+        &mut self,
+        connection_handle: ConnectionHandle,
+        reason: Reason,
+    ) -> Result<(), Error> {
+        self.hci.cmd_disconnect(connection_handle, reason).await?;
+        Ok(())
+    }
+}
+
+impl<H> BleHost<'_, H, BleHostStateConnectedPeripheral>
+where
+    H: HciDriver,
+{
+    pub async fn disconnect(
+        &mut self,
+        connection_handle: ConnectionHandle,
+        reason: Reason,
+    ) -> Result<(), Error> {
+        self.hci.cmd_disconnect(connection_handle, reason).await?;
+        Ok(())
+    }
+}
+
 impl<'a, H, S> BleHost<'a, H, S>
 where
     H: HciDriver,
@@ -403,7 +431,8 @@ where
 {
     pub(crate) async fn wait_for_event(&mut self) -> Result<EventList, Error> {
         match self {
-            Self::Initial(_) | Self::Standby(_) => Err(Error::CannotWaitForEventInThisState),
+            Self::Initial(_) => Err(Error::CannotWaitForEventInThisState),
+            Self::Standby(host) => Ok(host.hci.wait_for_event().await?),
             Self::Advertising(host) => Ok(host.hci.wait_for_event().await?),
             Self::Scanning(host) => Ok(host.hci.wait_for_event().await?),
             Self::Initiating(host) => Ok(host.hci.wait_for_event().await?),
@@ -434,6 +463,18 @@ pub trait BleHostObserver {
         &self,
         host: BleHostStates<'a, H>,
         event: &LeConnectionCompleteEvent,
+    ) -> impl core::future::Future<Output = BleHostStates<'a, H>>
+    where
+        H: HciDriver,
+    {
+        async { host }
+    }
+
+    #[allow(unused_variables)]
+    fn disconnection_complete<'a, H>(
+        &self,
+        host: BleHostStates<'a, H>,
+        event: &DisconnectionCompleteEvent,
     ) -> impl core::future::Future<Output = BleHostStates<'a, H>>
     where
         H: HciDriver,

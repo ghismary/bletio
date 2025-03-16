@@ -4,10 +4,11 @@ use heapless::Vec;
 use num_enum::{FromPrimitive, IntoPrimitive};
 
 use crate::event::command_status::CommandStatusEvent;
-use crate::{CommandCompleteEvent, LeMetaEvent};
+use crate::{CommandCompleteEvent, DisconnectionCompleteEvent, LeMetaEvent};
 
 pub(crate) mod command_complete;
 pub(crate) mod command_status;
+pub(crate) mod disconnection_complete;
 pub(crate) mod le_advertising_report;
 pub(crate) mod le_connection_complete;
 pub(crate) mod le_meta;
@@ -18,6 +19,7 @@ const EVENT_LIST_NB_EVENTS: usize = 4;
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[allow(clippy::large_enum_variant)]
 pub enum Event {
+    DisconnectionComplete(DisconnectionCompleteEvent),
     CommandComplete(CommandCompleteEvent),
     CommandStatus(CommandStatusEvent),
     LeMeta(LeMetaEvent),
@@ -48,6 +50,7 @@ impl DerefMut for EventList {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[repr(u8)]
 enum EventCode {
+    DisconnectionComplete = 0x05,
     CommandComplete = 0x0E,
     CommandStatus = 0x0F,
     LeMeta = 0x3E,
@@ -62,6 +65,7 @@ pub(crate) mod parser {
 
     use super::*;
     use crate::event::command_status::parser::command_status_event;
+    use crate::event::disconnection_complete::parser::disconnection_complete_event;
     use crate::{
         event::{
             command_complete::parser::command_complete_event, le_meta::parser::le_meta_event,
@@ -90,6 +94,10 @@ pub(crate) mod parser {
         Ok((
             input,
             Packet::Event(match event_code {
+                EventCode::DisconnectionComplete => {
+                    let (_, event) = disconnection_complete_event(parameters)?;
+                    Event::DisconnectionComplete(event)
+                }
                 EventCode::CommandComplete => {
                     let (_, event) = command_complete_event(parameters)?;
                     Event::CommandComplete(event)
