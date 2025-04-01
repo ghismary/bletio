@@ -1,6 +1,6 @@
 //! Assigned numbers for appearance values.
 //!
-//! FILE GENERATED FROM REVISION 4f955efbe9144b01c02e2ee2044f43d510cc8da0 OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
+//! FILE GENERATED FROM REVISION d130dfb44ce6060cdfd3c558cf4891814c7f4026 OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 

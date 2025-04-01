@@ -1,6 +1,6 @@
 //! Assigned numbers for company identifiers.
 //!
-//! FILE GENERATED FROM REVISION 4f955efbe9144b01c02e2ee2044f43d510cc8da0 OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
+//! FILE GENERATED FROM REVISION d130dfb44ce6060cdfd3c558cf4891814c7f4026 OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
@@ -17,6 +17,60 @@ use crate::advertising::AdvertisingError;
 /// It is to be used when creating a Manufacturer Specific Data Advertising Structure.
 /// See [ManufacturerSpecificDataAdStruct::try_new](crate::advertising::ad_struct::ManufacturerSpecificDataAdStruct::try_new).
 pub enum CompanyIdentifier {
+    /// Codie LLC (0x0EC8)
+    CodieLlc = 0x0EC8,
+    /// Canyon Bicycles GmbH (0x0EC7)
+    CanyonBicyclesGmbH = 0x0EC7,
+    /// AuthGate B.V. (0x0EC6)
+    AuthGateBV = 0x0EC6,
+    /// Alibaba (China) Co., Ltd. (0x0EC5)
+    AlibabaChinaCoLtd = 0x0EC5,
+    /// PACIFIC MARINE BATTERIES PTY. LIMITED (0x0EC4)
+    PacificMarineBatteriesPtyLimited = 0x0EC4,
+    /// Herschel Infrared Ltd (0x0EC3)
+    HerschelInfraredLtd = 0x0EC3,
+    /// High Entropy, LLC (0x0EC2)
+    HighEntropyLlc = 0x0EC2,
+    /// Crossdoor (0x0EC1)
+    Crossdoor = 0x0EC1,
+    /// WEST inx Ltd. (0x0EC0)
+    WestInxLtd = 0x0EC0,
+    /// Schulte-Schlagbaum AG (0x0EBF)
+    SchulteSchlagbaumAg = 0x0EBF,
+    /// Deity Acoustic Technology Co. (0x0EBE)
+    DeityAcousticTechnologyCo = 0x0EBE,
+    /// Tongfang Health Technology (Beijing) Co., Ltd. (0x0EBD)
+    TongfangHealthTechnologyBeijingCoLtd = 0x0EBD,
+    /// GP Acoustics International Limited (0x0EBC)
+    GpAcousticsInternationalLimited = 0x0EBC,
+    /// Asahi Denso Co.,Ltd. (0x0EBB)
+    AsahiDensoCoLtd = 0x0EBB,
+    /// THERMY LTD (0x0EBA)
+    ThermyLtd = 0x0EBA,
+    /// egojin co,.ltd (0x0EB9)
+    EgojinCoLtd = 0x0EB9,
+    /// PARAGON ID (0x0EB8)
+    ParagonId = 0x0EB8,
+    /// Embedded Solutions LLC (0x0EB7)
+    EmbeddedSolutionsLlc = 0x0EB7,
+    /// Server Products, Inc. (0x0EB6)
+    ServerProductsInc = 0x0EB6,
+    /// Preseed Japan Corporation (0x0EB5)
+    PreseedJapanCorporation = 0x0EB5,
+    /// BLUEFIN DATA, LLC (0x0EB4)
+    BluefinDataLlc = 0x0EB4,
+    /// Zucchetti Axess (0x0EB3)
+    ZucchettiAxess = 0x0EB3,
+    /// PRADCO Outdoor Brands (0x0EB2)
+    PradcoOutdoorBrands = 0x0EB2,
+    /// WearNex Limited (0x0EB1)
+    WearNexLimited = 0x0EB1,
+    /// FactorySense (0x0EB0)
+    FactorySense = 0x0EB0,
+    /// Unfolded Circle ApS (0x0EAF)
+    UnfoldedCircleApS = 0x0EAF,
+    /// BHClears Microelectronics (Shanghai) Co., Ltd. (0x0EAE)
+    BhClearsMicroelectronicsShanghaiCoLtd = 0x0EAE,
     /// OPTRON Co., Ltd. (0x0EAD)
     OptronCoLtd = 0x0EAD,
     /// Dynetrex Solutions Inc. (0x0EAC)
@@ -25,7 +79,7 @@ pub enum CompanyIdentifier {
     SteyrSportGmbH = 0x0EAB,
     /// Hive Soundz inc. (0x0EAA)
     HiveSoundzInc = 0x0EAA,
-    /// Makichie Co., ltd. (0x0EA9)
+    /// Makichie Co., Ltd. (0x0EA9)
     MakichieCoLtd = 0x0EA9,
     /// Dongguan Trangjan Industrial Co., Ltd (0x0EA8)
     DongguanTrangjanIndustrialCoLtd = 0x0EA8,
@@ -291,8 +345,10 @@ pub enum CompanyIdentifier {
     LihjoenSpeedMeterCoLtd = 0x0E26,
     /// Hangzhou Hikvision Digital Technology Co., Ltd. (0x0E25)
     HangzhouHikvisionDigitalTechnologyCoLtd = 0x0E25,
-    /// MS kajak7 UG (limited liability) (0x0E24)
-    MsKajak7UgLimitedLiability = 0x0E24,
+    /// Avedis Zildjian Co. (0x0E24)
+    AvedisZildjianCo = 0x0E24,
+    /// MS kajak7 UG (limited liability) (0x0E23)
+    MsKajak7UgLimitedLiability = 0x0E23,
     /// HITO INC (0x0E22)
     HitoInc = 0x0E22,
     /// FOGO (0x0E21)
@@ -1867,8 +1923,8 @@ pub enum CompanyIdentifier {
     AlfaLavalCorporateAb = 0x0B10,
     /// B.E.A. S.A. (0x0B0F)
     BEASA = 0x0B0F,
-    /// Honda Lock Mfg. Co.,Ltd. (0x0B0E)
-    HondaLockMfgCoLtd = 0x0B0E,
+    /// Minebea Access Solutions Inc. (0x0B0E)
+    MinebeaAccessSolutionsInc = 0x0B0E,
     /// SANYO DENKO Co.,Ltd. (0x0B0D)
     SanyoDenkoCoLtd = 0x0B0D,
     /// BluPeak (0x0B0C)
@@ -7055,8 +7111,8 @@ pub enum CompanyIdentifier {
     BioResearchAssociates = 0x00EC,
     /// Server Technology Inc. (0x00EB)
     ServerTechnologyInc = 0x00EB,
-    /// www.vtracksystems.com (0x00EA)
-    WwwVtracksystemsCom = 0x00EA,
+    /// Nielsen-Kellerman (0x00EA)
+    NielsenKellerman = 0x00EA,
     /// Vtrack Systems (0x00E9)
     VtrackSystems = 0x00E9,
     /// ACTS Technologies (0x00E8)
