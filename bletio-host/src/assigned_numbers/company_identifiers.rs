@@ -1,6 +1,6 @@
 //! Assigned numbers for company identifiers.
 //!
-//! FILE GENERATED FROM REVISION d130dfb44ce6060cdfd3c558cf4891814c7f4026 OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
+//! FILE GENERATED FROM REVISION adc9c005881e2ccd2d8dc5055f657a18622159f5 OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
@@ -17,6 +17,54 @@ use crate::advertising::AdvertisingError;
 /// It is to be used when creating a Manufacturer Specific Data Advertising Structure.
 /// See [ManufacturerSpecificDataAdStruct::try_new](crate::advertising::ad_struct::ManufacturerSpecificDataAdStruct::try_new).
 pub enum CompanyIdentifier {
+    /// MAERSK CONTAINER INDUSTRY A/S (0x0EE0)
+    MaerskContainerIndustryAS = 0x0EE0,
+    /// Dynaudio A/S (0x0EDF)
+    DynaudioAS = 0x0EDF,
+    /// Sony Honda Mobility Inc. (0x0EDE)
+    SonyHondaMobilityInc = 0x0EDE,
+    /// Ceridwen Limited (0x0EDD)
+    CeridwenLimited = 0x0EDD,
+    /// Shenzhen Zoqin Technology Co., Ltd. (0x0EDC)
+    ShenzhenZoqinTechnologyCoLtd = 0x0EDC,
+    /// ShenZhen BoYiChuangXin (0x0EDB)
+    ShenZhenBoYiChuangXin = 0x0EDB,
+    /// Kodira GmbH (0x0EDA)
+    KodiraGmbH = 0x0EDA,
+    /// Overhead Door Corporation (0x0ED9)
+    OverheadDoorCorporation = 0x0ED9,
+    /// DORAN MFG. LLC (0x0ED8)
+    DoranMfgLlc = 0x0ED8,
+    /// CS INSTRUMENTS GmbH & Co.KG (0x0ED7)
+    CsInstrumentsGmbHAndCoKg = 0x0ED7,
+    /// Quintessential Design, Inc. (0x0ED6)
+    QuintessentialDesignInc = 0x0ED6,
+    /// Relish Technologies Limited (0x0ED5)
+    RelishTechnologiesLimited = 0x0ED5,
+    /// Goerdyna Group Co., Ltd (0x0ED4)
+    GoerdynaGroupCoLtd = 0x0ED4,
+    /// Lichens Innovation inc. (0x0ED3)
+    LichensInnovationInc = 0x0ED3,
+    /// SHENZHEN BESTWAY ELECTRONICS CO.,LTD (0x0ED2)
+    ShenzhenBestwayElectronicsCoLtd = 0x0ED2,
+    /// VINYL MATT MEDIA LIMITED (0x0ED1)
+    VinylMattMediaLimited = 0x0ED1,
+    /// Gibson, Inc. (0x0ED0)
+    GibsonInc = 0x0ED0,
+    /// GGEC America, Inc. (0x0ECF)
+    GgecAmericaInc = 0x0ECF,
+    /// Guangzhou Honor Microelectronic Co.,Ltd. (0x0ECE)
+    GuangzhouHonorMicroelectronicCoLtd = 0x0ECE,
+    /// Nature Inc. (0x0ECD)
+    NatureInc = 0x0ECD,
+    /// Shenzhen NEOECO Technology Co., Ltd. (0x0ECC)
+    ShenzhenNeoecoTechnologyCoLtd = 0x0ECC,
+    /// Zhong Shan City Richsound Electronic Industrial Ltd. (0x0ECB)
+    ZhongShanCityRichsoundElectronicIndustrialLtd = 0x0ECB,
+    /// NexRev LLC (0x0ECA)
+    NexRevLlc = 0x0ECA,
+    /// NeuroPace Inc (0x0EC9)
+    NeuroPaceInc = 0x0EC9,
     /// Codie LLC (0x0EC8)
     CodieLlc = 0x0EC8,
     /// Canyon Bicycles GmbH (0x0EC7)
@@ -7373,8 +7421,8 @@ pub enum CompanyIdentifier {
     AAndDEngineeringInc = 0x0069,
     /// General Motors (0x0068)
     GeneralMotors = 0x0068,
-    /// GN Audio A/S (0x0067)
-    GnAudioAS = 0x0067,
+    /// GN Hearing (0x0067)
+    GnHearing = 0x0067,
     /// 9Solutions Oy (0x0066)
     _9SolutionsOy = 0x0066,
     /// HP, Inc. (0x0065)
