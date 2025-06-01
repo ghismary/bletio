@@ -1,6 +1,6 @@
 //! Assigned numbers for company identifiers.
 //!
-//! FILE GENERATED FROM REVISION adc9c005881e2ccd2d8dc5055f657a18622159f5 OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
+//! FILE GENERATED FROM REVISION 23db18ee3859c3fa16c0817e2547619c778522bf OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
@@ -17,6 +17,66 @@ use crate::advertising::AdvertisingError;
 /// It is to be used when creating a Manufacturer Specific Data Advertising Structure.
 /// See [ManufacturerSpecificDataAdStruct::try_new](crate::advertising::ad_struct::ManufacturerSpecificDataAdStruct::try_new).
 pub enum CompanyIdentifier {
+    /// Teledyne Instruments, Inc. (0x0EFE)
+    TeledyneInstrumentsInc = 0x0EFE,
+    /// PRIMES GmbH (0x0EFD)
+    PrimesGmbH = 0x0EFD,
+    /// Jano Life Inc. (0x0EFC)
+    JanoLifeInc = 0x0EFC,
+    /// BLUEPROVIDERZ LLC (0x0EFB)
+    BlueproviderzLlc = 0x0EFB,
+    /// Sensear Pty Ltd (0x0EFA)
+    SensearPtyLtd = 0x0EFA,
+    /// Aseptico, Inc. (0x0EF9)
+    AsepticoInc = 0x0EF9,
+    /// IoT Solutions Malta Limited (0x0EF8)
+    IoTSolutionsMaltaLimited = 0x0EF8,
+    /// Trackonomy Systems, Inc. (0x0EF7)
+    TrackonomySystemsInc = 0x0EF7,
+    /// Shenzhen Cyber Innovation Technology Co., Ltd. (0x0EF6)
+    ShenzhenCyberInnovationTechnologyCoLtd = 0x0EF6,
+    /// LS ELECTRIC Co., Ltd. (0x0EF5)
+    LsElectricCoLtd = 0x0EF5,
+    /// SEMINOLE ELECTRONICS PRIVATE LIMITED (0x0EF4)
+    SeminoleElectronicsPrivateLimited = 0x0EF4,
+    /// Monil AS (0x0EF3)
+    MonilAs = 0x0EF3,
+    /// CAPTAIN BLINK (0x0EF2)
+    CaptainBlink = 0x0EF2,
+    /// Wuxi Does IOT Co., Ltd (0x0EF1)
+    WuxiDoesIotCoLtd = 0x0EF1,
+    /// Seaward Electronic (0x0EF0)
+    SeawardElectronic = 0x0EF0,
+    /// Q42 Internet B.V. (0x0EEF)
+    Q42InternetBV = 0x0EEF,
+    /// ELLEA INGEGNERIA SRL UNIPERSONALE (0x0EEE)
+    ElleaIngegneriaSrlUnipersonale = 0x0EEE,
+    /// BBC Bircher AG (0x0EED)
+    BbcBircherAg = 0x0EED,
+    /// Willow Laboratories, Inc. (0x0EEC)
+    WillowLaboratoriesInc = 0x0EEC,
+    /// Fujita Electric Works, Ltd (0x0EEB)
+    FujitaElectricWorksLtd = 0x0EEB,
+    /// Core Devices LLC (0x0EEA)
+    CoreDevicesLlc = 0x0EEA,
+    /// PIXEL TI IND. E COM PROD ELETRONICOS (0x0EE9)
+    PixelTiIndEComProdEletronicos = 0x0EE9,
+    /// SG Armaturen AS (0x0EE8)
+    SgArmaturenAs = 0x0EE8,
+    /// RICKARD AIR DIFFUSION (PTY) LTD (0x0EE7)
+    RickardAirDiffusionPtyLtd = 0x0EE7,
+    /// NOCTRIX HEALTH, INC (0x0EE6)
+    NoctrixHealthInc = 0x0EE6,
+    /// Ambient Life Inc. (0x0EE5)
+    AmbientLifeInc = 0x0EE5,
+    /// CAPTEMP, LDA (0x0EE4)
+    CaptempLda = 0x0EE4,
+    /// TAMRON Co., Ltd. (0x0EE3)
+    TamronCoLtd = 0x0EE3,
+    /// shenzhen hongever technology Co,. Ltd (0x0EE2)
+    ShenzhenHongeverTechnologyCoLtd = 0x0EE2,
+    /// MA MICRO LIMITED (0x0EE1)
+    MaMicroLimited = 0x0EE1,
     /// MAERSK CONTAINER INDUSTRY A/S (0x0EE0)
     MaerskContainerIndustryAS = 0x0EE0,
     /// Dynaudio A/S (0x0EDF)
@@ -4377,8 +4437,8 @@ pub enum CompanyIdentifier {
     PixArtImagingInc = 0x065C,
     /// Sesam Solutions BV (0x065B)
     SesamSolutionsBv = 0x065B,
-    /// Zound Industries International AB (0x065A)
-    ZoundIndustriesInternationalAb = 0x065A,
+    /// Marshall Group AB (0x065A)
+    MarshallGroupAb = 0x065A,
     /// UnSeen Technologies Oy (0x0659)
     UnSeenTechnologiesOy = 0x0659,
     /// Payex Norge AS (0x0658)
