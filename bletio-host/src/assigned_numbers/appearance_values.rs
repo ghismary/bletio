@@ -1,6 +1,6 @@
 //! Assigned numbers for appearance values.
 //!
-//! FILE GENERATED FROM REVISION 23db18ee3859c3fa16c0817e2547619c778522bf OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
+//! FILE GENERATED FROM REVISION c73ab4e4a055a8c337ebca30037776478bd22250 OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
@@ -522,6 +522,10 @@ pub enum AppearanceValue {
     Headphones = 0x0943,
     /// `Wearable Audio Device - Neck Band` Appearance value
     NeckBand = 0x0944,
+    /// `Wearable Audio Device - Left Earbud` Appearance value
+    LeftEarbud = 0x0945,
+    /// `Wearable Audio Device - Right Earbud` Appearance value
+    RightEarbud = 0x0946,
     /// `Aircraft - Generic Aircraft` Appearance value
     GenericAircraft = 0x0980,
     /// `Aircraft - Light Aircraft` Appearance value
@@ -656,4 +660,46 @@ pub enum AppearanceValue {
     TorqueWrench = 0x14C8,
     /// `Industrial Tools - Torque Screwdriver` Appearance value
     TorqueScrewdriver = 0x14C9,
+    /// `Cookware Device - Generic Cookware Device` Appearance value
+    GenericCookwareDevice = 0x1500,
+    /// `Cookware Device - Pot and Jugs` Appearance value
+    PotAndJugs = 0x1501,
+    /// `Cookware Device - Pressure Cooker` Appearance value
+    PressureCooker = 0x1502,
+    /// `Cookware Device - Slow Cooker` Appearance value
+    SlowCooker = 0x1503,
+    /// `Cookware Device - Steam Cooker` Appearance value
+    SteamCooker = 0x1504,
+    /// `Cookware Device - Saucepan` Appearance value
+    Saucepan = 0x1505,
+    /// `Cookware Device - Frying Pan` Appearance value
+    FryingPan = 0x1506,
+    /// `Cookware Device - Casserole` Appearance value
+    Casserole = 0x1507,
+    /// `Cookware Device - Dutch Oven` Appearance value
+    DutchOven = 0x1508,
+    /// `Cookware Device - Grill Pan/Raclette Grill/Griddle Pan` Appearance value
+    GrillPanRacletteGrillGriddlePan = 0x1509,
+    /// `Cookware Device - Braising Pan` Appearance value
+    BraisingPan = 0x150A,
+    /// `Cookware Device - Wok Pan` Appearance value
+    WokPan = 0x150B,
+    /// `Cookware Device - Paella Pan` Appearance value
+    PaellaPan = 0x150C,
+    /// `Cookware Device - Crepe Pan` Appearance value
+    CrepePan = 0x150D,
+    /// `Cookware Device - Tagine` Appearance value
+    Tagine = 0x150E,
+    /// `Cookware Device - Fondue` Appearance value
+    Fondue = 0x150F,
+    /// `Cookware Device - Lid` Appearance value
+    Lid = 0x1510,
+    /// `Cookware Device - Wired Probe` Appearance value
+    WiredProbe = 0x1511,
+    /// `Cookware Device - Wireless Probe` Appearance value
+    WirelessProbe = 0x1512,
+    /// `Cookware Device - Baking Molds` Appearance value
+    BakingMolds = 0x1513,
+    /// `Cookware Device - Baking Tray` Appearance value
+    BakingTray = 0x1514,
 }

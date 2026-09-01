@@ -1,6 +1,6 @@
 //! Assigned numbers for company identifiers.
 //!
-//! FILE GENERATED FROM REVISION 23db18ee3859c3fa16c0817e2547619c778522bf OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
+//! FILE GENERATED FROM REVISION c73ab4e4a055a8c337ebca30037776478bd22250 OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
@@ -17,6 +17,882 @@ use crate::advertising::AdvertisingError;
 /// It is to be used when creating a Manufacturer Specific Data Advertising Structure.
 /// See [ManufacturerSpecificDataAdStruct::try_new](crate::advertising::ad_struct::ManufacturerSpecificDataAdStruct::try_new).
 pub enum CompanyIdentifier {
+    /// ALLRA LIMITED (0x1116)
+    AllraLimited = 0x1116,
+    /// Thermia Aktiebolag (0x1115)
+    ThermiaAktiebolag = 0x1115,
+    /// Metabowerke GmbH (0x1114)
+    MetabowerkeGmbH = 0x1114,
+    /// ONXMAPS, INC (0x1113)
+    OnxmapsInc = 0x1113,
+    /// JustTec GmbH (0x1112)
+    JustTecGmbH = 0x1112,
+    /// RAPSODO PTE. LTD. (0x1111)
+    RapsodoPteLtd = 0x1111,
+    /// Hamaton Inc., (0x1110)
+    HamatonInc = 0x1110,
+    /// Nylint, LLC (0x110F)
+    NylintLlc = 0x110F,
+    /// Gigawit Electronics LTD (0x110E)
+    GigawitElectronicsLtd = 0x110E,
+    /// ARETA AI INC. (0x110D)
+    AretaAiInc = 0x110D,
+    /// rescuetrack GmbH (0x110C)
+    RescuetrackGmbH = 0x110C,
+    /// SIGMA CORPORATION (0x110B)
+    SigmaCorporation = 0x110B,
+    /// OnRace Motorsports (0x110A)
+    OnRaceMotorsports = 0x110A,
+    /// Hamodaz Corporation (0x1109)
+    HamodazCorporation = 0x1109,
+    /// BEMER Int. AG (0x1108)
+    BemerIntAg = 0x1108,
+    /// Optrel AG (0x1107)
+    OptrelAg = 0x1107,
+    /// Flicfit inc. (0x1106)
+    FlicfitInc = 0x1106,
+    /// Cirrus Design Corporation (0x1105)
+    CirrusDesignCorporation = 0x1105,
+    /// Daiichi Elektronik Sanayi ve Ticaret. A.S. (0x1104)
+    DaiichiElektronikSanayiVeTicaretAS = 0x1104,
+    /// BRISANT SECURE LTD (0x1103)
+    BrisantSecureLtd = 0x1103,
+    /// Temple Private Limited (0x1102)
+    TemplePrivateLimited = 0x1102,
+    /// Nearfaces UG (haftungsbeschränkt) (0x1101)
+    NearfacesUgHaftungsbeschrankt = 0x1101,
+    /// miThings (0x1100)
+    MiThings = 0x1100,
+    /// Sonus Faber spa (0x10FF)
+    SonusFaberSpa = 0x10FF,
+    /// Daisen Electronic Industrial Co., Ltd. (0x10FE)
+    DaisenElectronicIndustrialCoLtd = 0x10FE,
+    /// Neurabody Inc. (0x10FD)
+    NeurabodyInc = 0x10FD,
+    /// CITECH CO.,LTD. (0x10FC)
+    CitechCoLtd = 0x10FC,
+    /// Hydratune Australia Pty Ltd (0x10FB)
+    HydratuneAustraliaPtyLtd = 0x10FB,
+    /// QPlay Ltd (0x10FA)
+    QPlayLtd = 0x10FA,
+    /// Even Realities Ltd. (0x10F9)
+    EvenRealitiesLtd = 0x10F9,
+    /// IONLINE INTERNET SERVICE PROVIDER (0x10F8)
+    IonlineInternetServiceProvider = 0x10F8,
+    /// HEX INNOVATE (UK) LIMITED (0x10F7)
+    HexInnovateUkLimited = 0x10F7,
+    /// Pressure Systems International, Inc. (0x10F6)
+    PressureSystemsInternationalInc = 0x10F6,
+    /// Shenzhen DeepX Technology Co., Ltd. (0x10F5)
+    ShenzhenDeepXTechnologyCoLtd = 0x10F5,
+    /// SUPERARK LTD (0x10F4)
+    SuperarkLtd = 0x10F4,
+    /// EURODIMA GmbH & CoKG (0x10F3)
+    EurodimaGmbHAndCoKg = 0x10F3,
+    /// CHIGEE TECHNOLOGY CO., LTD. (0x10F2)
+    ChigeeTechnologyCoLtd = 0x10F2,
+    /// Ralston Instruments, LLC (0x10F1)
+    RalstonInstrumentsLlc = 0x10F1,
+    /// RFID N PRINT PTY LTD (0x10F0)
+    RfidNPrintPtyLtd = 0x10F0,
+    /// Keto-Check Inc. (0x10EF)
+    KetoCheckInc = 0x10EF,
+    /// Shanghai XYLink Limited Corporation (0x10EE)
+    ShanghaiXyLinkLimitedCorporation = 0x10EE,
+    /// BRITA SE (0x10ED)
+    BritaSe = 0x10ED,
+    /// ZELP LTD (0x10EC)
+    ZelpLtd = 0x10EC,
+    /// Fontaine Fifth Wheel Company (0x10EB)
+    FontaineFifthWheelCompany = 0x10EB,
+    /// Guangdong Youhong Medical Technology Co.,Ltd (0x10EA)
+    GuangdongYouhongMedicalTechnologyCoLtd = 0x10EA,
+    /// Hankook Tire & Technology Co., Ltd. (0x10E9)
+    HankookTireAndTechnologyCoLtd = 0x10E9,
+    /// Liontron GmbH & Co. KG (0x10E8)
+    LiontronGmbHAndCoKg = 0x10E8,
+    /// Placenet Internet of Places S.L. (0x10E7)
+    PlacenetInternetOfPlacesSL = 0x10E7,
+    /// KWANG YANG MOTOR CO., LTD. (0x10E6)
+    KwangYangMotorCoLtd = 0x10E6,
+    /// Durin, inc. (0x10E5)
+    DurinInc = 0x10E5,
+    /// Smart Technologies ULC (0x10E4)
+    SmartTechnologiesUlc = 0x10E4,
+    /// Vybe Audio LLC (0x10E3)
+    VybeAudioLlc = 0x10E3,
+    /// CAREHAWK INC. (0x10E2)
+    CarehawkInc = 0x10E2,
+    /// Neurable, Inc (0x10E1)
+    NeurableInc = 0x10E1,
+    /// Arnold & Richter Cine Technik GmbH & Co. Betriebs KG (0x10E0)
+    ArnoldAndRichterCineTechnikGmbHAndCoBetriebsKg = 0x10E0,
+    /// Hawkeye Surgical Lighting LLC (0x10DF)
+    HawkeyeSurgicalLightingLlc = 0x10DF,
+    /// Gastron Co.,Ltd (0x10DE)
+    GastronCoLtd = 0x10DE,
+    /// Triumph Designs Ltd (0x10DD)
+    TriumphDesignsLtd = 0x10DD,
+    /// Spectra Precision (Kaiserslautern) GmbH (0x10DC)
+    SpectraPrecisionKaiserslauternGmbH = 0x10DC,
+    /// SZ Avinox Innovation Co., Ltd. (0x10DB)
+    SzAvinoxInnovationCoLtd = 0x10DB,
+    /// SKAIChips Co.,Ltd (0x10DA)
+    SkaiChipsCoLtd = 0x10DA,
+    /// Liebherr-Hausgeraete GmbH (0x10D9)
+    LiebherrHausgeraeteGmbH = 0x10D9,
+    /// Westfalen Aktiengesellschaft (0x10D8)
+    WestfalenAktiengesellschaft = 0x10D8,
+    /// Arashi Vision Inc. (0x10D7)
+    ArashiVisionInc = 0x10D7,
+    /// UltronSMART Inc. (0x10D6)
+    UltronSmartInc = 0x10D6,
+    /// IntelliDesign Pty Ltd (0x10D5)
+    IntelliDesignPtyLtd = 0x10D5,
+    /// Victor Hasselblad AB (0x10D4)
+    VictorHasselbladAb = 0x10D4,
+    /// AGCO Corporation (0x10D3)
+    AgcoCorporation = 0x10D3,
+    /// Hehku Company Oy (0x10D2)
+    HehkuCompanyOy = 0x10D2,
+    /// Acer Inc. (0x10D1)
+    AcerInc = 0x10D1,
+    /// Band24, LLC (0x10D0)
+    Band24Llc = 0x10D0,
+    /// Tempur World, LLC (0x10CF)
+    TempurWorldLlc = 0x10CF,
+    /// Inito Health Inc. (0x10CE)
+    InitoHealthInc = 0x10CE,
+    /// Kumho Tire (0x10CD)
+    KumhoTire = 0x10CD,
+    /// Linde GmbH (0x10CC)
+    LindeGmbH = 0x10CC,
+    /// The90, Inc. (0x10CB)
+    The90Inc = 0x10CB,
+    /// FairPhone B.V (0x10CA)
+    FairPhoneBV = 0x10CA,
+    /// Tractian Technologies Inc. (0x10C9)
+    TractianTechnologiesInc = 0x10C9,
+    /// mylife Diabetes Care AG (0x10C8)
+    MylifeDiabetesCareAg = 0x10C8,
+    /// CHIYODA TECHNOL CORPORATION (0x10C7)
+    ChiyodaTechnolCorporation = 0x10C7,
+    /// Piscisea Tech Inc (0x10C6)
+    PisciseaTechInc = 0x10C6,
+    /// Cardinal Scale Mfg (0x10C5)
+    CardinalScaleMfg = 0x10C5,
+    /// OPICA GmbH (0x10C4)
+    OpicaGmbH = 0x10C4,
+    /// TECH FASS s.r.o. (0x10C3)
+    TechFassSRO = 0x10C3,
+    /// SainStore Technology Co., Ltd. (0x10C2)
+    SainStoreTechnologyCoLtd = 0x10C2,
+    /// Shenzhen ECO-NEWLEAF CO., LTD (0x10C1)
+    ShenzhenEcoNewleafCoLtd = 0x10C1,
+    /// Minda Corporation Ltd (0x10C0)
+    MindaCorporationLtd = 0x10C0,
+    /// All Inspire Health, Inc. (0x10BF)
+    AllInspireHealthInc = 0x10BF,
+    /// UNIVERSAL REMOTE CONTROL, INC. (0x10BE)
+    UniversalRemoteControlInc = 0x10BE,
+    /// Variowell Development GmbH (0x10BD)
+    VariowellDevelopmentGmbH = 0x10BD,
+    /// Harley-Davidson Motor Company (0x10BC)
+    HarleyDavidsonMotorCompany = 0x10BC,
+    /// VERGESENSE INC (0x10BB)
+    VergesenseInc = 0x10BB,
+    /// Noble HiFi, LLC (0x10BA)
+    NobleHiFiLlc = 0x10BA,
+    /// CYNC Labs, Inc. (0x10B9)
+    CyncLabsInc = 0x10B9,
+    /// Palarum LLC (0x10B8)
+    PalarumLlc = 0x10B8,
+    /// Fosilicon Co., Ltd (0x10B7)
+    FosiliconCoLtd = 0x10B7,
+    /// SHENZHEN CHINA MICRO SEMICON CO.,LIMITED (0x10B6)
+    ShenzhenChinaMicroSemiconCoLimited = 0x10B6,
+    /// SpartanLync Technologies Corp. (0x10B5)
+    SpartanLyncTechnologiesCorp = 0x10B5,
+    /// Solabs Technology (HK) Co., Limited (0x10B4)
+    SolabsTechnologyHkCoLimited = 0x10B4,
+    /// HOSEOTELNET Co., Ltd. (0x10B3)
+    HoseotelnetCoLtd = 0x10B3,
+    /// Shenzhen Xunzong Zhilian Technology Co., Ltd. (0x10B2)
+    ShenzhenXunzongZhilianTechnologyCoLtd = 0x10B2,
+    /// Senops Tracker, LLC (0x10B1)
+    SenopsTrackerLlc = 0x10B1,
+    /// VSC Synapse LLC (0x10B0)
+    VscSynapseLlc = 0x10B0,
+    /// Hangzhou SDIC Microelectronics Inc. (0x10AF)
+    HangzhouSdicMicroelectronicsInc = 0x10AF,
+    /// Raycon Inc. (0x10AE)
+    RayconInc = 0x10AE,
+    /// CoreHW Semiconductor Oy (0x10AD)
+    CoreHwSemiconductorOy = 0x10AD,
+    /// ATsens Co.,Ltd. (0x10AC)
+    ATsensCoLtd = 0x10AC,
+    /// ObjectSpectrum, LLC (0x10AB)
+    ObjectSpectrumLlc = 0x10AB,
+    /// Sigenergy Technology Co., Ltd. (0x10AA)
+    SigenergyTechnologyCoLtd = 0x10AA,
+    /// Mallow (0x10A9)
+    Mallow = 0x10A9,
+    /// Zhejiang Wanyou Intelligent Technology Co., Ltd. (0x10A8)
+    ZhejiangWanyouIntelligentTechnologyCoLtd = 0x10A8,
+    /// Pedigree Technologies, LLC (0x10A7)
+    PedigreeTechnologiesLlc = 0x10A7,
+    /// Lightnovo ApS (0x10A6)
+    LightnovoApS = 0x10A6,
+    /// Cebreo Medical A/S (0x10A5)
+    CebreoMedicalAS = 0x10A5,
+    /// RAPIDISE TECHNOLOGY PRIVATE LIMITED (0x10A4)
+    RapidiseTechnologyPrivateLimited = 0x10A4,
+    /// BQT Solutions (NZ) Limited (0x10A3)
+    BqtSolutionsNzLimited = 0x10A3,
+    /// Audio Research Corporation (0x10A2)
+    AudioResearchCorporation = 0x10A2,
+    /// flexlog GmbH (0x10A1)
+    FlexlogGmbH = 0x10A1,
+    /// inContAlert GmbH (0x10A0)
+    InContAlertGmbH = 0x10A0,
+    /// Shenzhen Hali-Power Industrial Co., Ltd. (0x109F)
+    ShenzhenHaliPowerIndustrialCoLtd = 0x109F,
+    /// SHIBAURA ELECTRONICS CO., LTD. (0x109E)
+    ShibauraElectronicsCoLtd = 0x109E,
+    /// terumo (0x109D)
+    Terumo = 0x109D,
+    /// KIBLE (0x109C)
+    Kible = 0x109C,
+    /// Tensoli GmbH (0x109B)
+    TensoliGmbH = 0x109B,
+    /// MONNIT CORPORATION (0x109A)
+    MonnitCorporation = 0x109A,
+    /// Selco GmbH (0x1099)
+    SelcoGmbH = 0x1099,
+    /// smart-TEC GmbH & Co. KG (0x1098)
+    SmartTecGmbHAndCoKg = 0x1098,
+    /// Knox Associates, Inc. (0x1097)
+    KnoxAssociatesInc = 0x1097,
+    /// Aktv8 LLC (0x1096)
+    Aktv8Llc = 0x1096,
+    /// CardiaMetrics (0x1095)
+    CardiaMetrics = 0x1095,
+    /// Personal Products Co., Ltd. (0x1094)
+    PersonalProductsCoLtd = 0x1094,
+    /// Mindspire Limited (0x1093)
+    MindspireLimited = 0x1093,
+    /// BXB DIGITAL PTY LIMITED (0x1092)
+    BxbDigitalPtyLimited = 0x1092,
+    /// COSEL ELEKTRONIK OTOMASYON SISTEMLERI SANAYI VE TICARET LIMITED SIRKETI (0x1091)
+    CoselElektronikOtomasyonSistemleriSanayiVeTicaretLimitedSirketi = 0x1091,
+    /// NAGANO KEIKI CO., LTD. (0x1090)
+    NaganoKeikiCoLtd = 0x1090,
+    /// SkyCell AG (0x108F)
+    SkyCellAg = 0x108F,
+    /// Industrial Computing Limited (0x108E)
+    IndustrialComputingLimited = 0x108E,
+    /// DEWINE Labs GmbH (0x108D)
+    DewineLabsGmbH = 0x108D,
+    /// Tiny Displays Inc. (0x108C)
+    TinyDisplaysInc = 0x108C,
+    /// PERUN TECH SP. Z O.O. (0x108B)
+    PerunTechSpZOO = 0x108B,
+    /// Grayhill Inc. (0x108A)
+    GrayhillInc = 0x108A,
+    /// DEER MANAGEMENT SYSTEMS, LLC (0x1089)
+    DeerManagementSystemsLlc = 0x1089,
+    /// Sesame AI, Inc. (0x1088)
+    SesameAiInc = 0x1088,
+    /// Matisse Interactif inc. (0x1087)
+    MatisseInteractifInc = 0x1087,
+    /// M3SH TECHNOLOGY INC. (0x1086)
+    M3ShTechnologyInc = 0x1086,
+    /// FUTURE INTELLIGENCE TECHNOLOGY SINGAPORE PTE. LTD. (0x1085)
+    FutureIntelligenceTechnologySingaporePteLtd = 0x1085,
+    /// 24x8, LLC (0x1084)
+    _24X8Llc = 0x1084,
+    /// SYSTEM LOCO LTD (0x1083)
+    SystemLocoLtd = 0x1083,
+    /// AIR PRODUCTS AND CHEMICALS, INC. (0x1082)
+    AirProductsAndChemicalsInc = 0x1082,
+    /// Australis Scientific Pty Ltd. (0x1081)
+    AustralisScientificPtyLtd = 0x1081,
+    /// Knit Sound Company (0x1080)
+    KnitSoundCompany = 0x1080,
+    /// Anton Paar ConsumerTec GmbH (0x107F)
+    AntonPaarConsumerTecGmbH = 0x107F,
+    /// Belford investment holdings pty ltd (0x107E)
+    BelfordInvestmentHoldingsPtyLtd = 0x107E,
+    /// IMPACT-BZ LTD (0x107D)
+    ImpactBzLtd = 0x107D,
+    /// Martin.Care GmbH (0x107C)
+    MartinCareGmbH = 0x107C,
+    /// E.J. Brooks Company (0x107B)
+    EJBrooksCompany = 0x107B,
+    /// CodaHD LLC (0x107A)
+    CodaHdLlc = 0x107A,
+    /// Digimax Innovative Products LTD. (0x1079)
+    DigimaxInnovativeProductsLtd = 0x1079,
+    /// augment AI Inc. (0x1078)
+    AugmentAiInc = 0x1078,
+    /// Shenzhen Muyu Technology Co., Ltd. (0x1077)
+    ShenzhenMuyuTechnologyCoLtd = 0x1077,
+    /// ALPHADIF (0x1076)
+    Alphadif = 0x1076,
+    /// TM-TECHNOLOGIES, JSC (0x1075)
+    TmTechnologiesJsc = 0x1075,
+    /// CenTrak, Inc. (0x1074)
+    CenTrakInc = 0x1074,
+    /// Hong Kong Future lntelligent Technology Co., Limited (0x1073)
+    HongKongFutureLntelligentTechnologyCoLimited = 0x1073,
+    /// ALTESSA SOLUTIONS INC. (0x1072)
+    AltessaSolutionsInc = 0x1072,
+    /// IZYBAT (0x1071)
+    Izybat = 0x1071,
+    /// TLV Co.,LTD. (0x1070)
+    TlvCoLtd = 0x1070,
+    /// Prosaris Solutions Ltd. (0x106F)
+    ProsarisSolutionsLtd = 0x106F,
+    /// STRYDE LIMITED (0x106E)
+    StrydeLimited = 0x106E,
+    /// Rokstar Holdings Limited (0x106D)
+    RokstarHoldingsLimited = 0x106D,
+    /// Global Electronics (0x106C)
+    GlobalElectronics = 0x106C,
+    /// GORDON MURRAY GROUP LIMITED (0x106B)
+    GordonMurrayGroupLimited = 0x106B,
+    /// OSKEY (0x106A)
+    Oskey = 0x106A,
+    /// Remoticom B.V. (0x1069)
+    RemoticomBV = 0x1069,
+    /// Hotron Co., Ltd. (0x1068)
+    HotronCoLtd = 0x1068,
+    /// Shenzhen FHX Precision Hardware & Plastic Co., Ltd. (0x1067)
+    ShenzhenFhxPrecisionHardwareAndPlasticCoLtd = 0x1067,
+    /// Algiz AS (0x1066)
+    AlgizAs = 0x1066,
+    /// HIGH HIT ENTERPRISE CO., LTD. (0x1065)
+    HighHitEnterpriseCoLtd = 0x1065,
+    /// Shearwater Research Inc. (0x1064)
+    ShearwaterResearchInc = 0x1064,
+    /// Field Line Automation Ltd (0x1063)
+    FieldLineAutomationLtd = 0x1063,
+    /// Framason Audio S.A (0x1062)
+    FramasonAudioSA = 0x1062,
+    /// VCS Vision Control Solutions GmbH (0x1061)
+    VcsVisionControlSolutionsGmbH = 0x1061,
+    /// TOMOE VALVE CO.,LTD (0x1060)
+    TomoeValveCoLtd = 0x1060,
+    /// Chip-pump Microelectronics (0x105F)
+    ChipPumpMicroelectronics = 0x105F,
+    /// Zuuka Limited (0x105E)
+    ZuukaLimited = 0x105E,
+    /// Williams Sound, LLC (0x105D)
+    WilliamsSoundLlc = 0x105D,
+    /// YANMAR HOLDINGS CO., LTD. (0x105C)
+    YanmarHoldingsCoLtd = 0x105C,
+    /// Fairbanks Scales Inc. (0x105B)
+    FairbanksScalesInc = 0x105B,
+    /// ArjoHuntleigh AB (0x105A)
+    ArjoHuntleighAb = 0x105A,
+    /// Shenzhen Shuye Technology Co.,Ltd. (0x1059)
+    ShenzhenShuyeTechnologyCoLtd = 0x1059,
+    /// Gravity (Shenzhen)Space Technology Co., Ltd (0x1058)
+    GravityShenzhenSpaceTechnologyCoLtd = 0x1058,
+    /// RSA Security LLC (0x1057)
+    RsaSecurityLlc = 0x1057,
+    /// CLM-Solutions (0x1056)
+    ClmSolutions = 0x1056,
+    /// NewNet, Inc. (0x1055)
+    NewNetInc = 0x1055,
+    /// Romcor Pty Ltd (0x1054)
+    RomcorPtyLtd = 0x1054,
+    /// Sensorworx, Inc. (0x1053)
+    SensorworxInc = 0x1053,
+    /// CHOZEN International CO., LTD. (0x1052)
+    ChozenInternationalCoLtd = 0x1052,
+    /// UnlimitedIRL LLC (0x1051)
+    UnlimitedIrlLlc = 0x1051,
+    /// Hangzhou Sneuro Medical Co., Ltd. (0x1050)
+    HangzhouSneuroMedicalCoLtd = 0x1050,
+    /// Safety Lighting Research Pty Ltd (0x104F)
+    SafetyLightingResearchPtyLtd = 0x104F,
+    /// LSC Control Systems Pty Ltd (0x104E)
+    LscControlSystemsPtyLtd = 0x104E,
+    /// BUND MEDIA PTY. LTD. (0x104D)
+    BundMediaPtyLtd = 0x104D,
+    /// LAUMAS Elettronica S.r.l. (0x104C)
+    LaumasElettronicaSRL = 0x104C,
+    /// Yoto Limited (0x104B)
+    YotoLimited = 0x104B,
+    /// Mueller-BBM Rail Technologies GmbH (0x104A)
+    MuellerBbmRailTechnologiesGmbH = 0x104A,
+    /// Anhui Ubico Advanced Manufacture Co., Ltd. (0x1049)
+    AnhuiUbicoAdvancedManufactureCoLtd = 0x1049,
+    /// Ferrari s.p.a. (0x1048)
+    FerrariSPA = 0x1048,
+    /// Yamaha Motor eBike Systems GmbH (0x1047)
+    YamahaMotorEBikeSystemsGmbH = 0x1047,
+    /// EXELIO S.R.L. (0x1046)
+    ExelioSRL = 0x1046,
+    /// VOTRONIC Elektronik-Systeme GmbH (0x1045)
+    VotronicElektronikSystemeGmbH = 0x1045,
+    /// Rotarex S.A. (0x1044)
+    RotarexSA = 0x1044,
+    /// Shanghai Holychip Electronic Co., Ltd. (0x1043)
+    ShanghaiHolychipElectronicCoLtd = 0x1043,
+    /// Namara Water Technologies, Inc (0x1042)
+    NamaraWaterTechnologiesInc = 0x1042,
+    /// Shenzhen Huasheng Jiaye Technology Co., Ltd (0x1041)
+    ShenzhenHuashengJiayeTechnologyCoLtd = 0x1041,
+    /// Raspberry Pi (0x1040)
+    RaspberryPi = 0x1040,
+    /// infyni (0x103F)
+    Infyni = 0x103F,
+    /// Nextorage Corporation (0x103E)
+    NextorageCorporation = 0x103E,
+    /// Blahaj Ltd (0x103D)
+    BlahajLtd = 0x103D,
+    /// FOSS Analytical A/S (0x103A)
+    FossAnalyticalAS = 0x103A,
+    /// Beijing Hongsi Electronic Technology Co.,Ltd. (0x0FDC)
+    BeijingHongsiElectronicTechnologyCoLtd = 0x0FDC,
+    /// NIVELCO PROCESS CONTROL CO. (0x0FDA)
+    NivelcoProcessControlCo = 0x0FDA,
+    /// REMDEVICE S.R.L. (0x0FD9)
+    RemdeviceSRL = 0x0FD9,
+    /// SIVA Inotec Limited (0x0FD8)
+    SivaInotecLimited = 0x0FD8,
+    /// Hondata, Inc. (0x0FD7)
+    HondataInc = 0x0FD7,
+    /// LIOTYS (0x0FD6)
+    Liotys = 0x0FD6,
+    /// Telemacy Ltd (0x0FD5)
+    TelemacyLtd = 0x0FD5,
+    /// QRITAGYA LLP (0x0FD4)
+    QritagyaLlp = 0x0FD4,
+    /// YDIIT Co., Ltd (0x0FD3)
+    YdiitCoLtd = 0x0FD3,
+    /// Domteknika S.A (0x0FD2)
+    DomteknikaSA = 0x0FD2,
+    /// Auranova LLC (0x0FD1)
+    AuranovaLlc = 0x0FD1,
+    /// Stark Future SL (0x0FD0)
+    StarkFutureSl = 0x0FD0,
+    /// Nestlab AS (0x0FCF)
+    NestlabAs = 0x0FCF,
+    /// NOJA Power (0x0FCE)
+    NojaPower = 0x0FCE,
+    /// Wimate Technology Solutions Pvt Ltd (0x0FCD)
+    WimateTechnologySolutionsPvtLtd = 0x0FCD,
+    /// Neurotherapeutics Ltd (0x0FCC)
+    NeurotherapeuticsLtd = 0x0FCC,
+    /// Biocorp Production (0x0FCB)
+    BiocorpProduction = 0x0FCB,
+    /// Legato Audio, Inc. (0x0FCA)
+    LegatoAudioInc = 0x0FCA,
+    /// Zirbel Bike GmbH (0x0FC9)
+    ZirbelBikeGmbH = 0x0FC9,
+    /// Eforthink Technology Co., Ltd. (0x0FC8)
+    EforthinkTechnologyCoLtd = 0x0FC8,
+    /// Pharox B.V. (0x0FC7)
+    PharoxBV = 0x0FC7,
+    /// ASD Lighting PLC (0x0FC6)
+    AsdLightingPlc = 0x0FC6,
+    /// Hypershell Co., Ltd (0x0FC5)
+    HypershellCoLtd = 0x0FC5,
+    /// FulScience Automotive Electronics Co., Ltd. (0x0FC4)
+    FulScienceAutomotiveElectronicsCoLtd = 0x0FC4,
+    /// Shenzhen Jimi loT Co.,Ltd (0x0FC3)
+    ShenzhenJimiLoTCoLtd = 0x0FC3,
+    /// ISSPRO, INC (0x0FC2)
+    IssproInc = 0x0FC2,
+    /// Air Automotive tracking Inc. (0x0FC1)
+    AirAutomotiveTrackingInc = 0x0FC1,
+    /// Littlebird Connected Care, Inc. (0x0FC0)
+    LittlebirdConnectedCareInc = 0x0FC0,
+    /// Tridentify AB (0x0FBF)
+    TridentifyAb = 0x0FBF,
+    /// TaigaIoT (0x0FBE)
+    TaigaIoT = 0x0FBE,
+    /// Locus Robotics Corp. (0x0FBD)
+    LocusRoboticsCorp = 0x0FBD,
+    /// ATANS TECHNOLOGY INC. (0x0FBC)
+    AtansTechnologyInc = 0x0FBC,
+    /// Rollease Acmeda, Inc. (0x0FBB)
+    RolleaseAcmedaInc = 0x0FBB,
+    /// Cosonic Intelligent Technologies Co., Ltd. (0x0FBA)
+    CosonicIntelligentTechnologiesCoLtd = 0x0FBA,
+    /// Shenzhen Mutual Technology Co., Ltd (0x0FB9)
+    ShenzhenMutualTechnologyCoLtd = 0x0FB9,
+    /// SITERWELL ELECTRONICS CO.,LIMITED (0x0FB8)
+    SiterwellElectronicsCoLimited = 0x0FB8,
+    /// Hapn Holdings, LLC (0x0FB7)
+    HapnHoldingsLlc = 0x0FB7,
+    /// TQ-Systems GmbH (0x0FB6)
+    TqSystemsGmbH = 0x0FB6,
+    /// Hangzhou Nano IC Technologies Co,. Ltd (0x0FB5)
+    HangzhouNanoIcTechnologiesCoLtd = 0x0FB5,
+    /// StoneDevices (0x0FB4)
+    StoneDevices = 0x0FB4,
+    /// Hooked Society Oy Ltd (0x0FB3)
+    HookedSocietyOyLtd = 0x0FB3,
+    /// PLAUD Inc. (0x0FB2)
+    PlaudInc = 0x0FB2,
+    /// Avivomed Inc. (0x0FB1)
+    AvivomedInc = 0x0FB1,
+    /// General Resistance, LLC (0x0FB0)
+    GeneralResistanceLlc = 0x0FB0,
+    /// Terasite Technologies (0x0FAF)
+    TerasiteTechnologies = 0x0FAF,
+    /// Capacite (0x0FAE)
+    Capacite = 0x0FAE,
+    /// The AI Toy Company (0x0FAD)
+    TheAiToyCompany = 0x0FAD,
+    /// Flitsmeister B.V. (0x0FAC)
+    FlitsmeisterBV = 0x0FAC,
+    /// Geo Radar AI Private Limited (0x0FAB)
+    GeoRadarAiPrivateLimited = 0x0FAB,
+    /// Suzhou Fanxi Technology Co., Ltd. (0x0FAA)
+    SuzhouFanxiTechnologyCoLtd = 0x0FAA,
+    /// Ranch Systems, Inc. (0x0FA9)
+    RanchSystemsInc = 0x0FA9,
+    /// Senti Technologies Private Limited (0x0FA8)
+    SentiTechnologiesPrivateLimited = 0x0FA8,
+    /// spheretek japan (0x0FA7)
+    SpheretekJapan = 0x0FA7,
+    /// Ugreen Group Limited (0x0FA6)
+    UgreenGroupLimited = 0x0FA6,
+    /// Avanos Medical, Inc. (0x0FA5)
+    AvanosMedicalInc = 0x0FA5,
+    /// Nice Spa (0x0FA4)
+    NiceSpa = 0x0FA4,
+    /// B.E.G. Brueck Electronic GmbH (0x0FA3)
+    BEGBrueckElectronicGmbH = 0x0FA3,
+    /// BIA NEUROSCIENCE INC. (0x0FA2)
+    BiaNeuroscienceInc = 0x0FA2,
+    /// PALRED RETAIL PRIVATE LIMITED (0x0FA1)
+    PalredRetailPrivateLimited = 0x0FA1,
+    /// DP IOT (0x0FA0)
+    DpIot = 0x0FA0,
+    /// Seiko Future Creation Inc. (0x0F9F)
+    SeikoFutureCreationInc = 0x0F9F,
+    /// Hibino Corporation (0x0F9E)
+    HibinoCorporation = 0x0F9E,
+    /// IRTrans GmbH (0x0F9D)
+    IrTransGmbH = 0x0F9D,
+    /// WePower Technologies LLC (0x0F9C)
+    WePowerTechnologiesLlc = 0x0F9C,
+    /// Hanshow Technology Co.,Ltd. (0x0F9B)
+    HanshowTechnologyCoLtd = 0x0F9B,
+    /// Eiritsu Electronics Industry Co., Ltd. (0x0F9A)
+    EiritsuElectronicsIndustryCoLtd = 0x0F9A,
+    /// DEZINE GROUP LLC (0x0F99)
+    DezineGroupLlc = 0x0F99,
+    /// Fitnexa Inc (0x0F98)
+    FitnexaInc = 0x0F98,
+    /// SPX Aids to Navigation Oy (0x0F97)
+    SpxAidsToNavigationOy = 0x0F97,
+    /// SEIKOIST, INC (0x0F96)
+    SeikoistInc = 0x0F96,
+    /// Dongguang Huasoo Automation Technology Company Limited (0x0F95)
+    DongguangHuasooAutomationTechnologyCompanyLimited = 0x0F95,
+    /// IDX Company, Ltd. (0x0F94)
+    IdxCompanyLtd = 0x0F94,
+    /// Aktiebolaget Ebeco (0x0F93)
+    AktiebolagetEbeco = 0x0F93,
+    /// Ethos Group, Inc. (0x0F92)
+    EthosGroupInc = 0x0F92,
+    /// Valostra Digital Ventures LLP (0x0F91)
+    ValostraDigitalVenturesLlp = 0x0F91,
+    /// MOBI7 TECNOLOGIA EM MOBILIDADE S.A. (0x0F90)
+    Mobi7TecnologiaEmMobilidadeSA = 0x0F90,
+    /// SIGNUM INTELLIGENCE LTD (0x0F8F)
+    SignumIntelligenceLtd = 0x0F8F,
+    /// Biceek Inc (0x0F8E)
+    BiceekInc = 0x0F8E,
+    /// JUREN CO., LTD. (0x0F8D)
+    JurenCoLtd = 0x0F8D,
+    /// ROYAL PARTS CO.,LTD (0x0F8C)
+    RoyalPartsCoLtd = 0x0F8C,
+    /// A.Y. McDonald Mfg. Co. (0x0F8B)
+    AYMcDonaldMfgCo = 0x0F8B,
+    /// Innogando S.L. (0x0F8A)
+    InnogandoSL = 0x0F8A,
+    /// STOREIO TECHNOLOGIES LTD (0x0F89)
+    StoreioTechnologiesLtd = 0x0F89,
+    /// Kohler Ventures, Inc. (0x0F88)
+    KohlerVenturesInc = 0x0F88,
+    /// Anacove Inc. (0x0F87)
+    AnacoveInc = 0x0F87,
+    /// Lakecrest Pty Ltd (0x0F86)
+    LakecrestPtyLtd = 0x0F86,
+    /// Hangzhou Sciener Smart Technology Co., Ltd. (0x0F85)
+    HangzhouScienerSmartTechnologyCoLtd = 0x0F85,
+    /// KT Micro, Inc. (0x0F84)
+    KtMicroInc = 0x0F84,
+    /// Calpeda S.p.A. (0x0F83)
+    CalpedaSPA = 0x0F83,
+    /// Amon Co.Ltd. (0x0F82)
+    AmonCoLtd = 0x0F82,
+    /// IN Phase International lTD (0x0F81)
+    InPhaseInternationalLTd = 0x0F81,
+    /// Hydro Electronic Devices, Inc. (0x0F80)
+    HydroElectronicDevicesInc = 0x0F80,
+    /// Badass eBikes GmbH (0x0F7F)
+    BadassEBikesGmbH = 0x0F7F,
+    /// shenzhen Holyiot Technology Co.,Ltd (0x0F7E)
+    ShenzhenHolyiotTechnologyCoLtd = 0x0F7E,
+    /// eQ-3 AG (0x0F7D)
+    EQ3Ag = 0x0F7D,
+    /// Polk Audio (0x0F7C)
+    PolkAudio = 0x0F7C,
+    /// SKYROAM, INC. (0x0F7B)
+    SkyroamInc = 0x0F7B,
+    /// SHENZHEN GUANG QI GUO CHUANG TECHNOLOGY CO.,LTD (0x0F7A)
+    ShenzhenGuangQiGuoChuangTechnologyCoLtd = 0x0F7A,
+    /// Walter Mueller Inc. for Industrial Electronics (0x0F79)
+    WalterMuellerIncForIndustrialElectronics = 0x0F79,
+    /// Also, Inc. (0x0F78)
+    AlsoInc = 0x0F78,
+    /// CROSS BRAIN CO.,Ltd. (0x0F77)
+    CrossBrainCoLtd = 0x0F77,
+    /// simatec ag (0x0F76)
+    SimatecAg = 0x0F76,
+    /// Senseonics, Incorporated (0x0F75)
+    SenseonicsIncorporated = 0x0F75,
+    /// Sperry Labs LLC (0x0F74)
+    SperryLabsLlc = 0x0F74,
+    /// Keycafe Inc. (0x0F73)
+    KeycafeInc = 0x0F73,
+    /// FLORLINK, INC. (0x0F72)
+    FlorlinkInc = 0x0F72,
+    /// PIRITIZ LLC (0x0F71)
+    PiritizLlc = 0x0F71,
+    /// TECHFLITTER SOLUTIONS PRIVATE LIMITED (0x0F70)
+    TechflitterSolutionsPrivateLimited = 0x0F70,
+    /// onanoff limited (0x0F6F)
+    OnanoffLimited = 0x0F6F,
+    /// iSi Wearable Safety GmbH (0x0F6E)
+    ISiWearableSafetyGmbH = 0x0F6E,
+    /// MODRETRO, INC. (0x0F6D)
+    ModretroInc = 0x0F6D,
+    /// Biogents AG (0x0F6C)
+    BiogentsAg = 0x0F6C,
+    /// Skywalk Inc. (0x0F6B)
+    SkywalkInc = 0x0F6B,
+    /// Roam Devices LLC (0x0F6A)
+    RoamDevicesLlc = 0x0F6A,
+    /// Ancoe Industry Corporation (0x0F69)
+    AncoeIndustryCorporation = 0x0F69,
+    /// Navico (0x0F68)
+    Navico = 0x0F68,
+    /// White Eagle Sonic Technologies, Inc. (0x0F67)
+    WhiteEagleSonicTechnologiesInc = 0x0F67,
+    /// BIGREDBEE, LLC (0x0F66)
+    BigredbeeLlc = 0x0F66,
+    /// CZV, Inc (0x0F65)
+    CzvInc = 0x0F65,
+    /// SafeNow GmbH (0x0F64)
+    SafeNowGmbH = 0x0F64,
+    /// WATTER, Inc. (0x0F63)
+    WatterInc = 0x0F63,
+    /// Kehwin Technologies Co. Ltd. (0x0F62)
+    KehwinTechnologiesCoLtd = 0x0F62,
+    /// HyolimXE Co., Ltd. (0x0F61)
+    HyolimXeCoLtd = 0x0F61,
+    /// ROBSON SRL (0x0F5F)
+    RobsonSrl = 0x0F5F,
+    /// WUXI WEIDA INTELLIGENT ELECTRONICS CO.,LTD. (0x0F5E)
+    WuxiWeidaIntelligentElectronicsCoLtd = 0x0F5E,
+    /// Leapcraft ApS (0x0F5D)
+    LeapcraftApS = 0x0F5D,
+    /// Micro Technology Services, Inc. (0x0F5C)
+    MicroTechnologyServicesInc = 0x0F5C,
+    /// shanghai fudan electronics group company Co. Ltd (0x0F5B)
+    ShanghaiFudanElectronicsGroupCompanyCoLtd = 0x0F5B,
+    /// Vibe Energy B.V. (0x0F5A)
+    VibeEnergyBV = 0x0F5A,
+    /// Silicon Vandals PTY LTD (0x0F59)
+    SiliconVandalsPtyLtd = 0x0F59,
+    /// Shenzhen Guo-link Technology Co.,Ltd. (0x0F58)
+    ShenzhenGuoLinkTechnologyCoLtd = 0x0F58,
+    /// Silverlake Technologies (0x0F57)
+    SilverlakeTechnologies = 0x0F57,
+    /// Astute Access Group Limited (0x0F56)
+    AstuteAccessGroupLimited = 0x0F56,
+    /// Sensoteq Ltd (0x0F55)
+    SensoteqLtd = 0x0F55,
+    /// ContiTech Deutschland GmbH (0x0F54)
+    ContiTechDeutschlandGmbH = 0x0F54,
+    /// Fledt & Meiton Marin AB (0x0F53)
+    FledtAndMeitonMarinAb = 0x0F53,
+    /// Shenzhen Yunke Intelligent Co.Ltd (0x0F52)
+    ShenzhenYunkeIntelligentCoLtd = 0x0F52,
+    /// ebm-papst Mulfingen GmbH & Co. KGaA & Co. KG (0x0F51)
+    EbmPapstMulfingenGmbHAndCoKGaAAndCoKg = 0x0F51,
+    /// Lantern Innovations Incorporated (0x0F50)
+    LanternInnovationsIncorporated = 0x0F50,
+    /// G-Vision GmbH (0x0F4F)
+    GVisionGmbH = 0x0F4F,
+    /// Ningbo Dooya Mechanic & Electronic Technology Co., Ltd (0x0F4E)
+    NingboDooyaMechanicAndElectronicTechnologyCoLtd = 0x0F4E,
+    /// Qulinda AB (0x0F4D)
+    QulindaAb = 0x0F4D,
+    /// JL WORLD CORPORATION LIMITED (0x0F4C)
+    JlWorldCorporationLimited = 0x0F4C,
+    /// desamisCo.,Ltd. (0x0F4B)
+    DesamisCoLtd = 0x0F4B,
+    /// Mitsubishi Motors Corporation (0x0F4A)
+    MitsubishiMotorsCorporation = 0x0F4A,
+    /// IYO INC. (0x0F49)
+    IyoInc = 0x0F49,
+    /// Lodestar Technology Inc. (0x0F47)
+    LodestarTechnologyInc = 0x0F47,
+    /// Huizhou Meicanxin Electronics Technology Co.,Ltd (0x0F46)
+    HuizhouMeicanxinElectronicsTechnologyCoLtd = 0x0F46,
+    /// Tactica Defense LLC (0x0F45)
+    TacticaDefenseLlc = 0x0F45,
+    /// MAVERICK ENERGY SOLUTIONS INTERNATIONAL,INC (0x0F44)
+    MaverickEnergySolutionsInternationalInc = 0x0F44,
+    /// 12mm Health Technology (Hainan) Co., Ltd. (0x0F43)
+    _12MmHealthTechnologyHainanCoLtd = 0x0F43,
+    /// LINKEDCHIP TECHNOLOGY INC (0x0F42)
+    LinkedchipTechnologyInc = 0x0F42,
+    /// BONX INC. (0x0F41)
+    BonxInc = 0x0F41,
+    /// Health Data Insight C.I.C. (0x0F40)
+    HealthDataInsightCIC = 0x0F40,
+    /// Landig + Lava GmbH & Co. KG (0x0F3F)
+    LandigLavaGmbHAndCoKg = 0x0F3F,
+    /// Salyx Medical Inc. (0x0F3E)
+    SalyxMedicalInc = 0x0F3E,
+    /// Vitio Medical S.L. (0x0F3D)
+    VitioMedicalSL = 0x0F3D,
+    /// Mobile Technology Solutions LLC (0x0F3C)
+    MobileTechnologySolutionsLlc = 0x0F3C,
+    /// SANWA NEWTEC CO.,LTD. (0x0F3B)
+    SanwaNewtecCoLtd = 0x0F3B,
+    /// Southern Audio Services, Inc (0x0F3A)
+    SouthernAudioServicesInc = 0x0F3A,
+    /// Seitron Spa (0x0F39)
+    SeitronSpa = 0x0F39,
+    /// GILL INSTRUMENTS LIMITED (0x0F38)
+    GillInstrumentsLimited = 0x0F38,
+    /// Schueco International KG (0x0F37)
+    SchuecoInternationalKg = 0x0F37,
+    /// NODER Joint Stock Company (0x0F36)
+    NoderJointStockCompany = 0x0F36,
+    /// Audeze LLC (0x0F35)
+    AudezeLlc = 0x0F35,
+    /// NINGBO SHARKWARD ELECTRONICS CO.,LTD (0x0F34)
+    NingboSharkwardElectronicsCoLtd = 0x0F34,
+    /// TETNET (0x0F33)
+    Tetnet = 0x0F33,
+    /// FLINTEC UK LIMITED (0x0F32)
+    FlintecUkLimited = 0x0F32,
+    /// TECHNOLOGIES FOR FREERIDE s.r.o (0x0F31)
+    TechnologiesForFreerideSRO = 0x0F31,
+    /// Opal Camera, Inc. (0x0F30)
+    OpalCameraInc = 0x0F30,
+    /// ThingCo Limited (0x0F2F)
+    ThingCoLimited = 0x0F2F,
+    /// BRITZ INTERNATIONAL CO.,LTD (0x0F2E)
+    BritzInternationalCoLtd = 0x0F2E,
+    /// ClipsClips LLC (0x0F2D)
+    ClipsClipsLlc = 0x0F2D,
+    /// Vision Group Inc. (0x0F2C)
+    VisionGroupInc = 0x0F2C,
+    /// ElitEngineering LLC (0x0F2B)
+    ElitEngineeringLlc = 0x0F2B,
+    /// KELLER Druckmesstechnik AG (0x0F2A)
+    KellerDruckmesstechnikAg = 0x0F2A,
+    /// Trezor Company s.r.o. (0x0F29)
+    TrezorCompanySRO = 0x0F29,
+    /// Amp Fit Israel LTD (0x0F28)
+    AmpFitIsraelLtd = 0x0F28,
+    /// Global Link Distribution Corp. (0x0F27)
+    GlobalLinkDistributionCorp = 0x0F27,
+    /// Centromere Holding B.V. (0x0F26)
+    CentromereHoldingBV = 0x0F26,
+    /// Sichuan Changhong Neonet Technologies Co.,Ltd. (0x0F25)
+    SichuanChanghongNeonetTechnologiesCoLtd = 0x0F25,
+    /// Easy Measure Co., Ltd. (0x0F24)
+    EasyMeasureCoLtd = 0x0F24,
+    /// Yuquan Semiconductor (Xiamen) Co., Ltd. (0x0F23)
+    YuquanSemiconductorXiamenCoLtd = 0x0F23,
+    /// ONESPACE TECHNOLOGIES (PTY) LTD (0x0F22)
+    OnespaceTechnologiesPtyLtd = 0x0F22,
+    /// Rokk Limited (0x0F21)
+    RokkLimited = 0x0F21,
+    /// Beijing Spring Creation Technology Co., Ltd. (0x0F20)
+    BeijingSpringCreationTechnologyCoLtd = 0x0F20,
+    /// Ninebot (Changzhou) Tech Co., Ltd. (0x0F1F)
+    NinebotChangzhouTechCoLtd = 0x0F1F,
+    /// Yolni Inc. (0x0F1E)
+    YolniInc = 0x0F1E,
+    /// ZIMMERMANN PV-Steel Group GmbH & Co. KG (0x0F1D)
+    ZimmermannPvSteelGroupGmbHAndCoKg = 0x0F1D,
+    /// Edge Semiconductors Inc. (0x0F1C)
+    EdgeSemiconductorsInc = 0x0F1C,
+    /// PalatiumCare LLC (0x0F1B)
+    PalatiumCareLlc = 0x0F1B,
+    /// FLO SCIENCES, LLC (0x0F1A)
+    FloSciencesLlc = 0x0F1A,
+    /// Shenzhen SuperSound Technology Co.,Ltd (0x0F19)
+    ShenzhenSuperSoundTechnologyCoLtd = 0x0F19,
+    /// iKeyless, LLC (0x0F18)
+    IKeylessLlc = 0x0F18,
+    /// RORENTECH Co., Ltd. (0x0F17)
+    RorentechCoLtd = 0x0F17,
+    /// ADHD Friendly co.Ltd (0x0F16)
+    AdhdFriendlyCoLtd = 0x0F16,
+    /// Oval Corporation (0x0F15)
+    OvalCorporation = 0x0F15,
+    /// PreEvnt, LLC (0x0F14)
+    PreEvntLlc = 0x0F14,
+    /// Freshape SA (0x0F13)
+    FreshapeSa = 0x0F13,
+    /// Endur ID, Inc. (0x0F12)
+    EndurIdInc = 0x0F12,
+    /// Deep and Steep LLC (0x0F11)
+    DeepAndSteepLlc = 0x0F11,
+    /// ShenZhen Doctors of Intelligence & Technology Co.,Ltd (0x0F10)
+    ShenZhenDoctorsOfIntelligenceAndTechnologyCoLtd = 0x0F10,
+    /// caive Inc. (0x0F0F)
+    CaiveInc = 0x0F0F,
+    /// IDEATRONIK Limited Liability Company (0x0F0E)
+    IdeatronikLimitedLiabilityCompany = 0x0F0E,
+    /// Maennl Elektronik GmbH (0x0F0D)
+    MaennlElektronikGmbH = 0x0F0D,
+    /// Hitachi Industrial Equipment Systems Co.,Ltd. (0x0F0C)
+    HitachiIndustrialEquipmentSystemsCoLtd = 0x0F0C,
+    /// Brightway Innovation Intelligent Technology (Suzhou) Co., Ltd. (0x0F0B)
+    BrightwayInnovationIntelligentTechnologySuzhouCoLtd = 0x0F0B,
+    /// LION GROUP, INC. (0x0F0A)
+    LionGroupInc = 0x0F0A,
+    /// ANC CHINA LIMITED (0x0F09)
+    AncChinaLimited = 0x0F09,
+    /// Lezyne USA Inc. (0x0F08)
+    LezyneUsaInc = 0x0F08,
+    /// Tech OVN Private Limited (0x0F07)
+    TechOvnPrivateLimited = 0x0F07,
+    /// SHENZHEN POWEROAK NEWENER CO., LTD (0x0F06)
+    ShenzhenPoweroakNewenerCoLtd = 0x0F06,
+    /// SHENZHEN GWSTAI TECHNOLOGY CO.,LTD (0x0F05)
+    ShenzhenGwstaiTechnologyCoLtd = 0x0F05,
+    /// Lumen Labs (HK) Ltd (0x0F04)
+    LumenLabsHkLtd = 0x0F04,
+    /// Olibra LLC (0x0F03)
+    OlibraLlc = 0x0F03,
+    /// GE HEALTHCARE TECHNOLOGIES INC. (0x0F02)
+    GeHealthcareTechnologiesInc = 0x0F02,
+    /// HAPPLABS SOFTWARE PRIVATE LIMITED (0x0F01)
+    HapplabsSoftwarePrivateLimited = 0x0F01,
+    /// TRACERCO LIMITED (0x0F00)
+    TracercoLimited = 0x0F00,
+    /// Healthcare Technology Limited (0x0EFF)
+    HealthcareTechnologyLimited = 0x0EFF,
     /// Teledyne Instruments, Inc. (0x0EFE)
     TeledyneInstrumentsInc = 0x0EFE,
     /// PRIMES GmbH (0x0EFD)
@@ -37,12 +913,8 @@ pub enum CompanyIdentifier {
     ShenzhenCyberInnovationTechnologyCoLtd = 0x0EF6,
     /// LS ELECTRIC Co., Ltd. (0x0EF5)
     LsElectricCoLtd = 0x0EF5,
-    /// SEMINOLE ELECTRONICS PRIVATE LIMITED (0x0EF4)
-    SeminoleElectronicsPrivateLimited = 0x0EF4,
     /// Monil AS (0x0EF3)
     MonilAs = 0x0EF3,
-    /// CAPTAIN BLINK (0x0EF2)
-    CaptainBlink = 0x0EF2,
     /// Wuxi Does IOT Co., Ltd (0x0EF1)
     WuxiDoesIotCoLtd = 0x0EF1,
     /// Seaward Electronic (0x0EF0)
@@ -155,10 +1027,6 @@ pub enum CompanyIdentifier {
     AsahiDensoCoLtd = 0x0EBB,
     /// THERMY LTD (0x0EBA)
     ThermyLtd = 0x0EBA,
-    /// egojin co,.ltd (0x0EB9)
-    EgojinCoLtd = 0x0EB9,
-    /// PARAGON ID (0x0EB8)
-    ParagonId = 0x0EB8,
     /// Embedded Solutions LLC (0x0EB7)
     EmbeddedSolutionsLlc = 0x0EB7,
     /// Server Products, Inc. (0x0EB6)
@@ -185,8 +1053,6 @@ pub enum CompanyIdentifier {
     DynetrexSolutionsInc = 0x0EAC,
     /// STEYR Sport GmbH (0x0EAB)
     SteyrSportGmbH = 0x0EAB,
-    /// Hive Soundz inc. (0x0EAA)
-    HiveSoundzInc = 0x0EAA,
     /// Makichie Co., Ltd. (0x0EA9)
     MakichieCoLtd = 0x0EA9,
     /// Dongguan Trangjan Industrial Co., Ltd (0x0EA8)
@@ -195,8 +1061,6 @@ pub enum CompanyIdentifier {
     BrickXterGmbH = 0x0EA7,
     /// AMG Lab LLC (0x0EA6)
     AmgLabLlc = 0x0EA6,
-    /// EasyReach Solutions Private Limited (0x0EA5)
-    EasyReachSolutionsPrivateLimited = 0x0EA5,
     /// BiTECH Automotive (Wuhu) Co.,Ltd (0x0EA4)
     BiTechAutomotiveWuhuCoLtd = 0x0EA4,
     /// OLIS ELECTRONICS, LLC (0x0EA3)
@@ -297,18 +1161,12 @@ pub enum CompanyIdentifier {
     RockyRadiosLlc = 0x0E74,
     /// Adventures of the Persistently Impaired (and other tales) Limited (0x0E73)
     AdventuresOfThePersistentlyImpairedAndOtherTalesLimited = 0x0E73,
-    /// TOR.AI LIMITED (0x0E72)
-    TorAiLimited = 0x0E72,
     /// ENABLEWEAR LLC (0x0E71)
     EnablewearLlc = 0x0E71,
     /// Powerstick.com (0x0E70)
     PowerstickCom = 0x0E70,
     /// OpConnect, Inc. (0x0E6F)
     OpConnectInc = 0x0E6F,
-    /// I.M.LAB Inc (0x0E6E)
-    IMLabInc = 0x0E6E,
-    /// FEVOS LIMITED (0x0E6D)
-    FevosLimited = 0x0E6D,
     /// RIGH, INC. (0x0E6C)
     RighInc = 0x0E6C,
     /// Shenzhen Goodocom Information Technology Co., Ltd. (0x0E6B)
@@ -317,8 +1175,6 @@ pub enum CompanyIdentifier {
     HyenaInc = 0x0E6A,
     /// Megatronix (Beijing) Technology Co., Ltd (0x0E69)
     MegatronixBeijingTechnologyCoLtd = 0x0E69,
-    /// EarTex Ltd (0x0E68)
-    EarTexLtd = 0x0E68,
     /// NEXT DEVICES LTDA (0x0E67)
     NextDevicesLtda = 0x0E67,
     /// Shenzhen Baseus Technology Co., Ltd. (0x0E66)
@@ -341,8 +1197,8 @@ pub enum CompanyIdentifier {
     ShaperToolsInc = 0x0E5E,
     /// L.T.H. Electronics Limited (0x0E5D)
     LTHElectronicsLimited = 0x0E5D,
-    /// Amimon Ltd. (0x0E5C)
-    AmimonLtd = 0x0E5C,
+    /// Rocoto Ltd (0x0E5C)
+    RocotoLtd = 0x0E5C,
     /// Wuhu Hongjing Electronic Co.,Ltd (0x0E5B)
     WuhuHongjingElectronicCoLtd = 0x0E5B,
     /// OmniWave Microelectronics Shanghai Co., Ltd (0x0E5A)
@@ -357,8 +1213,8 @@ pub enum CompanyIdentifier {
     IneproMeteringBV = 0x0E56,
     /// New Cosmos Electric Co., Ltd. (0x0E55)
     NewCosmosElectricCoLtd = 0x0E55,
-    /// Relief Technologies AS (0x0E54)
-    ReliefTechnologiesAs = 0x0E54,
+    /// After Technologies AS (0x0E54)
+    AfterTechnologiesAs = 0x0E54,
     /// MINIRIG (0x0E53)
     Minirig = 0x0E53,
     /// Aquana, LLC (0x0E52)
@@ -497,16 +1353,12 @@ pub enum CompanyIdentifier {
     EkoHealthInc = 0x0E10,
     /// SenseWorks Tecnologia Ltda. (0x0E0F)
     SenseWorksTecnologiaLtda = 0x0E0F,
-    /// ALOGIC CORPORATION PTY LTD (0x0E0E)
-    AlogicCorporationPtyLtd = 0x0E0E,
     /// FrontAct Co., Ltd. (0x0E0D)
     FrontActCoLtd = 0x0E0D,
     /// Yuanfeng Technology Co., Ltd. (0x0E0C)
     YuanfengTechnologyCoLtd = 0x0E0C,
     /// Sounding Audio Industrial Ltd. (0x0E0B)
     SoundingAudioIndustrialLtd = 0x0E0B,
-    /// PRINT INTERNATIONAL LIMITED (0x0E0A)
-    PrintInternationalLimited = 0x0E0A,
     /// Evolutive Systems SL (0x0E09)
     EvolutiveSystemsSl = 0x0E09,
     /// Heinrich Kopp GmbH (0x0E08)
@@ -605,8 +1457,6 @@ pub enum CompanyIdentifier {
     MinebeaIntecGmbH = 0x0DDA,
     /// SCHELL GmbH & Co. KG (0x0DD9)
     SchellGmbHAndCoKg = 0x0DD9,
-    /// Granchip IoT Technology (Guangzhou) Co.,Ltd (0x0DD8)
-    GranchipIoTTechnologyGuangzhouCoLtd = 0x0DD8,
     /// Xiant Technologies, Inc. (0x0DD7)
     XiantTechnologiesInc = 0x0DD7,
     /// MODULAR MEDICAL, INC. (0x0DD6)
@@ -617,8 +1467,8 @@ pub enum CompanyIdentifier {
     KoqoonGmbHAndCoKg = 0x0DD4,
     /// Global Satellite Engineering (0x0DD3)
     GlobalSatelliteEngineering = 0x0DD3,
-    /// Sitecom Europe B.V. (0x0DD2)
-    SitecomEuropeBV = 0x0DD2,
+    /// Fresh n Rebel B.V. (0x0DD2)
+    FreshNRebelBV = 0x0DD2,
     /// OrangeMicro Limited (0x0DD1)
     OrangeMicroLimited = 0x0DD1,
     /// ESNAH (0x0DD0)
@@ -691,8 +1541,6 @@ pub enum CompanyIdentifier {
     HexagonAuraRealityAg = 0x0DAF,
     /// TITUM AUDIO, INC. (0x0DAE)
     TitumAudioInc = 0x0DAE,
-    /// linktop (0x0DAD)
-    Linktop = 0x0DAD,
     /// ITALTRACTOR ITM S.P.A. (0x0DAC)
     ItaltractorItmSPA = 0x0DAC,
     /// Efento (0x0DAB)
@@ -741,8 +1589,6 @@ pub enum CompanyIdentifier {
     NeokohmSistemasEletronicosLtda = 0x0D96,
     /// Hunter Industries Incorporated (0x0D95)
     HunterIndustriesIncorporated = 0x0D95,
-    /// Shrooly Inc (0x0D94)
-    ShroolyInc = 0x0D94,
     /// HagerEnergy GmbH (0x0D93)
     HagerEnergyGmbH = 0x0D93,
     /// TACHIKAWA CORPORATION (0x0D92)
@@ -765,8 +1611,6 @@ pub enum CompanyIdentifier {
     SimplyEmbeddedInc = 0x0D8A,
     /// Nanohex Corp (0x0D89)
     NanohexCorp = 0x0D89,
-    /// Geocene Inc. (0x0D88)
-    GeoceneInc = 0x0D88,
     /// Quectel Wireless Solutions Co., Ltd. (0x0D87)
     QuectelWirelessSolutionsCoLtd = 0x0D87,
     /// ROCKWELL AUTOMATION, INC. (0x0D86)
@@ -821,8 +1665,6 @@ pub enum CompanyIdentifier {
     LookCycleInternational = 0x0D6E,
     /// DYNAMOX S/A (0x0D6D)
     DynamoxSA = 0x0D6D,
-    /// Ambient IoT Pty Ltd (0x0D6C)
-    AmbientIoTPtyLtd = 0x0D6C,
     /// Crane Payment Innovations, Inc. (0x0D6B)
     CranePaymentInnovationsInc = 0x0D6B,
     /// Helge Kaiser GmbH (0x0D6A)
@@ -853,8 +1695,6 @@ pub enum CompanyIdentifier {
     PellaCorp = 0x0D5E,
     /// Stogger B.V. (0x0D5D)
     StoggerBV = 0x0D5D,
-    /// Pison Technology, Inc. (0x0D5C)
-    PisonTechnologyInc = 0x0D5C,
     /// Axis Communications AB (0x0D5B)
     AxisCommunicationsAb = 0x0D5B,
     /// Gunnebo Aktiebolag (0x0D5A)
@@ -885,8 +1725,6 @@ pub enum CompanyIdentifier {
     NikatSolutionsPrivateLimited = 0x0D4E,
     /// Optec, LLC (0x0D4D)
     OptecLlc = 0x0D4D,
-    /// IotGizmo Corporation (0x0D4C)
-    IotGizmoCorporation = 0x0D4C,
     /// Soundwave Hearing, LLC (0x0D4B)
     SoundwaveHearingLlc = 0x0D4B,
     /// Rockpile Solutions, LLC (0x0D4A)
@@ -923,8 +1761,6 @@ pub enum CompanyIdentifier {
     LoneStarMarinePtyLtd = 0x0D3B,
     /// Frost Solutions, LLC (0x0D3A)
     FrostSolutionsLlc = 0x0D3A,
-    /// Systemic Games, LLC (0x0D39)
-    SystemicGamesLlc = 0x0D39,
     /// CycLock (0x0D38)
     CycLock = 0x0D38,
     /// Zerene Inc. (0x0D37)
@@ -1003,8 +1839,6 @@ pub enum CompanyIdentifier {
     MerryElectronicsCoLtd = 0x0D13,
     /// Spartek Systems Inc. (0x0D12)
     SpartekSystemsInc = 0x0D12,
-    /// Great Dane LLC (0x0D11)
-    GreatDaneLlc = 0x0D11,
     /// JVC KENWOOD Corporation (0x0D10)
     JvcKenwoodCorporation = 0x0D10,
     /// Timebirds Australia Pty Ltd (0x0D0F)
@@ -1037,14 +1871,8 @@ pub enum CompanyIdentifier {
     RockyMountainAtvMcJakeWilson = 0x0D02,
     /// KEEPEN (0x0D01)
     Keepen = 0x0D01,
-    /// Sparkpark AS (0x0D00)
-    SparkparkAs = 0x0D00,
-    /// Ergodriven Inc (0x0CFF)
-    ErgodrivenInc = 0x0CFF,
     /// Thule Group AB (0x0CFE)
     ThuleGroupAb = 0x0CFE,
-    /// Wuhan Woncan Construction Technologies Co., Ltd. (0x0CFD)
-    WuhanWoncanConstructionTechnologiesCoLtd = 0x0CFD,
     /// ElectronX design (0x0CFC)
     ElectronXDesign = 0x0CFC,
     /// Tyromotion GmbH (0x0CFB)
@@ -1065,8 +1893,6 @@ pub enum CompanyIdentifier {
     SoluxPtyLtd = 0x0CF4,
     /// Radio Sound (0x0CF3)
     RadioSound = 0x0CF3,
-    /// BestSens AG (0x0CF2)
-    BestSensAg = 0x0CF2,
     /// Midmark (0x0CF1)
     Midmark = 0x0CF1,
     /// THOTAKA TEKHNOLOGIES INDIA PRIVATE LIMITED (0x0CF0)
@@ -1089,8 +1915,8 @@ pub enum CompanyIdentifier {
     DongguanYougoElectronicsCoLtd = 0x0CE8,
     /// TAG HEUER SA (0x0CE7)
     TagHeuerSa = 0x0CE7,
-    /// McWong International, Inc. (0x0CE6)
-    McWongInternationalInc = 0x0CE6,
+    /// mwConnect (0x0CE6)
+    MwConnect = 0x0CE6,
     /// Amina Distribution AS (0x0CE5)
     AminaDistributionAs = 0x0CE5,
     /// Off-Highway Powertrain Services Germany GmbH (0x0CE4)
@@ -1105,8 +1931,6 @@ pub enum CompanyIdentifier {
     VodalogicPtyLtd = 0x0CE0,
     /// SHENZHEN CHENYUN ELECTRONICS  CO., LTD (0x0CDF)
     ShenzhenChenyunElectronicsCoLtd = 0x0CDF,
-    /// RESPONSE TECHNOLOGIES, LTD. (0x0CDE)
-    ResponseTechnologiesLtd = 0x0CDE,
     /// Alif Semiconductor, Inc. (0x0CDD)
     AlifSemiconductorInc = 0x0CDD,
     /// Ypsomed AG (0x0CDC)
@@ -1171,16 +1995,12 @@ pub enum CompanyIdentifier {
     ForwardThinkingSystemsLlc = 0x0CBF,
     /// Pricer AB (0x0CBD)
     PricerAb = 0x0CBD,
-    /// TROX GmbH (0x0CBC)
-    TroxGmbH = 0x0CBC,
     /// Emlid Tech Kft. (0x0CBB)
     EmlidTechKft = 0x0CBB,
     /// Ameso Tech (OPC) Private Limited (0x0CBA)
     AmesoTechOpcPrivateLimited = 0x0CBA,
     /// seca GmbH & Co. KG (0x0CB9)
     SecaGmbHAndCoKg = 0x0CB9,
-    /// Shanghai Proxy Network Technology Co., Ltd. (0x0CB8)
-    ShanghaiProxyNetworkTechnologyCoLtd = 0x0CB8,
     /// Cucumber Lighting Controls Limited (0x0CB7)
     CucumberLightingControlsLimited = 0x0CB7,
     /// THE EELECTRIC MACARON LLC (0x0CB6)
@@ -1231,8 +2051,6 @@ pub enum CompanyIdentifier {
     Bigben = 0x0CA0,
     /// Dragonfly Energy Corp. (0x0C9F)
     DragonflyEnergyCorp = 0x0C9F,
-    /// ECCEL CORPORATION SAS (0x0C9E)
-    EccelCorporationSas = 0x0C9E,
     /// Ribbiot, INC. (0x0C9D)
     RibbiotInc = 0x0C9D,
     /// Sunstone-RTLS Ipari Szolgaltato Korlatolt Felelossegu Tarsasag (0x0C9C)
@@ -1243,8 +2061,6 @@ pub enum CompanyIdentifier {
     AlfInc = 0x0C9A,
     /// Vire Health Oy (0x0C99)
     VireHealthOy = 0x0C99,
-    /// MiX Telematics International (PTY) LTD (0x0C98)
-    MiXTelematicsInternationalPtyLtd = 0x0C98,
     /// Deako (0x0C97)
     Deako = 0x0C97,
     /// H+B Hightech GmbH (0x0C96)
@@ -1295,8 +2111,6 @@ pub enum CompanyIdentifier {
     CardioidTechnologiesLda = 0x0C80,
     /// Rochester Sensors, LLC (0x0C7F)
     RochesterSensorsLlc = 0x0C7F,
-    /// BOOMING OF THINGS (0x0C7E)
-    BoomingOfThings = 0x0C7E,
     /// 3ALogics, Inc. (0x0C7D)
     _3ALogicsInc = 0x0C7D,
     /// Mopeka Products LLC (0x0C7C)
@@ -1311,8 +2125,6 @@ pub enum CompanyIdentifier {
     ChargtronIotPrivateLimited = 0x0C78,
     /// TEAC Corporation (0x0C77)
     TeacCorporation = 0x0C77,
-    /// Shenzhen Gwell Times Technology Co. , Ltd (0x0C76)
-    ShenzhenGwellTimesTechnologyCoLtd = 0x0C76,
     /// Embedded Engineering Solutions LLC (0x0C75)
     EmbeddedEngineeringSolutionsLlc = 0x0C75,
     /// yupiteru (0x0C74)
@@ -1337,14 +2149,10 @@ pub enum CompanyIdentifier {
     GilsonSas = 0x0C6B,
     /// CONSORCIO TRUST CONTROL - NETTEL (0x0C6A)
     ConsorcioTrustControlNettel = 0x0C6A,
-    /// BLITZ electric motors. LTD (0x0C69)
-    BlitzElectricMotorsLtd = 0x0C69,
     /// Emerja Corporation (0x0C68)
     EmerjaCorporation = 0x0C68,
     /// TRACKTING S.R.L. (0x0C67)
     TracktingSRL = 0x0C67,
-    /// DEN Smart Home B.V. (0x0C66)
-    DenSmartHomeBV = 0x0C66,
     /// WAKO CO,.LTD (0x0C65)
     WakoCoLtd = 0x0C65,
     /// dormakaba Holding AG (0x0C64)
@@ -1407,8 +2215,6 @@ pub enum CompanyIdentifier {
     ValeoManagementServices = 0x0C48,
     /// Epsilon Electronics,lnc (0x0C47)
     EpsilonElectronicsLnc = 0x0C47,
-    /// Granwin IoT Technology (Guangzhou) Co.,Ltd (0x0C46)
-    GranwinIoTTechnologyGuangzhouCoLtd = 0x0C46,
     /// Brose Verwaltung SE, Bamberg (0x0C45)
     BroseVerwaltungSeBamberg = 0x0C45,
     /// ONCELABS LLC (0x0C44)
@@ -1431,16 +2237,12 @@ pub enum CompanyIdentifier {
     ClassifiedCycling = 0x0C3C,
     /// ORB Innovations Ltd (0x0C3B)
     OrbInnovationsLtd = 0x0C3B,
-    /// Equinosis, LLC (0x0C3A)
-    EquinosisLlc = 0x0C3A,
     /// TIGER CORPORATION (0x0C39)
     TigerCorporation = 0x0C39,
     /// Noritz Corporation. (0x0C38)
     NoritzCorporation = 0x0C38,
     /// SignalQuest, LLC (0x0C37)
     SignalQuestLlc = 0x0C37,
-    /// Cosmicnode BV (0x0C36)
-    CosmicnodeBv = 0x0C36,
     /// Thermokon-Sensortechnik GmbH (0x0C35)
     ThermokonSensortechnikGmbH = 0x0C35,
     /// BYD Company Limited (0x0C34)
@@ -1561,8 +2363,6 @@ pub enum CompanyIdentifier {
     DodamEnersysCoLtd = 0x0BFB,
     /// CleanBands Systems Ltd. (0x0BFA)
     CleanBandsSystemsLtd = 0x0BFA,
-    /// Alio, Inc (0x0BF9)
-    AlioInc = 0x0BF9,
     /// Innovacionnye Resheniya (0x0BF8)
     InnovacionnyeResheniya = 0x0BF8,
     /// Wacker Neuson SE (0x0BF7)
@@ -1571,8 +2371,6 @@ pub enum CompanyIdentifier {
     GreenTegAg = 0x0BF6,
     /// T5 tek, Inc. (0x0BF5)
     T5TekInc = 0x0BF5,
-    /// ER Lab LLC (0x0BF4)
-    ErLabLlc = 0x0BF4,
     /// PONE BIOMETRICS AS (0x0BF3)
     PoneBiometricsAs = 0x0BF3,
     /// Angel Medical Systems, Inc. (0x0BF2)
@@ -1587,8 +2385,6 @@ pub enum CompanyIdentifier {
     LinksysUsaInc = 0x0BEE,
     /// CORAL-TAIYI Co. Ltd. (0x0BED)
     CoralTaiyiCoLtd = 0x0BED,
-    /// Miracle-Ear, Inc. (0x0BEC)
-    MiracleEarInc = 0x0BEC,
     /// Luna Health, Inc. (0x0BEB)
     LunaHealthInc = 0x0BEB,
     /// Twenty Five Seven, prodaja in storitve, d.o.o. (0x0BEA)
@@ -1609,8 +2405,6 @@ pub enum CompanyIdentifier {
     ComtelSystemsLtd = 0x0BE3,
     /// OTC engineering (0x0BE2)
     OtcEngineering = 0x0BE2,
-    /// Back40 Precision (0x0BE1)
-    Back40Precision = 0x0BE1,
     /// Koizumi Lighting Technology corp. (0x0BE0)
     KoizumiLightingTechnologyCorp = 0x0BE0,
     /// WINKEY ENTERPRISE (HONG KONG) LIMITED (0x0BDF)
@@ -1619,18 +2413,14 @@ pub enum CompanyIdentifier {
     Yale = 0x0BDE,
     /// Coroflo Limited (0x0BDD)
     CorofloLimited = 0x0BDD,
-    /// Ledworks S.r.l. (0x0BDC)
-    LedworksSRL = 0x0BDC,
+    /// TWINKLY SRL (0x0BDC)
+    TwinklySrl = 0x0BDC,
     /// CHAR-BROIL, LLC (0x0BDB)
     CharBroilLlc = 0x0BDB,
     /// Aardex Ltd. (0x0BDA)
     AardexLtd = 0x0BDA,
-    /// Elics Basis Ltd. (0x0BD9)
-    ElicsBasisLtd = 0x0BD9,
     /// PURA SCENTS, INC. (0x0BD8)
     PuraScentsInc = 0x0BD8,
-    /// VINFAST TRADING AND PRODUCTION JOINT STOCK COMPANY (0x0BD7)
-    VinfastTradingAndProductionJointStockCompany = 0x0BD7,
     /// Shenzhen Injoinic Technology Co., Ltd. (0x0BD6)
     ShenzhenInjoinicTechnologyCoLtd = 0x0BD6,
     /// Super B Lithium Power B.V. (0x0BD5)
@@ -1681,8 +2471,6 @@ pub enum CompanyIdentifier {
     HimsaIiKS = 0x0BBF,
     /// SAAB Aktiebolag (0x0BBE)
     SaabAktiebolag = 0x0BBE,
-    /// ETHEORY PTY LTD (0x0BBD)
-    EtheoryPtyLtd = 0x0BBD,
     /// T2REALITY SOLUTIONS PRIVATE LIMITED (0x0BBC)
     T2RealitySolutionsPrivateLimited = 0x0BBC,
     /// SWISSINNO SOLUTIONS AG (0x0BBB)
@@ -1749,8 +2537,6 @@ pub enum CompanyIdentifier {
     SensoriaHoldingsLtd = 0x0B9D,
     /// Komatsu Ltd. (0x0B9C)
     KomatsuLtd = 0x0B9C,
-    /// GISMAN (0x0B9B)
-    Gisman = 0x0B9B,
     /// Beijing Wisepool Infinite Intelligence Technology Co.,Ltd (0x0B9A)
     BeijingWisepoolInfiniteIntelligenceTechnologyCoLtd = 0x0B9A,
     /// The Goodyear Tire & Rubber Company (0x0B99)
@@ -1761,18 +2547,12 @@ pub enum CompanyIdentifier {
     SilverTreeLabsInc = 0x0B97,
     /// Telecom Design (0x0B96)
     TelecomDesign = 0x0B96,
-    /// Netwake GmbH (0x0B95)
-    NetwakeGmbH = 0x0B95,
     /// Dreem SAS (0x0B94)
     DreemSas = 0x0B94,
     /// Hangzhou BroadLink Technology Co., Ltd. (0x0B93)
     HangzhouBroadLinkTechnologyCoLtd = 0x0B93,
-    /// Citisend Solutions, SL (0x0B92)
-    CitisendSolutionsSl = 0x0B92,
     /// Alfen ICU B.V. (0x0B91)
     AlfenIcuBV = 0x0B91,
-    /// Ineos Automotive Limited (0x0B90)
-    IneosAutomotiveLimited = 0x0B90,
     /// Senscomm Semiconductor Co., Ltd. (0x0B8F)
     SenscommSemiconductorCoLtd = 0x0B8F,
     /// Gentle Energy Corp. (0x0B8E)
@@ -1837,8 +2617,6 @@ pub enum CompanyIdentifier {
     LilbitOdmAs = 0x0B71,
     /// JDRF Electromag Engineering Inc (0x0B70)
     JdrfElectromagEngineeringInc = 0x0B70,
-    /// Shenzhen Malide Technology Co.,Ltd (0x0B6F)
-    ShenzhenMalideTechnologyCoLtd = 0x0B6F,
     /// React Mobile (0x0B6E)
     ReactMobile = 0x0B6E,
     /// SOLUM CO., LTD (0x0B6D)
@@ -1853,8 +2631,6 @@ pub enum CompanyIdentifier {
     Addaday = 0x0B69,
     /// Quha oy (0x0B68)
     QuhaOy = 0x0B68,
-    /// CleanSpace Technology Pty Ltd (0x0B67)
-    CleanSpaceTechnologyPtyLtd = 0x0B67,
     /// MITSUBISHI ELECTRIC AUTOMATION (THAILAND) COMPANY LIMITED (0x0B66)
     MitsubishiElectricAutomationThailandCompanyLimited = 0x0B66,
     /// The Apache Software Foundation (0x0B65)
@@ -1875,14 +2651,8 @@ pub enum CompanyIdentifier {
     CellcontrolInc = 0x0B5E,
     /// Fujian Newland Auto-ID Tech. Co., Ltd. (0x0B5D)
     FujianNewlandAutoIdTechCoLtd = 0x0B5D,
-    /// Exponential Power, Inc. (0x0B5C)
-    ExponentialPowerInc = 0x0B5C,
     /// Shenzhen ImagineVision Technology Limited (0x0B5B)
     ShenzhenImagineVisionTechnologyLimited = 0x0B5B,
-    /// H.P. Shelby Manufacturing, LLC. (0x0B5A)
-    HPShelbyManufacturingLlc = 0x0B5A,
-    /// Versa Group B.V. (0x0B59)
-    VersaGroupBV = 0x0B59,
     /// TOKAI-DENSHI INC (0x0B58)
     TokaiDenshiInc = 0x0B58,
     /// CONVERTRONIX TECHNOLOGIES AND SERVICES LLP (0x0B57)
@@ -1919,8 +2689,6 @@ pub enum CompanyIdentifier {
     NioUsaInc = 0x0B48,
     /// Gentex Corporation (0x0B47)
     GentexCorporation = 0x0B47,
-    /// Bird Rides, Inc. (0x0B46)
-    BirdRidesInc = 0x0B46,
     /// Electronic Sensors, Inc. (0x0B45)
     ElectronicSensorsInc = 0x0B45,
     /// nFore Technology Co., Ltd. (0x0B44)
@@ -1975,12 +2743,8 @@ pub enum CompanyIdentifier {
     IllumagearInc = 0x0B2C,
     /// MAINBOT (0x0B2B)
     Mainbot = 0x0B2B,
-    /// ACL Airshop B.V. (0x0B2A)
-    AclAirshopBV = 0x0B2A,
     /// Tech-Venom Entertainment Private Limited (0x0B29)
     TechVenomEntertainmentPrivateLimited = 0x0B29,
-    /// CHACON (0x0B28)
-    Chacon = 0x0B28,
     /// Lumi United Technology Co., Ltd (0x0B27)
     LumiUnitedTechnologyCoLtd = 0x0B27,
     /// Baracoda Daily Healthtech. (0x0B26)
@@ -1993,8 +2757,6 @@ pub enum CompanyIdentifier {
     IRhythmTechnologiesInc = 0x0B23,
     /// Hygiene IQ, LLC. (0x0B22)
     HygieneIqLlc = 0x0B22,
-    /// ams AG (0x0B21)
-    AmsAg = 0x0B21,
     /// TKH Security B.V. (0x0B20)
     TkhSecurityBV = 0x0B20,
     /// Beijing ESWIN Computing Technology Co., Ltd. (0x0B1F)
@@ -2005,8 +2767,6 @@ pub enum CompanyIdentifier {
     AcceleratedSystems = 0x0B1D,
     /// Nanoleq AG (0x0B1C)
     NanoleqAg = 0x0B1C,
-    /// Enerpac Tool Group Corp. (0x0B1B)
-    EnerpacToolGroupCorp = 0x0B1B,
     /// Roca Sanitario, S.A. (0x0B1A)
     RocaSanitarioSA = 0x0B1A,
     /// WBS PROJECT H PTY LTD (0x0B19)
@@ -2041,8 +2801,6 @@ pub enum CompanyIdentifier {
     SanistaalAS = 0x0B0B,
     /// Belun Technology Company Limited (0x0B0A)
     BelunTechnologyCompanyLimited = 0x0B0A,
-    /// soonisys (0x0B09)
-    Soonisys = 0x0B09,
     /// Shenzhen Qianfenyi Intelligent Technology Co., LTD (0x0B08)
     ShenzhenQianfenyiIntelligentTechnologyCoLtd = 0x0B08,
     /// Workaround Gmbh (0x0B07)
@@ -2051,8 +2809,6 @@ pub enum CompanyIdentifier {
     FazuaGmbH = 0x0B06,
     /// Marquardt GmbH (0x0B05)
     MarquardtGmbH = 0x0B05,
-    /// I-PERCUT (0x0B04)
-    IPercut = 0x0B04,
     /// Precision Triathlon Systems Limited (0x0B03)
     PrecisionTriathlonSystemsLimited = 0x0B03,
     /// IORA Technology Development Ltd. Sti. (0x0B02)
@@ -2087,8 +2843,6 @@ pub enum CompanyIdentifier {
     RadioworksMicroelectronicsPtyLtd = 0x0AF4,
     /// 701x Inc. (0x0AF3)
     _701XInc = 0x0AF3,
-    /// Shanghai All Link Microelectronics Co.,Ltd (0x0AF2)
-    ShanghaiAllLinkMicroelectronicsCoLtd = 0x0AF2,
     /// CRADERS,CO.,LTD (0x0AF1)
     CradersCoLtd = 0x0AF1,
     /// Leupold & Stevens, Inc. (0x0AF0)
@@ -2119,12 +2873,6 @@ pub enum CompanyIdentifier {
     DaliAlliance = 0x0AE4,
     /// GlobalMed (0x0AE3)
     GlobalMed = 0x0AE3,
-    /// IMATRIX SYSTEMS, INC. (0x0AE2)
-    ImatrixSystemsInc = 0x0AE2,
-    /// ChengDu ForThink Technology Co., Ltd. (0x0AE1)
-    ChengDuForThinkTechnologyCoLtd = 0x0AE1,
-    /// Viceroy Devices Corporation (0x0AE0)
-    ViceroyDevicesCorporation = 0x0AE0,
     /// Douglas Dynamics L.L.C. (0x0ADF)
     DouglasDynamicsLLC = 0x0ADF,
     /// Vocera Communications, Inc. (0x0ADE)
@@ -2137,8 +2885,6 @@ pub enum CompanyIdentifier {
     ReelablesInc = 0x0ADB,
     /// Codefabrik GmbH (0x0ADA)
     CodefabrikGmbH = 0x0ADA,
-    /// Shenzhen Aimore. Co.,Ltd (0x0AD9)
-    ShenzhenAimoreCoLtd = 0x0AD9,
     /// Franz Kaldewei GmbH&Co KG (0x0AD8)
     FranzKaldeweiGmbHAndCoKg = 0x0AD8,
     /// AL-KO Geraete GmbH (0x0AD7)
@@ -2153,8 +2899,6 @@ pub enum CompanyIdentifier {
     SsvSoftwareSystemsGmbH = 0x0AD3,
     /// Lautsprecher Teufel GmbH (0x0AD2)
     LautsprecherTeufelGmbH = 0x0AD2,
-    /// EAGLE KINGDOM TECHNOLOGIES LIMITED (0x0AD1)
-    EagleKingdomTechnologiesLimited = 0x0AD1,
     /// Nordic Strong ApS (0x0AD0)
     NordicStrongApS = 0x0AD0,
     /// CACI Technologies (0x0ACF)
@@ -2255,8 +2999,6 @@ pub enum CompanyIdentifier {
     LoyTecElectronicsGmbH = 0x0AA0,
     /// ista International GmbH (0x0A9F)
     IstaInternationalGmbH = 0x0A9F,
-    /// LifePlus, Inc. (0x0A9E)
-    LifePlusInc = 0x0A9E,
     /// Canon Finetech Nisca Inc. (0x0A9D)
     CanonFinetechNiscaInc = 0x0A9D,
     /// Xi'an Fengyu Information Technology Co., Ltd. (0x0A9C)
@@ -2269,10 +3011,6 @@ pub enum CompanyIdentifier {
     ShanghaiHighFlyingElectronicsTechnologyCoLtd = 0x0A99,
     /// Foil, Inc. (0x0A98)
     FoilInc = 0x0A98,
-    /// SensTek (0x0A97)
-    SensTek = 0x0A97,
-    /// Lightricity Ltd (0x0A96)
-    LightricityLtd = 0x0A96,
     /// Pamex Inc. (0x0A95)
     PamexInc = 0x0A95,
     /// OOBIK Inc. (0x0A94)
@@ -2297,8 +3035,8 @@ pub enum CompanyIdentifier {
     SaNlightGmbH = 0x0A8B,
     /// HAINBUCH GMBH SPANNENDE TECHNIK (0x0A8A)
     HainbuchGmbhSpannendeTechnik = 0x0A8A,
-    /// SES-Imagotag (0x0A89)
-    SesImagotag = 0x0A89,
+    /// VusionGroup (0x0A89)
+    VusionGroup = 0x0A89,
     /// PSA Peugeot Citroen (0x0A88)
     PsaPeugeotCitroen = 0x0A88,
     /// Shanghai Smart System Technology Co., Ltd (0x0A87)
@@ -2353,8 +3091,6 @@ pub enum CompanyIdentifier {
     WarnerBros = 0x0A6F,
     /// Pac Sane Limited (0x0A6E)
     PacSaneLimited = 0x0A6E,
-    /// KUUKANJYOKIN Co.,Ltd. (0x0A6D)
-    KuukanjyokinCoLtd = 0x0A6D,
     /// Pokkels (0x0A6C)
     Pokkels = 0x0A6C,
     /// Olympic Ophthalmics, Inc. (0x0A6B)
@@ -2367,14 +3103,10 @@ pub enum CompanyIdentifier {
     FocusIngenieriaSrl = 0x0A68,
     /// Beijing SuperHexa Century Technology CO. Ltd (0x0A67)
     BeijingSuperHexaCenturyTechnologyCoLtd = 0x0A67,
-    /// JUSTMORPH PTE. LTD. (0x0A66)
-    JustmorphPteLtd = 0x0A66,
     /// Lytx, INC. (0x0A65)
     LytxInc = 0x0A65,
     /// Geopal system A/S (0x0A64)
     GeopalSystemAS = 0x0A64,
-    /// Gremsy JSC (0x0A63)
-    GremsyJsc = 0x0A63,
     /// MOKO TECHNOLOGY Ltd (0x0A62)
     MokoTechnologyLtd = 0x0A62,
     /// Smart Parks B.V. (0x0A61)
@@ -2383,8 +3115,6 @@ pub enum CompanyIdentifier {
     DatangSemiconductorTechnologyCoLtd = 0x0A60,
     /// stryker (0x0A5F)
     Stryker = 0x0A5F,
-    /// LaceClips llc (0x0A5E)
-    LaceClipsLlc = 0x0A5E,
     /// MG Energy Systems B.V. (0x0A5D)
     MgEnergySystemsBV = 0x0A5D,
     /// Innovative Design Labs Inc. (0x0A5C)
@@ -2425,8 +3155,6 @@ pub enum CompanyIdentifier {
     MistyWestEnergyAndTransportLtd = 0x0A4B,
     /// Map Large, Inc. (0x0A4A)
     MapLargeInc = 0x0A4A,
-    /// Venture Research Inc. (0x0A49)
-    VentureResearchInc = 0x0A49,
     /// JRC Mobility Inc. (0x0A48)
     JrcMobilityInc = 0x0A48,
     /// The Wand Company Ltd (0x0A47)
@@ -2443,20 +3171,14 @@ pub enum CompanyIdentifier {
     MotionalysisInc = 0x0A42,
     /// OPEX Corporation (0x0A41)
     OpexCorporation = 0x0A41,
-    /// GEWISS S.p.A. (0x0A40)
-    GewissSPA = 0x0A40,
     /// Shenzhen Yopeak Optoelectronics Technology Co., Ltd. (0x0A3F)
     ShenzhenYopeakOptoelectronicsTechnologyCoLtd = 0x0A3F,
-    /// Hefei Yunlian Semiconductor Co., Ltd (0x0A3E)
-    HefeiYunlianSemiconductorCoLtd = 0x0A3E,
     /// DELABIE (0x0A3D)
     Delabie = 0x0A3D,
     /// Siteco GmbH (0x0A3C)
     SitecoGmbH = 0x0A3C,
     /// Galileo Technology Limited (0x0A3B)
     GalileoTechnologyLimited = 0x0A3B,
-    /// Incotex Co. Ltd. (0x0A3A)
-    IncotexCoLtd = 0x0A3A,
     /// BLUETICKETING SRL (0x0A39)
     BlueticketingSrl = 0x0A39,
     /// Bouffalo Lab (Nanjing)., Ltd. (0x0A38)
@@ -2479,8 +3201,6 @@ pub enum CompanyIdentifier {
     AirWeigh = 0x0A30,
     /// Instamic, Inc. (0x0A2F)
     InstamicInc = 0x0A2F,
-    /// Zuma Array Limited (0x0A2E)
-    ZumaArrayLimited = 0x0A2E,
     /// Shenzhen Feasycom Technology Co., Ltd. (0x0A2D)
     ShenzhenFeasycomTechnologyCoLtd = 0x0A2D,
     /// Shenzhen H&T Intelligent Control Co., Ltd (0x0A2C)
@@ -2493,8 +3213,6 @@ pub enum CompanyIdentifier {
     WorthcloudTechnologyCoLtd = 0x0A29,
     /// NanoFlex Power Corporation (0x0A28)
     NanoFlexPowerCorporation = 0x0A28,
-    /// AYU DEVICES PRIVATE LIMITED (0x0A27)
-    AyuDevicesPrivateLimited = 0x0A27,
     /// Louis Vuitton (0x0A26)
     LouisVuitton = 0x0A26,
     /// Eran Financial Services LLC (0x0A25)
@@ -2515,8 +3233,8 @@ pub enum CompanyIdentifier {
     CombiQAb = 0x0A1E,
     /// API-K (0x0A1D)
     ApiK = 0x0A1D,
-    /// INPEAK S.C. (0x0A1C)
-    InpeakSC = 0x0A1C,
+    /// INPEAK sp. z o.o. (0x0A1C)
+    InpeakSpZOO = 0x0A1C,
     /// Embrava Pty Ltd (0x0A1B)
     EmbravaPtyLtd = 0x0A1B,
     /// Link Labs, Inc. (0x0A1A)
@@ -2527,8 +3245,6 @@ pub enum CompanyIdentifier {
     CambridgeAnimalTechnologiesLtd = 0x0A18,
     /// Plume Design Inc (0x0A17)
     PlumeDesignInc = 0x0A17,
-    /// RIDE VISION LTD (0x0A16)
-    RideVisionLtd = 0x0A16,
     /// Syng Inc (0x0A15)
     SyngInc = 0x0A15,
     /// CROXEL, INC. (0x0A14)
@@ -2549,12 +3265,8 @@ pub enum CompanyIdentifier {
     BluePeacockGmbH = 0x0A0D,
     /// Shanghai Yidian Intelligent Technology Co., Ltd. (0x0A0C)
     ShanghaiYidianIntelligentTechnologyCoLtd = 0x0A0C,
-    /// SIANA Systems (0x0A0B)
-    SianaSystems = 0x0A0B,
     /// Volan Technology Inc. (0x0A0A)
     VolanTechnologyInc = 0x0A0A,
-    /// ECCT (0x0A09)
-    Ecct = 0x0A09,
     /// Oras Oy (0x0A08)
     OrasOy = 0x0A08,
     /// Reflow Pty Ltd (0x0A07)
@@ -2577,8 +3289,6 @@ pub enum CompanyIdentifier {
     Airstar = 0x09FF,
     /// Lichtvision Engineering GmbH (0x09FE)
     LichtvisionEngineeringGmbH = 0x09FE,
-    /// Keep Technologies, Inc. (0x09FD)
-    KeepTechnologiesInc = 0x09FD,
     /// Confidex (0x09FC)
     Confidex = 0x09FC,
     /// TOITU CO., LTD. (0x09FB)
@@ -2631,20 +3341,14 @@ pub enum CompanyIdentifier {
     CpsAs = 0x09E4,
     /// Friday Home Aps (0x09E3)
     FridayHomeAps = 0x09E3,
-    /// Wuhan Linptech Co.,Ltd. (0x09E2)
-    WuhanLinptechCoLtd = 0x09E2,
     /// Tag-N-Trac Inc (0x09E1)
     TagNTracInc = 0x09E1,
-    /// Preddio Technologies Inc. (0x09E0)
-    PreddioTechnologiesInc = 0x09E0,
     /// Magnus Technology Sdn Bhd (0x09DF)
     MagnusTechnologySdnBhd = 0x09DF,
     /// JLD Technology Solutions, LLC (0x09DE)
     JldTechnologySolutionsLlc = 0x09DE,
     /// Innoware Development AB (0x09DD)
     InnowareDevelopmentAb = 0x09DD,
-    /// AON2 Ltd. (0x09DC)
-    Aon2Ltd = 0x09DC,
     /// Bionic Avionics Inc. (0x09DB)
     BionicAvionicsInc = 0x09DB,
     /// Nagravision SA (0x09DA)
@@ -2661,8 +3365,6 @@ pub enum CompanyIdentifier {
     GearRadioElectronicsCorp = 0x09D5,
     /// ORBIS Inc. (0x09D4)
     OrbisInc = 0x09D4,
-    /// HeartHero, inc. (0x09D3)
-    HeartHeroInc = 0x09D3,
     /// Temperature Sensitive Solutions Systems Sweden AB (0x09D2)
     TemperatureSensitiveSolutionsSystemsSwedenAb = 0x09D2,
     /// ABLEPAY TECHNOLOGIES AS (0x09D1)
@@ -2673,8 +3375,6 @@ pub enum CompanyIdentifier {
     BlueStreakIoTLlc = 0x09CF,
     /// Julius Blum GmbH (0x09CE)
     JuliusBlumGmbH = 0x09CE,
-    /// Blyott (0x09CD)
-    Blyott = 0x09CD,
     /// Senso4s d.o.o. (0x09CC)
     Senso4SDOO = 0x09CC,
     /// Hx Engineering, LLC (0x09CB)
@@ -2801,8 +3501,6 @@ pub enum CompanyIdentifier {
     AktiebolagetRegin = 0x098F,
     /// ADVEEZ (0x098E)
     Adveez = 0x098E,
-    /// C3-WIRELESS, LLC (0x098D)
-    C3WirelessLlc = 0x098D,
     /// bGrid B.V. (0x098C)
     BGridBV = 0x098C,
     /// Mequonic Engineering, S.L. (0x098B)
@@ -2817,8 +3515,6 @@ pub enum CompanyIdentifier {
     TseBrakesInc = 0x0987,
     /// Cello Hill, LLC (0x0986)
     CelloHillLlc = 0x0986,
-    /// Lumos Health Inc. (0x0985)
-    LumosHealthInc = 0x0985,
     /// TeraTron GmbH (0x0984)
     TeraTronGmbH = 0x0984,
     /// Feedback Sports LLC (0x0983)
@@ -2855,20 +3551,14 @@ pub enum CompanyIdentifier {
     Abeye = 0x0974,
     /// Popit Oy (0x0973)
     PopitOy = 0x0973,
-    /// Closed Joint Stock Company "Zavod Flometr" ("Zavod Flometr" CJSC) (0x0972)
-    ClosedJointStockCompanyZavodFlometrZavodFlometrCjsc = 0x0972,
     /// GA (0x0971)
     Ga = 0x0971,
     /// IBA Dosimetry GmbH (0x0970)
     IbaDosimetryGmbH = 0x0970,
-    /// Lund Motion Products, Inc. (0x096F)
-    LundMotionProductsInc = 0x096F,
     /// Band Industries, inc. (0x096E)
     BandIndustriesInc = 0x096E,
     /// Gunwerks, LLC (0x096D)
     GunwerksLlc = 0x096D,
-    /// 9374-7319 Quebec inc (0x096C)
-    _93747319QuebecInc = 0x096C,
     /// Guide ID B.V. (0x096B)
     GuideIdBV = 0x096B,
     /// dricos, Inc. (0x096A)
@@ -2903,8 +3593,6 @@ pub enum CompanyIdentifier {
     LogiLubeLlc095C = 0x095C,
     /// Lismore Instruments Limited (0x095B)
     LismoreInstrumentsLimited = 0x095B,
-    /// Selekt Bilgisayar, lletisim Urunleri lnsaat Sanayi ve Ticaret Limited Sirketi (0x095A)
-    SelektBilgisayarLletisimUrunleriLnsaatSanayiVeTicaretLimitedSirketi = 0x095A,
     /// HerdDogg, Inc (0x0959)
     HerdDoggInc = 0x0959,
     /// ZTE Corporation (0x0958)
@@ -2981,8 +3669,6 @@ pub enum CompanyIdentifier {
     KiteSpringInc = 0x0934,
     /// SRAM (0x0933)
     Sram = 0x0933,
-    /// BarVision, LLC (0x0932)
-    BarVisionLlc = 0x0932,
     /// BREATHINGS Co., Ltd. (0x0931)
     BreathingsCoLtd = 0x0931,
     /// James Walker RotaBolt Limited (0x0930)
@@ -3009,16 +3695,12 @@ pub enum CompanyIdentifier {
     GooligumTechnologiesPtyLtd = 0x0926,
     /// Yukai Engineering Inc. (0x0925)
     YukaiEngineeringInc = 0x0925,
-    /// Fundacion Tecnalia Research and Innovation (0x0924)
-    FundacionTecnaliaResearchAndInnovation = 0x0924,
     /// JSB TECH PTE LTD (0x0923)
     JsbTechPteLtd = 0x0923,
     /// Shanghai MXCHIP Information Technology Co., Ltd. (0x0922)
     ShanghaiMxchipInformationTechnologyCoLtd = 0x0922,
     /// KAHA PTE. LTD. (0x0921)
     KahaPteLtd = 0x0921,
-    /// Omnisense Limited (0x0920)
-    OmnisenseLimited = 0x0920,
     /// Myzee Technology (0x091F)
     MyzeeTechnology = 0x091F,
     /// Melbot Studios, Sociedad Limitada (0x091E)
@@ -3033,8 +3715,6 @@ pub enum CompanyIdentifier {
     AlbertronicBv = 0x091A,
     /// NO SMD LIMITED (0x0919)
     NoSmdLimited = 0x0919,
-    /// Technosphere Labs Pvt. Ltd. (0x0918)
-    TechnosphereLabsPvtLtd = 0x0918,
     /// ASR Microelectronics(ShenZhen)Co., Ltd. (0x0917)
     AsrMicroelectronicsShenZhenCoLtd = 0x0917,
     /// Ambient Sensors LLC (0x0916)
@@ -3055,8 +3735,6 @@ pub enum CompanyIdentifier {
     VcInc = 0x090F,
     /// OPTIMUSIOT TECH LLP (0x090E)
     OptimusiotTechLlp = 0x090E,
-    /// IOT Invent GmbH (0x090D)
-    IotInventGmbH = 0x090D,
     /// Radiawave Technologies Co.,Ltd. (0x090C)
     RadiawaveTechnologiesCoLtd = 0x090C,
     /// EMBR labs, INC (0x090B)
@@ -3093,8 +3771,6 @@ pub enum CompanyIdentifier {
     HillRom = 0x08FC,
     /// Darkglass Electronics Oy (0x08FB)
     DarkglassElectronicsOy = 0x08FB,
-    /// Troo Corporation (0x08FA)
-    TrooCorporation = 0x08FA,
     /// Spacelabs Medical Inc. (0x08F9)
     SpacelabsMedicalInc = 0x08F9,
     /// instagrid GmbH (0x08F8)
@@ -3165,8 +3841,6 @@ pub enum CompanyIdentifier {
     Wares = 0x08D8,
     /// Inovonics Corp (0x08D7)
     InovonicsCorp = 0x08D7,
-    /// Nome Oy (0x08D6)
-    NomeOy = 0x08D6,
     /// KEYes (0x08D5)
     KeYes = 0x08D5,
     /// ADATA Technology Co., LTD. (0x08D4)
@@ -3197,12 +3871,8 @@ pub enum CompanyIdentifier {
     LiteboxerTechnologiesInc = 0x08C8,
     /// Monadnock Systems Ltd. (0x08C7)
     MonadnockSystemsLtd = 0x08C7,
-    /// Integra Optics Inc (0x08C6)
-    IntegraOpticsInc = 0x08C6,
     /// J. Wagner GmbH (0x08C5)
     JWagnerGmbH = 0x08C5,
-    /// CellAssist, LLC (0x08C4)
-    CellAssistLlc = 0x08C4,
     /// CHIPOLO d.o.o. (0x08C3)
     ChipoloDOO = 0x08C3,
     /// Lindinvent AB (0x08C2)
@@ -3231,8 +3901,6 @@ pub enum CompanyIdentifier {
     AbbInc = 0x08B7,
     /// Boehringer Ingelheim Vetmedica GmbH (0x08B6)
     BoehringerIngelheimVetmedicaGmbH = 0x08B6,
-    /// TransferFi (0x08B5)
-    TransferFi = 0x08B5,
     /// Sengled Co., Ltd. (0x08B4)
     SengledCoLtd = 0x08B4,
     /// IONIQ Skincare GmbH & Co. KG (0x08B3)
@@ -3263,8 +3931,6 @@ pub enum CompanyIdentifier {
     Tgr1618Limited = 0x08A7,
     /// Intelligenceworks Inc. (0x08A6)
     IntelligenceworksInc = 0x08A6,
-    /// UMEHEAL Ltd (0x08A5)
-    UmehealLtd = 0x08A5,
     /// Realme Chongqing Mobile Telecommunications Corp., Ltd. (0x08A4)
     RealmeChongqingMobileTelecommunicationsCorpLtd = 0x08A4,
     /// Hoffmann SE (0x08A3)
@@ -3289,8 +3955,6 @@ pub enum CompanyIdentifier {
     PrivateLimitedCompanyTeltonika = 0x089A,
     /// SFS unimarket AG (0x0899)
     SfsUnimarketAg = 0x0899,
-    /// Sensibo, Inc. (0x0898)
-    SensiboInc = 0x0898,
     /// Current Lighting Solutions LLC (0x0897)
     CurrentLightingSolutionsLlc = 0x0897,
     /// Nokian Renkaat Oyj (0x0896)
@@ -3309,8 +3973,6 @@ pub enum CompanyIdentifier {
     NichieiIntecCoLtd = 0x0890,
     /// Tait International Limited (0x088F)
     TaitInternationalLimited = 0x088F,
-    /// GIGA-TMS INC (0x088E)
-    GigaTmsInc = 0x088E,
     /// Soliton Systems K.K. (0x088D)
     SolitonSystemsKK = 0x088D,
     /// GB Solution co.,Ltd (0x088C)
@@ -3327,8 +3989,6 @@ pub enum CompanyIdentifier {
     HydroGearLimitedPartnership = 0x0887,
     /// Movella Technologies B.V. (0x0886)
     MovellaTechnologiesBV = 0x0886,
-    /// LEVOLOR INC (0x0885)
-    LevolorInc = 0x0885,
     /// Controlid Industria, Comercio de Hardware e Servicos de Tecnologia Ltda (0x0884)
     ControlidIndustriaComercioDeHardwareEServicosDeTecnologiaLtda = 0x0884,
     /// Wintersteiger AG (0x0883)
@@ -3355,8 +4015,8 @@ pub enum CompanyIdentifier {
     MizunoCorporation = 0x0879,
     /// The Chamberlain Group, Inc. (0x0878)
     TheChamberlainGroupInc = 0x0878,
-    /// Tome, Inc. (0x0877)
-    TomeInc = 0x0877,
+    /// Valtech (0x0877)
+    Valtech = 0x0877,
     /// SmartResQ ApS (0x0876)
     SmartResQApS = 0x0876,
     /// Berner International LLC (0x0875)
@@ -3403,8 +4063,6 @@ pub enum CompanyIdentifier {
     SmartSensorLabsLtd = 0x0861,
     /// Alflex Products B.V. (0x0860)
     AlflexProductsBV = 0x0860,
-    /// COMPEGPS TEAM,SOCIEDAD LIMITADA (0x085F)
-    CompegpsTeamSociedadLimitada = 0x085F,
     /// Krog Systems LLC (0x085E)
     KrogSystemsLlc = 0x085E,
     /// Guilin Zhishen Information Technology Co.,Ltd. (0x085D)
@@ -3497,8 +4155,6 @@ pub enum CompanyIdentifier {
     IntermotiveInc = 0x0832,
     /// Foxble, LLC (0x0831)
     FoxbleLlc = 0x0831,
-    /// Core Health and Fitness LLC (0x0830)
-    CoreHealthAndFitnessLlc = 0x0830,
     /// Blippit AB (0x082F)
     BlippitAb = 0x082F,
     /// ABB S.p.A. (0x082E)
@@ -3523,8 +4179,6 @@ pub enum CompanyIdentifier {
     CmePteLtd = 0x0825,
     /// 8Power Limited (0x0824)
     _8PowerLimited = 0x0824,
-    /// Nexite Ltd (0x0823)
-    NexiteLtd = 0x0823,
     /// adafruit industries (0x0822)
     AdafruitIndustries = 0x0822,
     /// INOVA Geophysical, Inc. (0x0821)
@@ -3607,8 +4261,6 @@ pub enum CompanyIdentifier {
     AccessCoLtd = 0x07FB,
     /// Klipsch Group, Inc. (0x07FA)
     KlipschGroupInc = 0x07FA,
-    /// Direct Communication Solutions, Inc. (0x07F9)
-    DirectCommunicationSolutionsInc = 0x07F9,
     /// quip NYC Inc. (0x07F8)
     QuipNycInc = 0x07F8,
     /// Cesar Systems Ltd. (0x07F7)
@@ -3655,8 +4307,6 @@ pub enum CompanyIdentifier {
     AirohaTechnologyCorp07E3 = 0x07E3,
     /// Alfred Kaercher SE & Co. KG (0x07E2)
     AlfredKaercherSeAndCoKg = 0x07E2,
-    /// Lucie Labs (0x07E1)
-    LucieLabs = 0x07E1,
     /// Edifier International Limited (0x07E0)
     EdifierInternationalLimited = 0x07E0,
     /// Snap-on Incorporated (0x07DF)
@@ -3701,8 +4351,6 @@ pub enum CompanyIdentifier {
     BarnacleSystemsInc = 0x07CC,
     /// West Pharmaceutical Services, Inc. (0x07CB)
     WestPharmaceuticalServicesInc = 0x07CB,
-    /// Modul-System HH AB (0x07CA)
-    ModulSystemHhAb = 0x07CA,
     /// Skullcandy, Inc. (0x07C9)
     SkullcandyInc = 0x07C9,
     /// WRLDS Creations AB (0x07C8)
@@ -3719,8 +4367,6 @@ pub enum CompanyIdentifier {
     CimTechniquesInc = 0x07C3,
     /// Radinn AB (0x07C2)
     RadinnAb = 0x07C2,
-    /// A.W. Chesterton Company (0x07C1)
-    AWChestertonCompany = 0x07C1,
     /// Biral AG (0x07C0)
     BiralAg = 0x07C0,
     /// REGULA Ltd. (0x07BF)
@@ -3729,14 +4375,10 @@ pub enum CompanyIdentifier {
     AxentiaTechnologiesAb = 0x07BE,
     /// Genedrive Diagnostics Ltd (0x07BD)
     GenedriveDiagnosticsLtd = 0x07BD,
-    /// KD CIRCUITS LLC (0x07BC)
-    KdCircuitsLlc = 0x07BC,
     /// EPIC S.R.L. (0x07BB)
     EpicSRL = 0x07BB,
     /// Battery-Biz Inc. (0x07BA)
     BatteryBizInc = 0x07BA,
-    /// Epona Biotec Limited (0x07B9)
-    EponaBiotecLimited = 0x07B9,
     /// iSwip (0x07B8)
     ISwip = 0x07B8,
     /// ETABLISSEMENTS GEORGES RENAULT (0x07B7)
@@ -3779,12 +4421,8 @@ pub enum CompanyIdentifier {
     RabLightingInc = 0x07A5,
     /// Xiamen Mage Information Technology Co., Ltd. (0x07A4)
     XiamenMageInformationTechnologyCoLtd = 0x07A4,
-    /// Comcast Cable (0x07A3)
-    ComcastCable = 0x07A3,
     /// Roku, Inc. (0x07A2)
     RokuInc = 0x07A2,
-    /// Apollo Neuroscience, Inc. (0x07A1)
-    ApolloNeuroscienceInc = 0x07A1,
     /// Regent Beleuchtungskorper AG (0x07A0)
     RegentBeleuchtungskorperAg = 0x07A0,
     /// Pune Scientific LLP (0x079F)
@@ -3835,10 +4473,6 @@ pub enum CompanyIdentifier {
     PcbPiezotronicsInc = 0x0789,
     /// BubblyNet, LLC (0x0788)
     BubblyNetLlc = 0x0788,
-    /// Pangaea Solution (0x0787)
-    PangaeaSolution = 0x0787,
-    /// HLP Controls Pty Limited (0x0786)
-    HlpControlsPtyLimited = 0x0786,
     /// O2 Micro, Inc. (0x0785)
     O2MicroInc = 0x0785,
     /// audifon GmbH & Co. KG (0x0784)
@@ -3859,8 +4493,6 @@ pub enum CompanyIdentifier {
     SensoritySRO = 0x077D,
     /// radius co., ltd. (0x077C)
     RadiusCoLtd = 0x077C,
-    /// AmaterZ, Inc. (0x077B)
-    AmaterZInc = 0x077B,
     /// Niruha Systems Private Limited (0x077A)
     NiruhaSystemsPrivateLimited = 0x077A,
     /// Loopshore Oy (0x0779)
@@ -3875,8 +4507,6 @@ pub enum CompanyIdentifier {
     _4EBusinessGmbH = 0x0775,
     /// C-MAX Asia Limited (0x0774)
     CMaxAsiaLimited = 0x0774,
-    /// Echoflex Solutions Inc. (0x0773)
-    EchoflexSolutionsInc = 0x0773,
     /// Thirdwayv Inc. (0x0772)
     ThirdwayvInc = 0x0772,
     /// Corvex Connected Safety (0x0771)
@@ -3953,8 +4583,6 @@ pub enum CompanyIdentifier {
     EagleDetectionSa = 0x074E,
     /// Amtech Systems, LLC (0x074D)
     AmtechSystemsLlc = 0x074D,
-    /// iopool s.a. (0x074C)
-    IopoolSA = 0x074C,
     /// Sarvavid Software Solutions LLP (0x074B)
     SarvavidSoftwareSolutionsLlp = 0x074B,
     /// Illusory Studios LLC (0x074A)
@@ -3977,16 +4605,12 @@ pub enum CompanyIdentifier {
     DmlLlc = 0x0742,
     /// MAC SRL (0x0741)
     MacSrl = 0x0741,
-    /// HITIQ LIMITED (0x0740)
-    HitiqLimited = 0x0740,
     /// Beijing Unisoc Technologies Co., Ltd. (0x073F)
     BeijingUnisocTechnologiesCoLtd = 0x073F,
     /// Bluepack S.R.L. (0x073E)
     BluepackSRL = 0x073E,
     /// Beijing Hao Heng Tian Tech Co., Ltd. (0x073D)
     BeijingHaoHengTianTechCoLtd = 0x073D,
-    /// Acubit ApS (0x073C)
-    AcubitApS = 0x073C,
     /// Fantini Cosmi s.p.a. (0x073B)
     FantiniCosmiSPA = 0x073B,
     /// Chandler Systems Inc. (0x073A)
@@ -4027,8 +4651,6 @@ pub enum CompanyIdentifier {
     SwaraLinkTechnologies = 0x0729,
     /// Eli Lilly and Company (0x0728)
     EliLillyAndCompany = 0x0728,
-    /// STALKIT AS (0x0727)
-    StalkitAs = 0x0727,
     /// PHC Corporation (0x0726)
     PhcCorporation = 0x0726,
     /// Tedee Sp. z o.o. (0x0725)
@@ -4059,8 +4681,6 @@ pub enum CompanyIdentifier {
     CoreiotPtyLtd = 0x0719,
     /// IDIBAIX enginneering (0x0718)
     IdibaixEnginneering = 0x0718,
-    /// iQsquare BV (0x0717)
-    IQsquareBv = 0x0717,
     /// Altonics (0x0716)
     Altonics = 0x0716,
     /// MBARC LABS Inc (0x0715)
@@ -4085,8 +4705,6 @@ pub enum CompanyIdentifier {
     BeijingWinnerMicroelectronicsCoLtd = 0x070C,
     /// Element Products, Inc. (0x070B)
     ElementProductsInc = 0x070B,
-    /// Huf Hülsbeck & Fürst GmbH & Co. KG (0x070A)
-    HufHulsbeckAndFurstGmbHAndCoKg = 0x070A,
     /// Carewear Corp. (0x0709)
     CarewearCorp = 0x0709,
     /// Be Interactive Co., Ltd (0x0708)
@@ -4141,12 +4759,8 @@ pub enum CompanyIdentifier {
     ChargyTechnologiesSl = 0x06F0,
     /// ALCARE Co., Ltd. (0x06EF)
     AlcareCoLtd = 0x06EF,
-    /// Avantis Systems Limited (0x06EE)
-    AvantisSystemsLimited = 0x06EE,
     /// J Neades Ltd (0x06ED)
     JNeadesLtd = 0x06ED,
-    /// Sigur (0x06EC)
-    Sigur = 0x06EC,
     /// Houston Radar LLC (0x06EB)
     HoustonRadarLlc = 0x06EB,
     /// SafeLine Sweden AB (0x06EA)
@@ -4193,18 +4807,12 @@ pub enum CompanyIdentifier {
     JctHealthcarePtyLtd = 0x06D6,
     /// Sensirion AG (0x06D5)
     SensirionAg = 0x06D5,
-    /// DYNAKODE TECHNOLOGY PRIVATE LIMITED (0x06D4)
-    DynakodeTechnologyPrivateLimited = 0x06D4,
-    /// TriTeq Lock and Security, LLC (0x06D3)
-    TriTeqLockAndSecurityLlc = 0x06D3,
     /// CeoTronics AG (0x06D2)
     CeoTronicsAg = 0x06D2,
     /// Meyer Sound Laboratories, Incorporated (0x06D1)
     MeyerSoundLaboratoriesIncorporated = 0x06D1,
     /// Etekcity Corporation (0x06D0)
     EtekcityCorporation = 0x06D0,
-    /// Belparts N.V. (0x06CF)
-    BelpartsNV = 0x06CF,
     /// FIOR & GENTZ (0x06CE)
     FiorAndGentz = 0x06CE,
     /// DIG Corporation (0x06CD)
@@ -4219,8 +4827,6 @@ pub enum CompanyIdentifier {
     MylapsBV = 0x06C9,
     /// Storz & Bickel GmbH & Co. KG (0x06C8)
     StorzAndBickelGmbHAndCoKg = 0x06C8,
-    /// Somatix Inc (0x06C7)
-    SomatixInc = 0x06C7,
     /// Simm Tronic Limited (0x06C6)
     SimmTronicLimited = 0x06C6,
     /// Urban Compass, Inc (0x06C5)
@@ -4235,8 +4841,6 @@ pub enum CompanyIdentifier {
     AlarmComHoldingsInc = 0x06C1,
     /// CAME S.p.A. (0x06C0)
     CameSPA = 0x06C0,
-    /// Delcom Products Inc. (0x06BF)
-    DelcomProductsInc = 0x06BF,
     /// HitSeed Oy (0x06BE)
     HitSeedOy = 0x06BE,
     /// ABB Oy (0x06BD)
@@ -4259,8 +4863,6 @@ pub enum CompanyIdentifier {
     WabilogicLtd = 0x06B5,
     /// Sencilion Oy (0x06B4)
     SencilionOy = 0x06B4,
-    /// The Hablab ApS (0x06B3)
-    TheHablabApS = 0x06B3,
     /// Tussock Innovation 2013 Limited (0x06B2)
     TussockInnovation2013Limited = 0x06B2,
     /// SimpliSafe, Inc. (0x06B1)
@@ -4303,8 +4905,6 @@ pub enum CompanyIdentifier {
     FlowMotionTechnologiesAs = 0x069F,
     /// Delta Electronics, Inc. (0x069E)
     DeltaElectronicsInc = 0x069E,
-    /// Vakaros LLC (0x069D)
-    VakarosLlc = 0x069D,
     /// Noomi AB (0x069C)
     NoomiAb = 0x069C,
     /// Dragonchip Limited (0x069B)
@@ -4335,10 +4935,6 @@ pub enum CompanyIdentifier {
     JrmGroupLimited = 0x068F,
     /// Razer Inc. (0x068E)
     RazerInc = 0x068E,
-    /// JetBeep Inc. (0x068D)
-    JetBeepInc = 0x068D,
-    /// Changzhou Sound Dragon Electronics and Acoustics Co., Ltd (0x068C)
-    ChangzhouSoundDragonElectronicsAndAcousticsCoLtd = 0x068C,
     /// Jiangsu Teranovo Tech Co., Ltd. (0x068B)
     JiangsuTeranovoTechCoLtd = 0x068B,
     /// Raytac Corporation (0x068A)
@@ -4365,8 +4961,6 @@ pub enum CompanyIdentifier {
     MannkindCorporation = 0x0680,
     /// NETGRID S.N.C. DI BISSOLI MATTEO, CAMPOREALE SIMONE, TOGNETTI FEDERICO (0x067F)
     NetgridSNCDiBissoliMatteoCamporealeSimoneTognettiFederico = 0x067F,
-    /// MbientLab Inc (0x067E)
-    MbientLabInc = 0x067E,
     /// Form Athletica Inc. (0x067D)
     FormAthleticaInc = 0x067D,
     /// Tile, Inc. (0x067C)
@@ -4383,8 +4977,6 @@ pub enum CompanyIdentifier {
     InnovationFirstInc = 0x0677,
     /// Expai Solutions Private Limited (0x0676)
     ExpaiSolutionsPrivateLimited = 0x0676,
-    /// Deco Enterprises, Inc. (0x0675)
-    DecoEnterprisesInc = 0x0675,
     /// BeSpoon (0x0674)
     BeSpoon = 0x0674,
     /// Innova Ideas Limited (0x0673)
@@ -4411,8 +5003,6 @@ pub enum CompanyIdentifier {
     LivanovaUsaInc = 0x0669,
     /// Bleb Technology srl (0x0668)
     BlebTechnologySrl = 0x0668,
-    /// Spark Technology Labs Inc. (0x0667)
-    SparkTechnologyLabsInc = 0x0667,
     /// WTO Werkzeug-Einrichtungen GmbH (0x0666)
     WtoWerkzeugEinrichtungenGmbH = 0x0666,
     /// Pure International Limited (0x0665)
@@ -4533,8 +5123,6 @@ pub enum CompanyIdentifier {
     AsPionGmbH = 0x062C,
     /// MinebeaMitsumi Inc. (0x062B)
     MinebeaMitsumiInc = 0x062B,
-    /// Lunatico Astronomia SL (0x062A)
-    LunaticoAstronomiaSl = 0x062A,
     /// PHONEPE PVT LTD (0x0629)
     PhonepePvtLtd = 0x0629,
     /// Ensto Oy (0x0628)
@@ -4547,8 +5135,6 @@ pub enum CompanyIdentifier {
     SquarePandaInc = 0x0625,
     /// Biovotion AG (0x0624)
     BiovotionAg = 0x0624,
-    /// Philadelphia Scientific (U.K.) Limited (0x0623)
-    PhiladelphiaScientificUKLimited = 0x0623,
     /// Beam Labs, LLC (0x0622)
     BeamLabsLlc = 0x0622,
     /// Noordung d.o.o. (0x0621)
@@ -4571,8 +5157,6 @@ pub enum CompanyIdentifier {
     SixGuysLabsSRO = 0x0619,
     /// Audio-Technica Corporation (0x0618)
     AudioTechnicaCorporation = 0x0618,
-    /// WIZCONNECTED COMPANY LIMITED (0x0617)
-    WizconnectedCompanyLimited = 0x0617,
     /// OS42 UG (haftungsbeschraenkt) (0x0616)
     Os42UgHaftungsbeschraenkt = 0x0616,
     /// INTER ACTION Corporation (0x0615)
@@ -4609,8 +5193,6 @@ pub enum CompanyIdentifier {
     JohnDeere = 0x0606,
     /// FMW electronic Futterer u. Maier-Wolf OHG (0x0605)
     FmwElectronicFuttererUMaierWolfOhg = 0x0605,
-    /// Cell2Jack LLC (0x0604)
-    Cell2JackLlc = 0x0604,
     /// Fourth Evolution Inc (0x0603)
     FourthEvolutionInc = 0x0603,
     /// Geberit International AG (0x0602)
@@ -4653,8 +5235,6 @@ pub enum CompanyIdentifier {
     Beken = 0x05F0,
     /// SIKOM AS (0x05EF)
     SikomAs = 0x05EF,
-    /// Wristcam Inc. (0x05EE)
-    WristcamInc = 0x05EE,
     /// Fuji Xerox Co., Ltd (0x05ED)
     FujiXeroxCoLtd = 0x05ED,
     /// Gycom Svenska AB (0x05EC)
@@ -4733,8 +5313,6 @@ pub enum CompanyIdentifier {
     SomfySas = 0x05C8,
     /// Lippert Components, INC (0x05C7)
     LippertComponentsInc = 0x05C7,
-    /// Smart Animal Training Systems, LLC (0x05C6)
-    SmartAnimalTrainingSystemsLlc = 0x05C6,
     /// SELVE GmbH & Co. KG (0x05C5)
     SelveGmbHAndCoKg = 0x05C5,
     /// Codecoup sp. z o.o. sp. k. (0x05C4)
@@ -4749,8 +5327,6 @@ pub enum CompanyIdentifier {
     NaluMedicalInc = 0x05C0,
     /// Real-World-Systems Corporation (0x05BF)
     RealWorldSystemsCorporation = 0x05BF,
-    /// RFID Global by Softwork SrL (0x05BE)
-    RfidGlobalBySoftworkSrL = 0x05BE,
     /// ULC Robotics Inc. (0x05BD)
     UlcRoboticsInc = 0x05BD,
     /// Leviton Mfg. Co., Inc. (0x05BC)
@@ -4873,8 +5449,6 @@ pub enum CompanyIdentifier {
     BreakwallAnalyticsLlc = 0x0582,
     /// LYS TECHNOLOGIES LTD (0x0581)
     LysTechnologiesLtd = 0x0581,
-    /// ARANZ Medical Limited (0x0580)
-    AranzMedicalLimited = 0x0580,
     /// Scuf Gaming International, LLC (0x057F)
     ScufGamingInternationalLlc = 0x057F,
     /// Beco, Inc (0x057E)
@@ -4887,8 +5461,6 @@ pub enum CompanyIdentifier {
     DuracellUSOperationsInc = 0x057B,
     /// OMNI Remotes (0x057A)
     OmniRemotes = 0x057A,
-    /// Ensemble Tech Private Limited (0x0579)
-    EnsembleTechPrivateLimited = 0x0579,
     /// Wellington Drive Technologies Ltd (0x0578)
     WellingtonDriveTechnologiesLtd = 0x0578,
     /// True Wearables, Inc. (0x0577)
@@ -4919,20 +5491,16 @@ pub enum CompanyIdentifier {
     RionCoLtd = 0x056B,
     /// Flipnavi Co.,Ltd. (0x056A)
     FlipnaviCoLtd = 0x056A,
-    /// Audionics System, INC. (0x0569)
-    AudionicsSystemInc = 0x0569,
     /// Bodyport Inc. (0x0568)
     BodyportInc = 0x0568,
     /// Xiamen Everesports Goods Co., Ltd (0x0567)
     XiamenEveresportsGoodsCoLtd = 0x0567,
     /// CORE TRANSPORT TECHNOLOGIES NZ LIMITED (0x0566)
     CoreTransportTechnologiesNzLimited = 0x0566,
-    /// Beijing Smartspace Technologies Inc. (0x0565)
-    BeijingSmartspaceTechnologiesInc = 0x0565,
     /// Beghelli Spa (0x0564)
     BeghelliSpa = 0x0564,
-    /// Steinel Vertrieb GmbH (0x0563)
-    SteinelVertriebGmbH = 0x0563,
+    /// Steinel GmbH (0x0563)
+    SteinelGmbH = 0x0563,
     /// Thalmic Labs Inc. (0x0562)
     ThalmicLabsInc = 0x0562,
     /// Finder S.p.A. (0x0561)
@@ -4969,8 +5537,6 @@ pub enum CompanyIdentifier {
     AvempaceSarl = 0x0552,
     /// Sylero (0x0551)
     Sylero = 0x0551,
-    /// Versa Networks, Inc. (0x0550)
-    VersaNetworksInc = 0x0550,
     /// Sinnoz (0x054F)
     Sinnoz = 0x054F,
     /// FORTRONIK storitve d.o.o. (0x054E)
@@ -4991,8 +5557,6 @@ pub enum CompanyIdentifier {
     LogicdataElectronicAndSoftwareEntwicklungsGmbH = 0x0547,
     /// Apexar Technologies S.A. (0x0546)
     ApexarTechnologiesSA = 0x0546,
-    /// Candy Hoover Group s.r.l (0x0545)
-    CandyHooverGroupSRL = 0x0545,
     /// OrthoSensor, Inc. (0x0544)
     OrthoSensorInc = 0x0544,
     /// MIWA LOCK CO.,Ltd (0x0543)
@@ -5075,8 +5639,6 @@ pub enum CompanyIdentifier {
     OffLineCoLtd = 0x051D,
     /// EDPS (0x051C)
     Edps = 0x051C,
-    /// Angee Technologies Ltd. (0x051B)
-    AngeeTechnologiesLtd = 0x051B,
     /// Leica Camera AG (0x051A)
     LeicaCameraAg = 0x051A,
     /// Tyto Life LLC (0x0519)
@@ -5115,8 +5677,6 @@ pub enum CompanyIdentifier {
     GarageSmartInc = 0x0509,
     /// Axes System sp. z o. o. (0x0508)
     AxesSystemSpZOO = 0x0508,
-    /// Yellowcog (0x0507)
-    Yellowcog = 0x0507,
     /// Hager (0x0506)
     Hager = 0x0506,
     /// InPlay, Inc. (0x0505)
@@ -5167,8 +5727,6 @@ pub enum CompanyIdentifier {
     DaisyWorksInc = 0x04EF,
     /// Auxivia (0x04EE)
     Auxivia = 0x04EE,
-    /// R9 Technology, Inc. (0x04ED)
-    R9TechnologyInc = 0x04ED,
     /// Motorola Solutions (0x04EC)
     MotorolaSolutions = 0x04EC,
     /// Bird Home Automation GmbH (0x04EB)
@@ -5179,8 +5737,6 @@ pub enum CompanyIdentifier {
     BuschJaegerElektroGmbH = 0x04E9,
     /// STABILO International (0x04E8)
     StabiloInternational = 0x04E8,
-    /// REHABTRONICS INC. (0x04E7)
-    RehabtronicsInc = 0x04E7,
     /// Smart Solution Technology, Inc. (0x04E6)
     SmartSolutionTechnologyInc = 0x04E6,
     /// Avack Oy (0x04E5)
@@ -5189,8 +5745,6 @@ pub enum CompanyIdentifier {
     Woodenshark = 0x04E4,
     /// Under Armour (0x04E3)
     UnderArmour = 0x04E3,
-    /// EllieGrid (0x04E2)
-    EllieGrid = 0x04E2,
     /// REACTEC LIMITED (0x04E1)
     ReactecLimited = 0x04E1,
     /// Guardtec, Inc. (0x04E0)
@@ -5217,8 +5771,8 @@ pub enum CompanyIdentifier {
     LuglocLlc = 0x04D6,
     /// Gooee Limited (0x04D5)
     GooeeLimited = 0x04D5,
-    /// 5th Element Ltd (0x04D4)
-    _5ThElementLtd = 0x04D4,
+    /// TASKA PROSTHETICS LIMITED (0x04D4)
+    TaskaProstheticsLimited = 0x04D4,
     /// Queercon, Inc (0x04D3)
     QueerconInc = 0x04D3,
     /// Anloq Technologies Inc. (0x04D2)
@@ -5233,8 +5787,6 @@ pub enum CompanyIdentifier {
     GoooledSRL = 0x04CE,
     /// Safetech Products LLC (0x04CD)
     SafetechProductsLlc = 0x04CD,
-    /// Enflux Inc. (0x04CC)
-    EnfluxInc = 0x04CC,
     /// Novo Nordisk A/S (0x04CB)
     NovoNordiskAS = 0x04CB,
     /// Steiner-Optik GmbH (0x04CA)
@@ -5289,8 +5841,6 @@ pub enum CompanyIdentifier {
     TheShadowOnTheMoon = 0x04B2,
     /// Kartographers Technologies Pvt. Ltd. (0x04B1)
     KartographersTechnologiesPvtLtd = 0x04B1,
-    /// Weba Sport und Med. Artikel GmbH (0x04B0)
-    WebaSportUndMedArtikelGmbH = 0x04B0,
     /// BIOROWER Handelsagentur GmbH (0x04AF)
     BiorowerHandelsagenturGmbH = 0x04AF,
     /// ERM Electronic Systems LTD (0x04AE)
@@ -5303,8 +5853,6 @@ pub enum CompanyIdentifier {
     HarbortronicsInc = 0x04AB,
     /// LINKIO SAS (0x04AA)
     LinkioSas = 0x04AA,
-    /// DISCOVERY SOUND TECHNOLOGY, LLC (0x04A9)
-    DiscoverySoundTechnologyLlc = 0x04A9,
     /// BioTex, Inc. (0x04A8)
     BioTexInc = 0x04A8,
     /// Dallas Logic Corporation (0x04A7)
@@ -5319,10 +5867,6 @@ pub enum CompanyIdentifier {
     GtTronicsHkLtd = 0x04A3,
     /// ovrEngineered, LLC (0x04A2)
     OvrEngineeredLlc = 0x04A2,
-    /// PNI Sensor Corporation (0x04A1)
-    PniSensorCorporation = 0x04A1,
-    /// Vypin, LLC (0x04A0)
-    VypinLlc = 0x04A0,
     /// Popper Pay AB (0x049F)
     PopperPayAb = 0x049F,
     /// AND!XOR LLC (0x049E)
@@ -5343,8 +5887,6 @@ pub enum CompanyIdentifier {
     CochlearLimited = 0x0497,
     /// Polymorphic Labs LLC (0x0496)
     PolymorphicLabsLlc = 0x0496,
-    /// LMT Mercer Group, Inc (0x0495)
-    LmtMercerGroupInc = 0x0495,
     /// SENNHEISER electronic GmbH & Co. KG (0x0494)
     SennheiserElectronicGmbHAndCoKg = 0x0494,
     /// Lynxemi Pte Ltd (0x0493)
@@ -5363,8 +5905,6 @@ pub enum CompanyIdentifier {
     SLabsSpZOO = 0x048D,
     /// Vectronix AG (0x048C)
     VectronixAg = 0x048C,
-    /// CP Electronics Limited (0x048B)
-    CpElectronicsLimited = 0x048B,
     /// Taelek Oy (0x048A)
     TaelekOy = 0x048A,
     /// Igarashi Engineering (0x0489)
@@ -5379,22 +5919,16 @@ pub enum CompanyIdentifier {
     SkidataAg = 0x0485,
     /// Revol Technologies Inc (0x0484)
     RevolTechnologiesInc = 0x0484,
-    /// Multi Care Systems B.V. (0x0483)
-    MultiCareSystemsBV = 0x0483,
     /// POS Tuning Udo Vosshenrich GmbH & Co. KG (0x0482)
     PosTuningUdoVosshenrichGmbHAndCoKg = 0x0482,
     /// Quintrax Limited (0x0481)
     QuintraxLimited = 0x0481,
-    /// Dynometrics Inc. (0x0480)
-    DynometricsInc = 0x0480,
     /// Pro-Mark, Inc. (0x047F)
     ProMarkInc = 0x047F,
     /// OurHub Dev IvS (0x047E)
     OurHubDevIvS = 0x047E,
     /// Occly LLC (0x047D)
     OcclyLlc = 0x047D,
-    /// POWERMAT LTD (0x047C)
-    PowermatLtd = 0x047C,
     /// MIYOSHI ELECTRONICS CORPORATION (0x047B)
     MiyoshiElectronicsCorporation = 0x047B,
     /// Sinosun Technology Co., Ltd. (0x047A)
@@ -5405,8 +5939,6 @@ pub enum CompanyIdentifier {
     FarSiteCommunicationsLimited = 0x0478,
     /// Blue Spark Technologies (0x0477)
     BlueSparkTechnologies = 0x0477,
-    /// Oxstren Wearable Technologies Private Limited (0x0476)
-    OxstrenWearableTechnologiesPrivateLimited = 0x0476,
     /// Icom inc. (0x0475)
     IcomInc = 0x0475,
     /// iApartment co., ltd. (0x0474)
@@ -5437,8 +5969,6 @@ pub enum CompanyIdentifier {
     KynesimLtd = 0x0468,
     /// Codenex Oy (0x0467)
     CodenexOy = 0x0467,
-    /// CycleLabs Solutions inc. (0x0466)
-    CycleLabsSolutionsInc = 0x0466,
     /// International Forte Group LLC (0x0465)
     InternationalForteGroupLlc = 0x0465,
     /// Bellman & Symfon Group AB (0x0464)
@@ -5459,20 +5989,14 @@ pub enum CompanyIdentifier {
     BostonScientificCorporation = 0x045D,
     /// Delta T Corporation (0x045C)
     DeltaTCorporation = 0x045C,
-    /// SPACEEK LTD (0x045B)
-    SpaceekLtd = 0x045B,
     /// 2048450 Ontario Inc (0x045A)
     _2048450OntarioInc = 0x045A,
-    /// Lumenetix, Inc (0x0459)
-    LumenetixInc = 0x0459,
     /// Mini Solution Co., Ltd. (0x0458)
     MiniSolutionCoLtd = 0x0458,
     /// RF INNOVATION (0x0457)
     RfInnovation = 0x0457,
     /// Nemik Consulting Inc (0x0456)
     NemikConsultingInc = 0x0456,
-    /// Atomation (0x0455)
-    Atomation = 0x0455,
     /// Sphinx Electronics GmbH & Co KG (0x0454)
     SphinxElectronicsGmbHAndCoKg = 0x0454,
     /// Qorvo Utrecht B.V. (0x0453)
@@ -5511,8 +6035,6 @@ pub enum CompanyIdentifier {
     TuckerInternationalLlc = 0x0443,
     /// SECOM CO., LTD. (0x0442)
     SecomCoLtd = 0x0442,
-    /// iProtoXi Oy (0x0441)
-    IProtoXiOy = 0x0441,
     /// Valencell, Inc. (0x0440)
     ValencellInc = 0x0440,
     /// Tentacle Sync GmbH (0x043F)
@@ -5521,8 +6043,6 @@ pub enum CompanyIdentifier {
     ThermomedicsInc = 0x043E,
     /// Coiler Corporation (0x043D)
     CoilerCorporation = 0x043D,
-    /// DeLaval (0x043C)
-    DeLaval = 0x043C,
     /// Appside co., ltd. (0x043B)
     AppsideCoLtd = 0x043B,
     /// Nuheara Limited (0x043A)
@@ -5597,10 +6117,6 @@ pub enum CompanyIdentifier {
     FatigueScience = 0x0417,
     /// SODA GmbH (0x0416)
     SodaGmbH = 0x0416,
-    /// Uber Technologies Inc (0x0415)
-    UberTechnologiesInc = 0x0415,
-    /// Lightning Protection International Pty Ltd (0x0414)
-    LightningProtectionInternationalPtyLtd = 0x0414,
     /// Wireless Cables Inc (0x0413)
     WirelessCablesInc = 0x0413,
     /// SEFAM (0x0412)
@@ -5615,20 +6131,14 @@ pub enum CompanyIdentifier {
     SkfUKLimited = 0x040E,
     /// NorthStar Battery Company, LLC (0x040D)
     NorthStarBatteryCompanyLlc = 0x040D,
-    /// Senix Corporation (0x040C)
-    SenixCorporation = 0x040C,
     /// Jana Care Inc. (0x040B)
     JanaCareInc = 0x040B,
     /// ZF OPENMATICS s.r.o. (0x040A)
     ZfOpenmaticsSRO = 0x040A,
-    /// RYSE INC. (0x0409)
-    RyseInc = 0x0409,
     /// ToGetHome Inc. (0x0408)
     ToGetHomeInc = 0x0408,
     /// Swiss Audio SA (0x0407)
     SwissAudioSa = 0x0407,
-    /// Airtago (0x0406)
-    Airtago = 0x0406,
     /// Vertex International, Inc. (0x0405)
     VertexInternationalInc = 0x0405,
     /// Authomate Inc (0x0404)
@@ -5665,16 +6175,12 @@ pub enum CompanyIdentifier {
     WhereInc = 0x03F5,
     /// PAL Technologies Ltd (0x03F4)
     PalTechnologiesLtd = 0x03F4,
-    /// Flowscape AB (0x03F3)
-    FlowscapeAb = 0x03F3,
     /// WindowMaster A/S (0x03F2)
     WindowMasterAS = 0x03F2,
     /// Hestan Smart Cooking Inc. (0x03F1)
     HestanSmartCookingInc = 0x03F1,
     /// CLINK (0x03F0)
     Clink = 0x03F0,
-    /// foolography GmbH (0x03EF)
-    FoolographyGmbH = 0x03EF,
     /// CUBE TECHNOLOGIES (0x03EE)
     CubeTechnologies = 0x03EE,
     /// BASIC MICRO.COM,INC. (0x03ED)
@@ -5687,8 +6193,6 @@ pub enum CompanyIdentifier {
     HelloInc = 0x03EA,
     /// SHENZHEN LEMONJOY TECHNOLOGY CO., LTD. (0x03E9)
     ShenzhenLemonjoyTechnologyCoLtd = 0x03E9,
-    /// Reiner Kartengeraete GmbH & Co. KG. (0x03E8)
-    ReinerKartengeraeteGmbHAndCoKg = 0x03E8,
     /// TRUE Fitness Technology (0x03E7)
     TrueFitnessTechnology = 0x03E7,
     /// IoT Instruments Oy (0x03E6)
@@ -5807,14 +6311,10 @@ pub enum CompanyIdentifier {
     AllswellInc = 0x03AE,
     /// XiQ (0x03AD)
     XiQ = 0x03AD,
-    /// Smablo LTD (0x03AC)
-    SmabloLtd = 0x03AC,
     /// Meizu Technology Co., Ltd. (0x03AB)
     MeizuTechnologyCoLtd = 0x03AB,
     /// Exon Sp. z o.o. (0x03AA)
     ExonSpZOO = 0x03AA,
-    /// THINKERLY SRL (0x03A9)
-    ThinkerlySrl = 0x03A9,
     /// Esrille Inc. (0x03A8)
     EsrilleInc = 0x03A8,
     /// AeroScout (0x03A7)
@@ -5855,8 +6355,6 @@ pub enum CompanyIdentifier {
     BloksGmbH = 0x0396,
     /// SDATAWAY (0x0395)
     Sdataway = 0x0395,
-    /// Netclearance Systems, Inc. (0x0394)
-    NetclearanceSystemsInc = 0x0394,
     /// LAVAZZA S.p.A. (0x0393)
     LavazzaSPA = 0x0393,
     /// T&D (0x0392)
@@ -5887,8 +6385,6 @@ pub enum CompanyIdentifier {
     AtericaInc = 0x0386,
     /// Embedded Electronic Solutions Ltd. dba e2Solutions (0x0385)
     EmbeddedElectronicSolutionsLtdDbaE2Solutions = 0x0385,
-    /// OCOSMOS Co., Ltd. (0x0384)
-    OcosmosCoLtd = 0x0384,
     /// Kronos Incorporated (0x0383)
     KronosIncorporated = 0x0383,
     /// Precision Outcomes Ltd (0x0382)
@@ -5925,8 +6421,6 @@ pub enum CompanyIdentifier {
     AppNearMeLtd = 0x0373,
     /// Nixie Labs, Inc. (0x0372)
     NixieLabsInc = 0x0372,
-    /// ORBCOMM (0x0371)
-    Orbcomm = 0x0371,
     /// Wazombi Labs OÜ (0x0370)
     WazombiLabsOü = 0x0370,
     /// Motiv, Inc. (0x036F)
@@ -5945,8 +6439,6 @@ pub enum CompanyIdentifier {
     LittleBits = 0x0369,
     /// Metormote AB (0x0368)
     MetormoteAb = 0x0368,
-    /// Saphe International (0x0367)
-    SapheInternational = 0x0367,
     /// BOLTT Sports technologies Private limited (0x0366)
     BolttSportsTechnologiesPrivateLimited = 0x0366,
     /// BioMech Sensor LLC (0x0365)
@@ -5983,8 +6475,8 @@ pub enum CompanyIdentifier {
     SpectrumBrandsInc = 0x0356,
     /// Sigma Designs, Inc. (0x0355)
     SigmaDesignsInc = 0x0355,
-    /// TOPPAN FORMS CO.,LTD. (0x0354)
-    ToppanFormsCoLtd = 0x0354,
+    /// TOPPAN, Inc. (0x0354)
+    ToppanInc = 0x0354,
     /// Alpha Audiotronics, Inc. (0x0353)
     AlphaAudiotronicsInc = 0x0353,
     /// iRiding(Xiamen)Technology Co.,Ltd. (0x0352)
@@ -5995,20 +6487,14 @@ pub enum CompanyIdentifier {
     BitstrataSystemsInc = 0x0350,
     /// Heartland Payment Systems (0x034F)
     HeartlandPaymentSystems = 0x034F,
-    /// SafeTrust Inc. (0x034E)
-    SafeTrustInc = 0x034E,
     /// TASER International, Inc. (0x034D)
     TaserInternationalInc = 0x034D,
     /// HM Electronics, Inc. (0x034C)
     HmElectronicsInc = 0x034C,
     /// Libratone A/S (0x034B)
     LibratoneAS = 0x034B,
-    /// Vaddio (0x034A)
-    Vaddio = 0x034A,
     /// VersaMe (0x0349)
     VersaMe = 0x0349,
-    /// Arioneo (0x0348)
-    Arioneo = 0x0348,
     /// Prevent Biometrics (0x0347)
     PreventBiometrics = 0x0347,
     /// Acuity Brands Lighting, Inc (0x0346)
@@ -6023,16 +6509,12 @@ pub enum CompanyIdentifier {
     GertecBrasilLtda = 0x0342,
     /// Etesian Technologies LLC (0x0341)
     EtesianTechnologiesLlc = 0x0341,
-    /// Letsense s.r.l. (0x0340)
-    LetsenseSRL = 0x0340,
     /// Automation Components, Inc. (0x033F)
     AutomationComponentsInc = 0x033F,
     /// Monitra SA (0x033E)
     MonitraSa = 0x033E,
     /// TPV Technology Limited (0x033D)
     TpvTechnologyLimited = 0x033D,
-    /// Virtuosys (0x033C)
-    Virtuosys = 0x033C,
     /// Courtney Thorne Limited (0x033B)
     CourtneyThorneLimited = 0x033B,
     /// Appception, Inc. (0x033A)
@@ -6051,8 +6533,6 @@ pub enum CompanyIdentifier {
     AirthingsAsa = 0x0334,
     /// Mul-T-Lock (0x0333)
     MulTLock = 0x0333,
-    /// Electrocompaniet A.S. (0x0332)
-    ElectrocompanietAS = 0x0332,
     /// 3flares Technologies Inc. (0x0331)
     _3FlaresTechnologiesInc = 0x0331,
     /// North Pole Engineering (0x0330)
@@ -6077,16 +6557,10 @@ pub enum CompanyIdentifier {
     EssexElectronics = 0x0327,
     /// Healthwear Technologies (Changzhou)Ltd (0x0326)
     HealthwearTechnologiesChangzhouLtd = 0x0326,
-    /// Amotus Solutions (0x0325)
-    AmotusSolutions = 0x0325,
     /// Astro, Inc. (0x0324)
     AstroInc = 0x0324,
     /// Rotor Bike Components (0x0323)
     RotorBikeComponents = 0x0323,
-    /// Compumedics Limited (0x0322)
-    CompumedicsLimited = 0x0322,
-    /// Jewelbots (0x0321)
-    Jewelbots = 0x0321,
     /// SONO ELECTRONICS. CO., LTD (0x0320)
     SonoElectronicsCoLtd = 0x0320,
     /// MetaSystem S.p.A. (0x031F)
@@ -6123,8 +6597,6 @@ pub enum CompanyIdentifier {
     SglItaliaSRL = 0x0310,
     /// Shortcut Labs (0x030F)
     ShortcutLabs = 0x030F,
-    /// Deviceworx (0x030E)
-    Deviceworx = 0x030E,
     /// Devdata S.r.l. (0x030D)
     DevdataSRL = 0x030D,
     /// Hilti AG (0x030C)
@@ -6157,20 +6629,14 @@ pub enum CompanyIdentifier {
     SiliconLaboratories = 0x02FF,
     /// Lierda Science & Technology Group Co., Ltd. (0x02FE)
     LierdaScienceAndTechnologyGroupCoLtd = 0x02FE,
-    /// Uwanna, Inc. (0x02FD)
-    UwannaInc = 0x02FD,
     /// Shanghai Frequen Microelectronics Co., Ltd. (0x02FC)
     ShanghaiFrequenMicroelectronicsCoLtd = 0x02FC,
     /// Clarius Mobile Health Corp. (0x02FB)
     ClariusMobileHealthCorp = 0x02FB,
-    /// CoSTAR TEchnologies (0x02FA)
-    CoStarTEchnologies = 0x02FA,
     /// IMAGINATION TECHNOLOGIES LTD (0x02F9)
     ImaginationTechnologiesLtd = 0x02F9,
     /// Runteq Oy Ltd (0x02F8)
     RunteqOyLtd = 0x02F8,
-    /// DreamVisions co., Ltd. (0x02F7)
-    DreamVisionsCoLtd = 0x02F7,
     /// Intemo Technologies (0x02F6)
     IntemoTechnologies = 0x02F6,
     /// Indagem Tech LLC (0x02F5)
@@ -6191,8 +6657,6 @@ pub enum CompanyIdentifier {
     CitizenHoldingsCoLtd = 0x02EE,
     /// HTC Corporation (0x02ED)
     HtcCorporation = 0x02ED,
-    /// Delta Systems, Inc (0x02EC)
-    DeltaSystemsInc = 0x02EC,
     /// Ardic Technology (0x02EB)
     ArdicTechnology = 0x02EB,
     /// Fujitsu Limited (0x02EA)
@@ -6255,8 +6719,6 @@ pub enum CompanyIdentifier {
     TevaBrandedPharmaceuticalProductsRAndDInc = 0x02CE,
     /// BMA ergonomics b.v. (0x02CD)
     BmaErgonomicsBV = 0x02CD,
-    /// Eijkelkamp Soil & Water (0x02CC)
-    EijkelkampSoilAndWater = 0x02CC,
     /// AINA-Wireless Inc. (0x02CB)
     AinaWirelessInc = 0x02CB,
     /// ABOV Semiconductor (0x02CA)
@@ -6281,16 +6743,14 @@ pub enum CompanyIdentifier {
     LineCorporation = 0x02C1,
     /// Dash Robotics (0x02C0)
     DashRobotics = 0x02C0,
-    /// Redbird Flight Simulations (0x02BF)
-    RedbirdFlightSimulations = 0x02BF,
     /// Seguro Technology Sp. z o.o. (0x02BE)
     SeguroTechnologySpZOO = 0x02BE,
     /// Chemtronics (0x02BD)
     Chemtronics = 0x02BD,
     /// Genevac Ltd (0x02BC)
     GenevacLtd = 0x02BC,
-    /// Koha.,Co.Ltd (0x02BB)
-    KohaCoLtd = 0x02BB,
+    /// YOKOWO CO., LTD. (0x02BB)
+    YokowoCoLtd = 0x02BB,
     /// Swissprime Technologies AG (0x02BA)
     SwissprimeTechnologiesAg = 0x02BA,
     /// Rinnai Corporation (0x02B9)
@@ -6319,8 +6779,6 @@ pub enum CompanyIdentifier {
     WeatherFlowInc = 0x02AE,
     /// Rx Networks, Inc. (0x02AD)
     RxNetworksInc = 0x02AD,
-    /// RTB Elektronik GmbH & Co. KG (0x02AC)
-    RtbElektronikGmbHAndCoKg = 0x02AC,
     /// BBPOS Limited (0x02AB)
     BbposLimited = 0x02AB,
     /// Doppler Lab (0x02AA)
@@ -6341,8 +6799,6 @@ pub enum CompanyIdentifier {
     Itude = 0x02A3,
     /// Sera4 Ltd. (0x02A2)
     Sera4Ltd = 0x02A2,
-    /// InventureTrack Systems (0x02A1)
-    InventureTrackSystems = 0x02A1,
     /// Impossible Camera GmbH (0x02A0)
     ImpossibleCameraGmbH = 0x02A0,
     /// Areus Engineering GmbH (0x029F)
@@ -6371,8 +6827,6 @@ pub enum CompanyIdentifier {
     EliasGmbH = 0x0294,
     /// Blue Bite (0x0293)
     BlueBite = 0x0293,
-    /// SwiftSensors (0x0292)
-    SwiftSensors = 0x0292,
     /// CliniCloud Inc (0x0291)
     CliniCloudInc = 0x0291,
     /// Multibit Oy (0x0290)
@@ -6381,8 +6835,6 @@ pub enum CompanyIdentifier {
     ChurchAndDwightCoInc = 0x028F,
     /// RF Digital Corp (0x028E)
     RfDigitalCorp = 0x028E,
-    /// IF, LLC (0x028D)
-    IfLlc = 0x028D,
     /// NANOLINK APS (0x028C)
     NanolinkAps = 0x028C,
     /// Code Gears LTD (0x028B)
@@ -6391,8 +6843,6 @@ pub enum CompanyIdentifier {
     JetroAs = 0x028A,
     /// SK Telecom (0x0289)
     SkTelecom = 0x0289,
-    /// Willowbank Electronics Ltd (0x0288)
-    WillowbankElectronicsLtd = 0x0288,
     /// Wally Ventures S.L. (0x0287)
     WallyVenturesSL = 0x0287,
     /// RF Code, Inc. (0x0286)
@@ -6465,14 +6915,10 @@ pub enum CompanyIdentifier {
     SmkCorporation = 0x0265,
     /// DDS, Inc. (0x0264)
     DdsInc = 0x0264,
-    /// Identiv, Inc. (0x0263)
-    IdentivInc = 0x0263,
     /// Glacial Ridge Technologies (0x0262)
     GlacialRidgeTechnologies = 0x0262,
     /// SECVRE GmbH (0x0261)
     SecvreGmbH = 0x0261,
-    /// SensaRx (0x0260)
-    SensaRx = 0x0260,
     /// Yardarm Technologies (0x025F)
     YardarmTechnologies = 0x025F,
     /// Fluke Corporation (0x025E)
@@ -6499,8 +6945,8 @@ pub enum CompanyIdentifier {
     Playbrush = 0x0254,
     /// Xicato Inc. (0x0253)
     XicatoInc = 0x0253,
-    /// UKC Technosolution (0x0252)
-    UkcTechnosolution = 0x0252,
+    /// Restar Corporation (0x0252)
+    RestarCorporation = 0x0252,
     /// Lumo Bodytech Inc. (0x0251)
     LumoBodytechInc = 0x0251,
     /// Sapphire Circuits LLC (0x0250)
@@ -6517,8 +6963,6 @@ pub enum CompanyIdentifier {
     OrlanLlc = 0x024B,
     /// Uwatec AG (0x024A)
     UwatecAg = 0x024A,
-    /// Transcranial Ltd (0x0249)
-    TranscranialLtd = 0x0249,
     /// Parker Hannifin Corp (0x0248)
     ParkerHannifinCorp = 0x0248,
     /// FiftyThree Inc. (0x0247)
@@ -6531,8 +6975,6 @@ pub enum CompanyIdentifier {
     IoteraInc = 0x0244,
     /// Masimo Corp (0x0243)
     MasimoCorp = 0x0243,
-    /// 16Lab Inc (0x0242)
-    _16LabInc = 0x0242,
     /// Bragi GmbH (0x0241)
     BragiGmbH = 0x0241,
     /// Argenox Technologies (0x0240)
@@ -6543,8 +6985,6 @@ pub enum CompanyIdentifier {
     RavenIndustries = 0x023E,
     /// ViCentra B.V. (0x023D)
     ViCentraBV = 0x023D,
-    /// Awarepoint (0x023C)
-    Awarepoint = 0x023C,
     /// Beijing CarePulse Electronic Technology Co, Ltd (0x023B)
     BeijingCarePulseElectronicTechnologyCoLtd = 0x023B,
     /// Alatech Tehnology (0x023A)
@@ -6561,16 +7001,12 @@ pub enum CompanyIdentifier {
     QrioInc = 0x0235,
     /// FengFan (BeiJing) Technology Co, Ltd (0x0234)
     FengFanBeiJingTechnologyCoLtd = 0x0234,
-    /// Shenzhen SuLong Communication Ltd (0x0233)
-    ShenzhenSuLongCommunicationLtd = 0x0233,
     /// x-Senso Solutions Kft (0x0232)
     XSensoSolutionsKft = 0x0232,
     /// ETA SA (0x0231)
     EtaSa = 0x0231,
     /// Foster Electric Company, Ltd (0x0230)
     FosterElectricCompanyLtd = 0x0230,
-    /// Huami (Shanghai) Culture Communication CO., LTD (0x022F)
-    HuamiShanghaiCultureCommunicationCoLtd = 0x022F,
     /// Siemens AG (0x022E)
     SiemensAg = 0x022E,
     /// Lupine (0x022D)
@@ -6615,8 +7051,6 @@ pub enum CompanyIdentifier {
     BlueSpeckLabsLlc = 0x021A,
     /// DOTT Limited (0x0219)
     DottLimited = 0x0219,
-    /// Hiotech AB (0x0218)
-    HiotechAb = 0x0218,
     /// Tech4home, Lda (0x0217)
     Tech4HomeLda = 0x0217,
     /// MTI Ltd (0x0216)
@@ -6637,8 +7071,6 @@ pub enum CompanyIdentifier {
     ComoduleGmbh = 0x020F,
     /// Omron Healthcare Co., LTD (0x020E)
     OmronHealthcareCoLtd = 0x020E,
-    /// Simplo Technology Co., LTD (0x020D)
-    SimploTechnologyCoLtd = 0x020D,
     /// CoroWare Technologies, Inc (0x020C)
     CoroWareTechnologiesInc = 0x020C,
     /// Jaguar Land Rover Limited (0x020B)
@@ -6653,10 +7085,6 @@ pub enum CompanyIdentifier {
     StempInc = 0x0207,
     /// Otter Products, LLC (0x0206)
     OtterProductsLlc = 0x0206,
-    /// Smartbotics Inc. (0x0205)
-    SmartboticsInc = 0x0205,
-    /// Tapcentive Inc. (0x0204)
-    TapcentiveInc = 0x0204,
     /// Kemppi Oy (0x0203)
     KemppiOy = 0x0203,
     /// Rigado LLC (0x0202)
@@ -6701,20 +7129,10 @@ pub enum CompanyIdentifier {
     FullpowerTechnologiesInc = 0x01EF,
     /// Valeo Service (0x01EE)
     ValeoService = 0x01EE,
-    /// CuteCircuit LTD (0x01ED)
-    CuteCircuitLtd = 0x01ED,
     /// Spreadtrum Communications Shanghai Ltd (0x01EC)
     SpreadtrumCommunicationsShanghaiLtd = 0x01EC,
-    /// AutoMap LLC (0x01EB)
-    AutoMapLlc = 0x01EB,
     /// Advanced Application Design, Inc. (0x01EA)
     AdvancedApplicationDesignInc = 0x01EA,
-    /// Sano, Inc. (0x01E9)
-    SanoInc = 0x01E9,
-    /// STIR (0x01E8)
-    Stir = 0x01E8,
-    /// IPS Group Inc. (0x01E7)
-    IpsGroupInc = 0x01E7,
     /// Technology Solutions (UK) Ltd (0x01E6)
     TechnologySolutionsUkLtd = 0x01E6,
     /// Dynamic Devices Ltd (0x01E5)
@@ -6723,20 +7141,16 @@ pub enum CompanyIdentifier {
     FreedomInnovations = 0x01E4,
     /// Caterpillar Inc (0x01E3)
     CaterpillarInc = 0x01E3,
-    /// Lectronix, Inc. (0x01E2)
-    LectronixInc = 0x01E2,
     /// Jolla Ltd (0x01E1)
     JollaLtd = 0x01E1,
-    /// Widex A/S (0x01E0)
-    WidexAS = 0x01E0,
+    /// WS Audiology Denmark A/S (0x01E0)
+    WsAudiologyDenmarkAS = 0x01E0,
     /// Bison Group Ltd. (0x01DF)
     BisonGroupLtd = 0x01DF,
     /// Minelab Electronics Pty Limited (0x01DE)
     MinelabElectronicsPtyLimited = 0x01DE,
     /// Koninklijke Philips N.V. (0x01DD)
     KoninklijkePhilipsNV = 0x01DD,
-    /// iParking Ltd. (0x01DC)
-    IParkingLtd = 0x01DC,
     /// Innblue Consulting (0x01DB)
     InnblueConsulting = 0x01DB,
     /// Logitech International SA (0x01DA)
@@ -6745,8 +7159,6 @@ pub enum CompanyIdentifier {
     SavantSystemsLlc = 0x01D9,
     /// Code Corporation (0x01D8)
     CodeCorporation = 0x01D8,
-    /// Squadrone Systems Inc. (0x01D7)
-    SquadroneSystemsInc = 0x01D7,
     /// G-wearables inc. (0x01D6)
     GWearablesInc = 0x01D6,
     /// ELAD srl (0x01D5)
@@ -6785,14 +7197,10 @@ pub enum CompanyIdentifier {
     BitcrazeAb = 0x01C5,
     /// DME Microelectronics (0x01C4)
     DmeMicroelectronics = 0x01C4,
-    /// Bunch (0x01C3)
-    Bunch = 0x01C3,
     /// Transenergooil AG (0x01C2)
     TransenergooilAg = 0x01C2,
     /// BRADATECH Corp. (0x01C1)
     BradatechCorp = 0x01C1,
-    /// pironex GmbH (0x01C0)
-    PironexGmbH = 0x01C0,
     /// Hongkong OnMicro Electronics Limited (0x01BF)
     HongkongOnMicroElectronicsLimited = 0x01BF,
     /// Pulsate Mobile Ltd. (0x01BE)
@@ -6803,8 +7211,8 @@ pub enum CompanyIdentifier {
     SenionLabAb = 0x01BC,
     /// Cochlear Bone Anchored Solutions AB (0x01BB)
     CochlearBoneAnchoredSolutionsAb = 0x01BB,
-    /// Stages Cycling LLC (0x01BA)
-    StagesCyclingLlc = 0x01BA,
+    /// SPIA Cycling Inc. (0x01BA)
+    SpiaCyclingInc = 0x01BA,
     /// HANA Micron (0x01B9)
     HanaMicron = 0x01B9,
     /// i+D3 S.L. (0x01B8)
@@ -6827,8 +7235,6 @@ pub enum CompanyIdentifier {
     StarMicronicsCoLtd = 0x01B0,
     /// Sunrise Micro Devices, Inc. (0x01AF)
     SunriseMicroDevicesInc = 0x01AF,
-    /// Earlens Corporation (0x01AE)
-    EarlensCorporation = 0x01AE,
     /// FlightSafety International (0x01AD)
     FlightSafetyInternational = 0x01AD,
     /// Trividia Health, Inc. (0x01AC)
@@ -6849,8 +7255,6 @@ pub enum CompanyIdentifier {
     IconHealthAndFitness = 0x01A5,
     /// MSA Innovation, LLC (0x01A4)
     MsaInnovationLlc = 0x01A4,
-    /// EROAD (0x01A3)
-    Eroad = 0x01A3,
     /// GIGALANE.CO.,LTD (0x01A2)
     GigalaneCoLtd = 0x01A2,
     /// FIAMM (0x01A1)
@@ -6889,8 +7293,6 @@ pub enum CompanyIdentifier {
     FdkCorporation = 0x0191,
     /// Intelletto Technologies Inc. (0x0190)
     IntellettoTechnologiesInc = 0x0190,
-    /// Fireflies Systems (0x018F)
-    FirefliesSystems = 0x018F,
     /// Google LLC (0x018E)
     GoogleLlc = 0x018E,
     /// Extron Design Services (0x018D)
@@ -6907,16 +7309,10 @@ pub enum CompanyIdentifier {
     UnicoRbc = 0x0188,
     /// Seraphim Sense Ltd (0x0187)
     SeraphimSenseLtd = 0x0187,
-    /// CORE Lighting Ltd (0x0186)
-    CoreLightingLtd = 0x0186,
-    /// bel'apps LLC (0x0185)
-    BelAppsLlc = 0x0185,
     /// Nectar (0x0184)
     Nectar = 0x0184,
     /// Walt Disney (0x0183)
     WaltDisney = 0x0183,
-    /// HOP Ubiquitous (0x0182)
-    HopUbiquitous = 0x0182,
     /// Gecko Health Innovations, Inc. (0x0181)
     GeckoHealthInnovationsInc = 0x0181,
     /// Gigaset Technologies GmbH (0x0180)
@@ -7049,8 +7445,6 @@ pub enum CompanyIdentifier {
     FedExServices = 0x0141,
     /// Alpine Electronics (China) Co., Ltd (0x0140)
     AlpineElectronicsChinaCoLtd = 0x0140,
-    /// B&B Manufacturing Company (0x013F)
-    BAndBManufacturingCompany = 0x013F,
     /// Nod, Inc. (0x013E)
     NodInc = 0x013E,
     /// WirelessWERX (0x013D)
@@ -7125,8 +7519,6 @@ pub enum CompanyIdentifier {
     HewlettPackardEnterprise = 0x011B,
     /// Qualcomm Labs, Inc. (0x011A)
     QualcommLabsInc = 0x011A,
-    /// Wize Technology Co., Ltd. (0x0119)
-    WizeTechnologyCoLtd = 0x0119,
     /// Radius Networks, Inc. (0x0118)
     RadiusNetworksInc = 0x0118,
     /// Wimoto Technologies Inc (0x0117)
@@ -7135,8 +7527,6 @@ pub enum CompanyIdentifier {
     _10AkTechnologies = 0x0116,
     /// e.solutions (0x0115)
     ESolutions = 0x0115,
-    /// Xensr (0x0114)
-    Xensr = 0x0114,
     /// Openbrain Technologies, Co., Ltd. (0x0113)
     OpenbrainTechnologiesCoLtd = 0x0113,
     /// Visybl Inc. (0x0112)
@@ -7189,14 +7579,10 @@ pub enum CompanyIdentifier {
     KoukaamAS = 0x00FB,
     /// Crystal Alarm AB (0x00FA)
     CrystalAlarmAb = 0x00FA,
-    /// StickNFind (0x00F9)
-    StickNFind = 0x00F9,
     /// AceUni Corp., Ltd. (0x00F8)
     AceUniCorpLtd = 0x00F8,
     /// VSN Technologies, Inc. (0x00F7)
     VsnTechnologiesInc = 0x00F7,
-    /// Elcometer Limited (0x00F6)
-    ElcometerLimited = 0x00F6,
     /// Smartifier Oy (0x00F5)
     SmartifierOy = 0x00F5,
     /// Nautilus Inc. (0x00F4)
@@ -7227,8 +7613,6 @@ pub enum CompanyIdentifier {
     ActsTechnologies = 0x00E8,
     /// KS Technologies (0x00E7)
     KsTechnologies = 0x00E7,
-    /// Freshtemp (0x00E6)
-    Freshtemp = 0x00E6,
     /// Eden Software Consultants Ltd. (0x00E5)
     EdenSoftwareConsultantsLtd = 0x00E5,
     /// L.S. Research, Inc. (0x00E4)
@@ -7263,8 +7647,6 @@ pub enum CompanyIdentifier {
     TimexGroupUsaInc = 0x00D6,
     /// Austco Communication Systems (0x00D5)
     AustcoCommunicationSystems = 0x00D5,
-    /// Kawantech (0x00D4)
-    Kawantech = 0x00D4,
     /// Taixingbang Technology (HK) Co,. LTD. (0x00D3)
     TaixingbangTechnologyHkCoLtd = 0x00D3,
     /// Renesas Design Netherlands B.V. (0x00D2)
@@ -7415,8 +7797,6 @@ pub enum CompanyIdentifier {
     Jawbone = 0x008A,
     /// GN Hearing A/S (0x0089)
     GnHearingAS = 0x0089,
-    /// Ecotest (0x0088)
-    Ecotest = 0x0088,
     /// Garmin International, Inc. (0x0087)
     GarminInternationalInc = 0x0087,
     /// Equinux AG (0x0086)
@@ -7435,12 +7815,8 @@ pub enum CompanyIdentifier {
     DeLormePublishingCompanyInc = 0x0080,
     /// Autonet Mobile (0x007F)
     AutonetMobile = 0x007F,
-    /// Sports Tracking Technologies Ltd. (0x007E)
-    SportsTrackingTechnologiesLtd = 0x007E,
     /// Seers Technology Co., Ltd. (0x007D)
     SeersTechnologyCoLtd = 0x007D,
-    /// A & R Cambridge (0x007C)
-    AAndRCambridge = 0x007C,
     /// Hanlynn Technologies (0x007B)
     HanlynnTechnologies = 0x007B,
     /// MStar Semiconductor, Inc. (0x007A)
@@ -7469,22 +7845,18 @@ pub enum CompanyIdentifier {
     SoundId = 0x006F,
     /// Summit Data Communications, Inc. (0x006E)
     SummitDataCommunicationsInc = 0x006E,
-    /// BriarTek, Inc (0x006D)
-    BriarTekInc = 0x006D,
     /// Beautiful Enterprise Co., Ltd. (0x006C)
     BeautifulEnterpriseCoLtd = 0x006C,
     /// Polar Electro OY (0x006B)
     PolarElectroOy = 0x006B,
-    /// LTIMINDTREE LIMITED (0x006A)
-    LtimindtreeLimited = 0x006A,
+    /// LTM Limited (0x006A)
+    LtmLimited = 0x006A,
     /// A&D Engineering, Inc. (0x0069)
     AAndDEngineeringInc = 0x0069,
     /// General Motors (0x0068)
     GeneralMotors = 0x0068,
     /// GN Hearing (0x0067)
     GnHearing = 0x0067,
-    /// 9Solutions Oy (0x0066)
-    _9SolutionsOy = 0x0066,
     /// HP, Inc. (0x0065)
     HpInc = 0x0065,
     /// Band XI International, LLC (0x0064)
@@ -7537,8 +7909,8 @@ pub enum CompanyIdentifier {
     StaccatoCommunicationsInc = 0x004D,
     /// Apple, Inc. (0x004C)
     AppleInc = 0x004C,
-    /// Continental Automotive Systems (0x004B)
-    ContinentalAutomotiveSystems = 0x004B,
+    /// AUMOVIO Systems, Inc. (0x004B)
+    AumovioSystemsInc = 0x004B,
     /// Accel Semiconductor Ltd. (0x004A)
     AccelSemiconductorLtd = 0x004A,
     /// 3DSP Corporation (0x0049)
@@ -7581,8 +7953,6 @@ pub enum CompanyIdentifier {
     MobilianCorporation = 0x0037,
     /// Renesas Electronics Corporation (0x0036)
     RenesasElectronicsCorporation = 0x0036,
-    /// Eclipse (HQ Espana) S.L. (0x0035)
-    EclipseHqEspanaSL = 0x0035,
     /// Computer Access Technology Corporation (CATC) (0x0034)
     ComputerAccessTechnologyCorporationCatc = 0x0034,
     /// Commil Ltd (0x0033)
