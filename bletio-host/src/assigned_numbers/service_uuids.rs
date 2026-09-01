@@ -1,6 +1,6 @@
 //! Assigned numbers for Bluetooth GATT services.
 //!
-//! FILE GENERATED FROM REVISION 23db18ee3859c3fa16c0817e2547619c778522bf OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
+//! FILE GENERATED FROM REVISION c73ab4e4a055a8c337ebca30037776478bd22250 OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
@@ -159,4 +159,14 @@ pub enum ServiceUuid {
     IndustrialMeasurementDevice = 0x185A,
     /// Ranging Service (0x185B) — org.bluetooth.service.ranging
     Ranging = 0x185B,
+    /// HID ISO Service (0x185C) — org.bluetooth.service.hid_iso
+    HidIso = 0x185C,
+    /// Cookware Service (0x185D) — org.bluetooth.service.cookware
+    Cookware = 0x185D,
+    /// Voice Assistant Service (0x185E) — org.bluetooth.service.voice_assistant
+    VoiceAssistant = 0x185E,
+    /// Generic Voice Assistant Service (0x185F) — org.bluetooth.service.generic_voice_assistant
+    GenericVoiceAssistant = 0x185F,
+    /// Tire Pressure Monitoring System Service (0x1860) — org.bluetooth.service.tire_pressure_monitoring_system
+    TirePressureMonitoringSystem = 0x1860,
 }

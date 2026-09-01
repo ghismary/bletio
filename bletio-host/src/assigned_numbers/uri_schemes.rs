@@ -1,6 +1,6 @@
 //! Assigned numbers for Bluetooth URI schemes.
 //!
-//! FILE GENERATED FROM REVISION 23db18ee3859c3fa16c0817e2547619c778522bf OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
+//! FILE GENERATED FROM REVISION c73ab4e4a055a8c337ebca30037776478bd22250 OF THE BLUETOOTH SIG REPOSITORY, DO NOT EDIT!!!
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
@@ -387,4 +387,8 @@ pub enum ProvisionedUriScheme {
     Example = 0x00B9,
     /// "ms-settings-cloudstorage:" URI scheme
     MsSettingsCloudstorage = 0x00BA,
+    /// "bluetooth:" URI scheme
+    Bluetooth = 0x00BB,
+    /// "bl:" URI scheme
+    Bl = 0x00BC,
 }
